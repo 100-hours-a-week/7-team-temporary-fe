@@ -5,7 +5,7 @@ export default function Home() {
         <h1 className="text-4xl font-bold text-center mb-8">
           7 Team Temporary FE
         </h1>
-        <p className="text-center text-gray-600">
+        <p className="text-center text-gray-600 flex flex-col">
           프로젝트가 성공적으로 설정되었습니다!
         </p>
       </div>
