@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 // Zustand 스토어 예제
 interface AppState {
@@ -12,4 +12,3 @@ export const useAppStore = create<AppState>((set) => ({
   increment: () => set((state) => ({ count: state.count + 1 })),
   decrement: () => set((state) => ({ count: state.count - 1 })),
 }));
-

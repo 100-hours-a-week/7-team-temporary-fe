@@ -57,4 +57,3 @@
 - `import/order`: error
 - `boundaries/element-types`: error
 - `boundaries/entry-point`: error
-

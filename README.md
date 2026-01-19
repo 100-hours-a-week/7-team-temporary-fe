@@ -22,31 +22,31 @@
 
 ### package.json 버전 요약
 
-| 구분 | 항목 | 버전 |
-|---|---|---|
-| 런타임 | Node | `>=22.13.0` |
-| 패키지 매니저 | pnpm | `>=9.15.1` / `pnpm@9.15.1` |
-| 언어 | TypeScript | `^5.8.2` |
-| 코어 | React | `^19.0.0` |
-|  | React DOM | `^19.0.0` |
-|  | Next.js | `^15.1.3` |
-| 스타일링 | Tailwind CSS | `^4.1.4` |
-|  | Emotion | `^11.11.4` |
-| 상태관리 | Tanstack Query | `^5.74.3` |
-|  | Zustand | `^5.0.3` |
-| 빌드 | Babel | `^7.26.4` |
-|  | Webpack | `Next.js 내부` |
-| 검증 | Zod | `^4.3.5` |
-| 드래그&드롭 | dnd-kit | `@dnd-kit/sortable ^10.0.0` |
-| PWA | Service Worker | `workbox-window ^7.4.0` |
-| 문서화 | Storybook | `storybook ^10.1.11` |
-| 의존성 검사 | Dependency Cruiser | `^17.3.6` |
-| 기타 | ESLint | `^9.25.1` |
-|  | Prettier | `^3.5.3` |
-|  | es-toolkit | `^1.36.0` |
-| 유틸 | clsx | `^2.1.1` |
-|  | tailwind-merge | `^2.5.4` |
-| 이펙트 | canvas-confetti | `^1.9.3` |
+| 구분          | 항목               | 버전                        |
+| ------------- | ------------------ | --------------------------- |
+| 런타임        | Node               | `>=22.13.0`                 |
+| 패키지 매니저 | pnpm               | `>=9.15.1` / `pnpm@9.15.1`  |
+| 언어          | TypeScript         | `^5.8.2`                    |
+| 코어          | React              | `^19.0.0`                   |
+|               | React DOM          | `^19.0.0`                   |
+|               | Next.js            | `^15.1.3`                   |
+| 스타일링      | Tailwind CSS       | `^4.1.4`                    |
+|               | Emotion            | `^11.11.4`                  |
+| 상태관리      | Tanstack Query     | `^5.74.3`                   |
+|               | Zustand            | `^5.0.3`                    |
+| 빌드          | Babel              | `^7.26.4`                   |
+|               | Webpack            | `Next.js 내부`              |
+| 검증          | Zod                | `^4.3.5`                    |
+| 드래그&드롭   | dnd-kit            | `@dnd-kit/sortable ^10.0.0` |
+| PWA           | Service Worker     | `workbox-window ^7.4.0`     |
+| 문서화        | Storybook          | `storybook ^10.1.11`        |
+| 의존성 검사   | Dependency Cruiser | `^17.3.6`                   |
+| 기타          | ESLint             | `^9.25.1`                   |
+|               | Prettier           | `^3.5.3`                    |
+|               | es-toolkit         | `^1.36.0`                   |
+| 유틸          | clsx               | `^2.1.1`                    |
+|               | tailwind-merge     | `^2.5.4`                    |
+| 이펙트        | canvas-confetti    | `^1.9.3`                    |
 
 ## 시작하기
 
@@ -96,4 +96,3 @@ src/
 - `pnpm lint` - ESLint 실행
 - `pnpm format` - Prettier로 코드 포맷팅
 - `pnpm format:check` - Prettier 포맷팅 체크
-

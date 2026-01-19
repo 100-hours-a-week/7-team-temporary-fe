@@ -1,13 +1,16 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import { Providers } from './providers';
+import { Inter } from "next/font/google";
 
-const inter = Inter({ subsets: ['latin'] });
+import { Providers } from "./providers";
+
+import "./globals.css";
+
+import type { Metadata } from "next";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: '7 Team Temporary FE',
-  description: '7 Team Temporary Frontend Application',
+  title: "7 Team Temporary FE",
+  description: "7 Team Temporary Frontend Application",
 };
 
 export default function RootLayout({
@@ -23,4 +26,3 @@ export default function RootLayout({
     </html>
   );
 }
-

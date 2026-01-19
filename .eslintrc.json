@@ -13,14 +13,7 @@
       "jsx": true
     }
   },
-  "plugins": [
-    "@typescript-eslint",
-    "boundaries",
-    "react-hooks",
-    "import",
-    "unused-imports",
-    "storybook"
-  ],
+  "plugins": ["@typescript-eslint", "boundaries", "import", "unused-imports", "storybook"],
   "env": {
     "browser": true,
     "node": true
@@ -93,7 +86,10 @@
           { "from": ["features"], "allow": ["shared", "entities", "features"] },
           { "from": ["widgets"], "allow": ["shared", "entities", "features", "widgets"] },
           { "from": ["pages"], "allow": ["shared", "entities", "features", "widgets", "pages"] },
-          { "from": ["app"], "allow": ["shared", "entities", "features", "widgets", "pages", "app"] }
+          {
+            "from": ["app"],
+            "allow": ["shared", "entities", "features", "widgets", "pages", "app"]
+          }
         ]
       }
     ],
@@ -111,4 +107,3 @@
     ]
   }
 }
-
