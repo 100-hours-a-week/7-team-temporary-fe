@@ -1,27 +1,25 @@
-# 프론트엔드 개발 표준 구조 설계
+# 프론트엔드 개발 표준 구조 설계 (분할 문서)
 
-위키 내용을 기준으로 팀에서 합의한 개발 표준 구조를 문서화했습니다.  
-각 섹션은 운영 시점에 맞게 보완해 주세요.
+원본 문서: `docs/frontend-standard-structure/4-프론트엔드-표준-구조설계.md`
 
-## 목차
+## 파일 목록
 
-- `00-stack-summary.md`
-- `01-architecture-overview.md`
-- `02-project-structure.md`
-- `03-routing-and-layout.md`
-- `04-ui-and-component-standards.md`
-- `05-state-management.md`
-- `06-responsive-design.md`
-- `07-code-conventions.md`
-- `08-lint-and-formatting.md`
-- `09-browser-pwa-compat.md`
-- `10-polyfill-strategy.md`
-- `11-seo-and-metadata.md`
-- `12-test-strategy.md`
-- `13-maintenance-rules.md`
-
-## 참고
-
-- 위키: 프론트엔드 개발 표준 구조 설계
-  - https://github.com/100-hours-a-week/7-team-temporary-wiki/wiki/%ED%94%84%EB%A1%A0%ED%8A%B8%EC%97%94%EB%93%9C-%EA%B0%9C%EB%B0%9C-%ED%91%9C%EC%A4%80-%EA%B5%AC%EC%A1%B0-%EC%84%A4%EA%B3%84
-
+- `00-스택-요약.md`
+- `01-Architecture-Decisions.md`
+- `02-0.-문서-개요.md`
+- `03-1.-아키텍처-개요-Architecture-Overview.md`
+- `04-2.-폴더-구조-설계-FSD-기반.md`
+- `05-3.-Next.jsApp-Router-적용-전략.md`
+- `06-4.-접근-제어-및-인증-흐름-설계.md`
+- `07-5.-Route-Handler-및-API-연동-정책.md`
+- `08-6.-라우팅-어댑터-구조.md`
+- `09-7.-상태-관리-구조.md`
+- `10-8.-공통-UI-및-컴포넌트-배치-기준.md`
+- `11-9.-반응형-디자인-지원-전략.md`
+- `12-10.-코드-컨벤션.md`
+- `13-11.-Lint---Formatting-정책.md`
+- `14-12.-지원-브라우저-범위-및-호환성.md`
+- `15-13.-Polyfill-전략.md`
+- `16-14.-SEO-및-메타데이터-전략.md`
+- `17-15.-테스트-전략.md`
+- `18-16.-일관성-및-유지-보수-규칙.md`
