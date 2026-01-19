@@ -141,11 +141,12 @@ interface RequestConfig<TBody> {
 {
   status: "SUCCESS";
   message: "login_succeed";
-  data: {}
+  data: {
+  }
 }
 ```
 
-  - 요청 함수 예시
+- 요청 함수 예시
 
 ```tsx
 const res = await fetch(url, {
@@ -202,15 +203,15 @@ interface UseApiQueryProps<TResult> {
 }
 ```
 
-  - `queryKey`
-    - 서버 상태를 식별하는 유일한 키
-    - 반드시 `queryKeyFactory`를 통해 생성한다.
+- `queryKey`
+  - 서버 상태를 식별하는 유일한 키
+  - 반드시 `queryKeyFactory`를 통해 생성한다.
 
 ```tsx
 queryKey: plannerKeys.daily(date);
 ```
 
-  - `url`: 실제 서버 요청 endpoint
+- `url`: 실제 서버 요청 endpoint
 
 #### useApiMutation
 
@@ -233,13 +234,13 @@ interface UseApiMutationProps<TForm, TDto, TResult> {
 }
 ```
 
-  - `url`: 실제 서버 요청 endpoint
-  - `method`:
-    - 반드시 명시
-    - GET 금지 (조회는 useQuery로만 처리)
-  - `dtoFn`:
-    - form 데이터를 **API 요청 DTO**로 변환하는 함수
-    - **UI form 구조**와 **API 스펙 분리**
+- `url`: 실제 서버 요청 endpoint
+- `method`:
+  - 반드시 명시
+  - GET 금지 (조회는 useQuery로만 처리)
+- `dtoFn`:
+  - form 데이터를 **API 요청 DTO**로 변환하는 함수
+  - **UI form 구조**와 **API 스펙 분리**
 
 ```tsx
 dtoFn: (form) => ({
@@ -248,22 +249,16 @@ dtoFn: (form) => ({
 });
 ```
 
-  - `onSuccess`:
-    - **onSuccess**는 서버 요청 성공 이후의 도메인 단위 side-effect를 처리한다.
-    - **UI 피드백(토스트, 모달 등)**은 Page Hook 또는 Page Component에서 처리한다.
-  - `invalidateKeys`:
-    - mutation 성공 시 명시적으로 invalidate할 queryKey 목록
+- `onSuccess`:
+  - **onSuccess**는 서버 요청 성공 이후의 도메인 단위 side-effect를 처리한다.
+  - **UI 피드백(토스트, 모달 등)**은 Page Hook 또는 Page Component에서 처리한다.
+- `invalidateKeys`:
+  - mutation 성공 시 명시적으로 invalidate할 queryKey 목록
 
 - **useApiMutation 함수 예시**
 
 ```tsx
-export function useApiMutation({
-  url,
-  dtoFn,
-  method,
-  onSuccess,
-  invalidateKeys = [],
-}) {
+export function useApiMutation({ url, dtoFn, method, onSuccess, invalidateKeys = [] }) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -287,7 +282,7 @@ export function useApiMutation({
 }
 ```
 
-  - **에러 토스트**는 사용처에서 처리한다. (예시코드)
+- **에러 토스트**는 사용처에서 처리한다. (예시코드)
 
 ```tsx
 const mutation = useApiMutation({ ... });
@@ -321,10 +316,7 @@ useEffect(() => {
 interface UseOptimisticMutationProps<TVariables, TCache> {
   mutationFn: (variables: TVariables) => Promise<unknown>;
   queryKey: readonly unknown[];
-  getOptimisticData: (
-    previous: TCache | undefined,
-    variables: TVariables,
-  ) => TCache;
+  getOptimisticData: (previous: TCache | undefined, variables: TVariables) => TCache;
   invalidateKeys: readonly unknown[][];
 }
 ```
@@ -398,9 +390,7 @@ export function useToggleTodoDone(date: string) {
 
       return {
         ...previous,
-        todos: previous.todos.map((t) =>
-          t.id === vars.todoId ? { ...t, isDone: !t.isDone } : t,
-        ),
+        todos: previous.todos.map((t) => (t.id === vars.todoId ? { ...t, isDone: !t.isDone } : t)),
       };
     },
 

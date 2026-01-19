@@ -54,15 +54,15 @@ return {
 ```ts
 const userKeys = queryKeyFactory("user");
 
-userKeys.all;            // ["user"]
-userKeys.by("me");       // ["user", "me"]
+userKeys.all; // ["user"]
+userKeys.by("me"); // ["user", "me"]
 userKeys.by("detail", id); // ["user", "detail", "u_123"]
 ```
 
 타입도 유지된다:
 
 ```ts
-readonly ["user", "detail", string]
+readonly[("user", "detail", string)];
 ```
 
 ---
@@ -77,10 +77,7 @@ readonly ["user", "detail", string]
 - 같은 데이터인데 캐시가 갈라짐
 
 ```ts
-["user", "me"]
-["users", "me"]
-["user", "detail", id]
-["user", id]
+["user", "me"][("users", "me")][("user", "detail", id)][("user", id)];
 ```
 
 ### 이 팩토리를 쓰면
@@ -141,4 +138,3 @@ queryClient.invalidateQueries({
 
 > 이 코드는 queryKey를 “문자열 배열”이 아니라  
 > “도메인 단위의 타입 안전한 식별자”로 만들기 위한 팩토리다.
-

@@ -22,6 +22,7 @@
 서버 상태를 **TanStack Query 기반 Query Layer로 완전히 위임**하고, 서버 상태 조회(`useApiQuery`)와 변경(`useApiMutation`)을 **단일 진입점으로 제한**한다면 서버 상태의 생명주기를 명확히 정의할 수 있을 것으로 판단한다.
 
 또한,
+
 - apiFetch는 HTTP 요청/응답만 담당하는 **순수 Transport Layer**로 한정하고
 - queryKey 생성 규칙과 cache / stale / invalidation 정책을 공통 규칙으로 강제하며
 - mutation 이후 상태 확정은 반드시 **invalidate → refetch 흐름**을 따르도록 한다면

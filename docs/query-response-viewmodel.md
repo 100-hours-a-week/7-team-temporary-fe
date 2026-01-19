@@ -111,4 +111,3 @@ Query Cache["user","me"]
 3. 읽는 쪽은 **그 타입을 신뢰**
 
 이 원칙이 깨지면 캐시 무결성과 invalidate/refetch 시점에서 타입 혼란이 발생한다.
-

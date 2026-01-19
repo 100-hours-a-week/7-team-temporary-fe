@@ -245,4 +245,3 @@ return data as TResponse;
 
 > 이 코드는 **“fetch를 직접 쓰지 못하게 만들기 위한 안전한 API 레이어”**이며,  
 > FSD 구조에서 `shared/api` 레이어에 두기에 적합한 구현이다.
-

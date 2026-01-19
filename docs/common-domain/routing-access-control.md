@@ -36,9 +36,9 @@ AuthStore.setAuthenticated(accessToken) : AuthStore(유저 전역상태관리)
 /home redirect : Route Guard
 ```
 
-  - **로그아웃**
-    - 수행 주체: AuthService → AuthStore → Route Guard
-    - 수행 흐름
+- **로그아웃**
+  - 수행 주체: AuthService → AuthStore → Route Guard
+  - 수행 흐름
 
 ```tsx
 사용자 로그아웃 클릭
@@ -50,10 +50,10 @@ AuthStore.clearAuth()
 /login redirect : Route Guard
 ```
 
-  - **로그인 실패 → refresh token 실패**
-    - 수행 주체: AuthService (또는 apiFetch) → AuthStore → Route Guard
+- **로그인 실패 → refresh token 실패**
+  - 수행 주체: AuthService (또는 apiFetch) → AuthStore → Route Guard
 
-  - 클라이언트 상태 초기화
+- 클라이언트 상태 초기화
 
 - **Route Guard**는 **미들웨어 이후 단계에서 UI 상태와 라우트를 동기화**하는 역할을 담당한다.
 
@@ -90,9 +90,9 @@ AuthStore.clearAuth()
 handleAuthError(error:ApiError):Promise<AuthResolution>
 ```
 
-  - **입력:** `ApiError` (status 포함)
-  - **역할:** refresh 가능한 인증 오류인지, 즉시 로그아웃해야 하는 오류인지 판단한다.
-  - **출력:** 다음 행동을 상위 레이어가 결정할 수 있는 **결과 값**
+- **입력:** `ApiError` (status 포함)
+- **역할:** refresh 가능한 인증 오류인지, 즉시 로그아웃해야 하는 오류인지 판단한다.
+- **출력:** 다음 행동을 상위 레이어가 결정할 수 있는 **결과 값**
 
-  - 로그아웃
-    - 사용자 로그아웃 또는 인증 복구 실패 시
+- 로그아웃
+  - 사용자 로그아웃 또는 인증 복구 실패 시

@@ -16,14 +16,14 @@ interface AuthState {
 }
 ```
 
-  - `isAuthenticated`
-    - 현재 앱이 **인증된 세션 상태인지 여부**
-  - `accessToken?`
-    - 서버 요청 시 Authorization 헤더에 사용되는 **현재 유효한 토큰**
-    - refresh 실패 시 즉시 제거된다
-  - `refreshToken`
-    - 서버가 **httpOnly 쿠키**로 내려주는 세션 토큰
-    - 클라이언트 상태/스토어에는 저장하지 않는다
+- `isAuthenticated`
+  - 현재 앱이 **인증된 세션 상태인지 여부**
+- `accessToken?`
+  - 서버 요청 시 Authorization 헤더에 사용되는 **현재 유효한 토큰**
+  - refresh 실패 시 즉시 제거된다
+- `refreshToken`
+  - 서버가 **httpOnly 쿠키**로 내려주는 세션 토큰
+  - 클라이언트 상태/스토어에는 저장하지 않는다
 
 - **상태 인터페이스**
 
@@ -34,20 +34,20 @@ interface AuthActions {
 }
 ```
 
-  - `setAuthenticated(token)`
-    - 로그인 성공 시 호출된다
-    - 수행 작업
-      1. `accessToken` 저장
-      2. `isAuthenticated = true`로 갱신
-  - `clearAuth()`
-    - 로그아웃 또는 인증 무효 시 호출된다
-    - 수행 작업
-      1. `accessToken` 제거
-      2. `isAuthenticated = false`로 변경
-    - 수행하지 않는 작업
-      - API 호출
-      - 서버 세션 종료
-      - 라우팅
+- `setAuthenticated(token)`
+  - 로그인 성공 시 호출된다
+  - 수행 작업
+    1. `accessToken` 저장
+    2. `isAuthenticated = true`로 갱신
+- `clearAuth()`
+  - 로그아웃 또는 인증 무효 시 호출된다
+  - 수행 작업
+    1. `accessToken` 제거
+    2. `isAuthenticated = false`로 변경
+  - 수행하지 않는 작업
+    - API 호출
+    - 서버 세션 종료
+    - 라우팅
 
 ### Local State
 

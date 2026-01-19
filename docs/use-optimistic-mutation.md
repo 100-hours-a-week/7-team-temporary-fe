@@ -26,10 +26,7 @@
 interface UseOptimisticMutationProps<TVariables, TCache> {
   mutationFn: (variables: TVariables) => Promise<unknown>;
   queryKey: readonly unknown[];
-  getOptimisticData: (
-    previous: TCache | undefined,
-    variables: TVariables
-  ) => TCache;
+  getOptimisticData: (previous: TCache | undefined, variables: TVariables) => TCache;
   invalidateKeys: readonly unknown[][];
 }
 ```
@@ -120,9 +117,7 @@ export function useToggleTodoDone(date: string) {
 
       return {
         ...previous,
-        todos: previous.todos.map((t) =>
-          t.id === vars.todoId ? { ...t, isDone: !t.isDone } : t,
-        ),
+        todos: previous.todos.map((t) => (t.id === vars.todoId ? { ...t, isDone: !t.isDone } : t)),
       };
     },
 
@@ -143,4 +138,3 @@ export function useToggleTodoDone(date: string) {
 5. 에러 발생 시 롤백
 6. 요청 종료 후 invalidate
 7. refetch로 서버 기준 상태 확정
-
