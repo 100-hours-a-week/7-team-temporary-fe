@@ -27,7 +27,7 @@ export function SignUpForm({
   const nicknameError = errors.nickname?.message;
   const genderError = errors.gender?.message;
   const birthError = errors.birth?.message;
-  const focuseTimeZoneError = errors.focuseTimeZone?.message;
+  const focusTimeZoneError = errors.focusTimeZone?.message;
   const dayEndTimeError = errors.dayEndTime?.message;
   const profileImageKeyError = errors.profileImageKey?.message;
 
@@ -103,14 +103,14 @@ export function SignUpForm({
         집중 시간대
         <select
           className="w-full rounded-md border px-3 py-2"
-          {...register("focuseTimeZone")}
+          {...register("focusTimeZone")}
         >
           <option value="MORNING">아침</option>
           <option value="AFTERNOON">오후</option>
           <option value="EVENING">저녁</option>
           <option value="NIGHT">밤</option>
         </select>
-        {focuseTimeZoneError && <span className="text-xs text-red-500">{focuseTimeZoneError}</span>}
+        {focusTimeZoneError && <span className="text-xs text-red-500">{focusTimeZoneError}</span>}
       </label>
       <label className="flex flex-col gap-2 text-sm">
         하루 종료 시간

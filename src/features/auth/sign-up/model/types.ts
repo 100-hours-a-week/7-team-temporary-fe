@@ -4,7 +4,7 @@ export interface SignUpFormModel {
   nickname: string;
   gender: "MALE" | "FEMALE";
   birth: string; // YYYY.MM.DD
-  focuseTimeZone: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT";
+  focusTimeZone: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT";
   dayEndTime: string; // HH:MM
   profileImageKey?: string;
 }
@@ -15,7 +15,7 @@ export interface SignUpRequestDto {
   nickname: string;
   gender: "MALE" | "FEMALE";
   birth: string; // YYYY.MM.DD
-  focuseTimeZone: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT";
+  focusTimeZone: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT";
   dayEndTime: string; // HH:MM
   profileImageKey?: string;
 }

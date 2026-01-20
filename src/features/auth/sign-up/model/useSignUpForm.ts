@@ -15,7 +15,7 @@ const DEFAULT_FORM: SignUpFormModel = {
   nickname: "",
   gender: "MALE",
   birth: "",
-  focuseTimeZone: "MORNING",
+  focusTimeZone: "MORNING",
   dayEndTime: "",
   profileImageKey: undefined,
 };
@@ -26,63 +26,57 @@ const REQUIRED_FIELDS: Array<keyof SignUpFormModel> = [
   "nickname",
   "gender",
   "birth",
-  "focuseTimeZone",
+  "focusTimeZone",
   "dayEndTime",
 ];
 
+//타입 : idle 초기 상태, valid 유효, invalid 실패
 type NicknameCheckStatus = "idle" | "valid" | "invalid";
 
+//선택(이미지)을 작성했을까요?
 interface UseSignUpFormOptions {
   onValid?: (form: SignUpFormModel) => void;
 }
 
+//회원가입 폼의 상태를 한 곳에 모아둔 묶음
 export const useSignUpForm = (options: UseSignUpFormOptions = {}) => {
   const [nicknameStatus, setNicknameStatus] = useState<NicknameCheckStatus>("idle");
 
   const {
     register,
     handleSubmit,
-    watch,
     trigger,
-    formState: { errors, touchedFields },
+    watch,
+    formState: {
+      errors, //error반환
+      isValid, //값이 모두 맞는지
+      isSubmitting, //제출 진행 중
+    },
   } = useForm<SignUpFormModel>({
     defaultValues: DEFAULT_FORM,
     mode: "onBlur",
-    reValidateMode: "onBlur",
     resolver: zodResolver(signUpFormSchema),
   });
 
-  const nicknameValue = watch("nickname");
+  const nickname = watch("nickname");
 
   useEffect(() => {
     setNicknameStatus("idle");
-  }, [nicknameValue]);
+  }, [nickname]);
 
   const handleNicknameCheck = async () => {
-    const isValid = await trigger("nickname");
-    setNicknameStatus(isValid ? "valid" : "invalid");
+    const isValidNickname = await trigger("nickname");
+    setNicknameStatus(isValidNickname ? "valid" : "invalid");
   };
 
-  const values = watch();
-  const hasAllRequiredValues = REQUIRED_FIELDS.every((key) => {
-    const value = values[key];
-    if (typeof value === "string") {
-      return value.trim().length > 0;
-    }
-    return value !== undefined && value !== null;
-  });
+  const canSubmit = isValid && nicknameStatus === "valid" && !isSubmitting;
 
-  const hasAllRequiredTouched = REQUIRED_FIELDS.every((key) => !!touchedFields[key]);
-  const hasNoErrors = Object.keys(errors).length === 0;
-  const canSubmit =
-    hasAllRequiredValues && hasAllRequiredTouched && hasNoErrors && nicknameStatus === "valid";
-
-  const onSubmit = handleSubmit((data: SignUpFormModel) => {
-    const normalizedForm: SignUpFormModel = {
+  //제출 시 이미지 있을 경우 함께 제출
+  const onSubmit = handleSubmit((data) => {
+    options.onValid?.({
       ...data,
       profileImageKey: normalizeProfileImageKey(data.profileImageKey),
-    };
-    options.onValid?.(normalizedForm);
+    });
   });
 
   return {

@@ -11,40 +11,38 @@ import {
   isProfileImageKeyValid,
 } from "@/shared/validation";
 
+//regex 검증 규칙
+//refine 내가 만든 규칙으로 검증하겠다.
+
 import type { SignUpFormModel } from "./types";
+import { BIRTH_ERRORS } from "@/shared/validation/birth";
+import { EMAIL_ERRORS } from "@/shared/validation/email";
+import { PASSWORD_ERRORS } from "@/shared/validation/password";
+import { NICKNAME_ERRORS } from "@/shared/validation/nickname";
+import { GENDER_ERRORS } from "@/shared/validation/gender";
+import { DAY_END_TIME_ERRORS } from "@/shared/validation/dayEndTime";
 
 export const signUpFormSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, "이메일을 입력해주세요.")
-    .refine(isEmailValid, "이메일 형식이 올바르지 않습니다."),
-  password: z
-    .string()
-    .min(1, "비밀번호를 입력해주세요.")
-    .refine(isPasswordValid, "비밀번호는 8~20자, 대/소문자, 숫자, 특수문자를 포함해야 합니다."),
-  nickname: z
-    .string()
-    .min(1, "닉네임을 입력해주세요.")
-    .max(10, "닉네임은 최대 10자까지 입력할 수 있습니다.")
-    .refine(isNicknameValid, "닉네임은 한글 또는 영문자만 입력할 수 있습니다."),
-  gender: z.enum(["MALE", "FEMALE"]).refine(isGenderValid, "성별을 선택해주세요."),
-  birth: z
-    .string()
-    .regex(BIRTH_DATE_REGEX, "생년월일은 YYYY.MM.DD 형식이어야 합니다.")
-    .refine(isBirthValid, "생년월일은 YYYY.MM.DD 형식이어야 합니다."),
-  focuseTimeZone: z.enum(["MORNING", "AFTERNOON", "EVENING", "NIGHT"]),
-  dayEndTime: z.string().refine(isDayEndTimeValid, "하루 종료 시간은 HH:MM 형식이어야 합니다."),
+  email: z.string().trim().refine(isEmailValid, EMAIL_ERRORS.INVALID_FORMAT),
+  password: z.string().refine(isPasswordValid, PASSWORD_ERRORS.INVALID_LENGTH),
+  nickname: z.string().refine(isNicknameValid, NICKNAME_ERRORS.ALLOWED_CHARS),
+  gender: z.enum(["MALE", "FEMALE"]).refine(isGenderValid, GENDER_ERRORS.REQUIRED),
+  birth: z.string().refine(isBirthValid, BIRTH_ERRORS.INVALID_FORMAT),
+  focusTimeZone: z.enum(["MORNING", "AFTERNOON", "EVENING", "NIGHT"]),
+  dayEndTime: z.string().refine(isDayEndTimeValid, DAY_END_TIME_ERRORS.INVALID_FORMAT),
   profileImageKey: z.string().optional().refine(isProfileImageKeyValid),
 }) satisfies z.ZodType<SignUpFormModel>;
 
 export type SignUpFormErrors = Partial<Record<keyof SignUpFormModel, string>>;
 
+//회원가입 폼에 있는 필드를 key로 만듬
 type SignUpFormKey = keyof SignUpFormModel;
 
+//현재 스키마로 받은 key들이 회원가입 폼의 key 필드인지 확인한다.
 const isSignUpFormKey = (value: unknown): value is SignUpFormKey =>
   typeof value === "string" && value in signUpFormSchema.shape;
 
+//필드별 에러객체 반환
 export const getSignUpFormErrors = (issue: z.ZodError<SignUpFormModel>): SignUpFormErrors => {
   const errors: SignUpFormErrors = {};
   issue.issues.forEach((item) => {
@@ -55,6 +53,7 @@ export const getSignUpFormErrors = (issue: z.ZodError<SignUpFormModel>): SignUpF
   return errors;
 };
 
+//각각의 필드의 유효성 검사
 export const validateSignUpField = <Key extends SignUpFormKey>(
   key: Key,
   value: SignUpFormModel[Key],
