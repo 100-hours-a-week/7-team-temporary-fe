@@ -1,0 +1,60 @@
+name: BigBang-FE-CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+      - 'release/**'
+  push:
+    branches:
+      - develop
+      - main
+      - 'release/**'
+
+jobs:
+  fe:
+    name: Frontend CI (Next.js)
+    runs-on: ubuntu-latest
+
+    # 공통
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.1
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # PR : develop/main/release(린트)
+      - name: Lint (PR)
+        if: github.event_name == 'pull_request'
+        run: pnpm run lint
+
+      # PR/Merge : develop/main/release(빌드)
+      - name: Build (Next.js)
+        run: pnpm run build
+
+      # Merge : main/release(보안)
+      - name: Security Audit (deps)
+        if: >
+          github.event_name == 'push' &&
+          (
+            github.ref == 'refs/heads/main' ||
+            startsWith(github.ref, 'refs/heads/release/')
+          )
+        run: pnpm audit --audit-level=moderate
