@@ -29,13 +29,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.1
-
       - name: Enable Corepack
-        run: corepack enable
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@9.15.1 --activate
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
