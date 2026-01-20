@@ -70,10 +70,10 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/heads/release/')
     env:
-      AWS_HOST: ${{ secrets.AWS_HOST }}
-      AWS_USER: ${{ secrets.AWS_USER }}
-      AWS_TARGET_DIR: ${{ secrets.AWS_TARGET_DIR }}
-      AWS_SERVICE: ${{ secrets.AWS_SERVICE }}
+      AWS_HOST: ${{ secrets.HOST_STAGING }}
+      AWS_USER: ${{ secrets.USER_STAGING }}
+      AWS_TARGET_DIR: ${{ secrets.APP_DIR }}
+      AWS_SERVICE: ${{ secrets.PM2_NAME }}
 
     steps:
       - name: Download artifact
@@ -85,7 +85,7 @@ jobs:
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.AWS_SSH_KEY }}
+          ssh-private-key: ${{ secrets.SSH_KEY_STAGING }}
 
       - name: Add host key
         run: |
@@ -134,10 +134,10 @@ jobs:
     env:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
       GCP_ZONE: ${{ secrets.GCP_ZONE }}
-      GCP_INSTANCE: ${{ secrets.GCP_INSTANCE }}
-      GCP_USER: ${{ secrets.GCP_USER }}
-      GCP_TARGET_DIR: ${{ secrets.GCP_TARGET_DIR }}
-      GCP_SERVICE: ${{ secrets.GCP_SERVICE }}
+      GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
+      GCP_USER: ${{ secrets.GCE_USER }}
+      GCP_TARGET_DIR: ${{ secrets.APP_DIR }}
+      GCP_SERVICE: ${{ secrets.PM2_NAME }}
 
     steps:
       - name: Download artifact
@@ -149,7 +149,8 @@ jobs:
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCE_USER }}
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
