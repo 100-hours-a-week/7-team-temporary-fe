@@ -72,7 +72,7 @@ jobs:
     env:
       AWS_HOST: ${{ secrets.HOST_STAGING }}
       AWS_USER: ${{ secrets.USER_STAGING }}
-      AWS_TARGET_DIR: ${{ secrets.APP_DIR }}
+      AWS_TARGET_DIR: ${{ secrets.APP_DIR_AWS }}
       AWS_SERVICE: ${{ secrets.PM2_NAME }}
 
     steps:
@@ -116,11 +116,11 @@ jobs:
             fi
 
             TARGET_DIR="${AWS_TARGET_DIR}"
-            mkdir -p "\${TARGET_DIR}"
-            rm -rf "\${TARGET_DIR}"/*
+            mkdir -p "${TARGET_DIR}"
+            rm -rf "${TARGET_DIR}"/*
 
-            tar -xzf /tmp/app.tar.gz -C "\${TARGET_DIR}"
-            cd "\${TARGET_DIR}"
+            tar -xzf /tmp/app.tar.gz -C "${TARGET_DIR}"
+            cd "${TARGET_DIR}"
             pnpm install --prod --frozen-lockfile
 
             pm2 reload "${AWS_SERVICE:-app}" || pm2 start npm --name "${AWS_SERVICE:-app}" -- start
@@ -158,7 +158,7 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           install_components: compute
 
-      - name: Deploy (blue-green)
+      - name: Deploy (pm2)
         run: |
           set -euo pipefail
           if [ -z "$GCP_PROJECT" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCP_INSTANCE" ] || [ -z "$GCP_USER" ] || [ -z "$GCP_TARGET_DIR" ]; then
