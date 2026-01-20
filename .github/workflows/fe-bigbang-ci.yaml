@@ -40,6 +40,14 @@ jobs:
           corepack enable
           corepack prepare pnpm@9.15.1 --activate
 
+      - name: Ensure pnpm installed
+        run: |
+          set -euo pipefail
+          if ! command -v pnpm >/dev/null 2>&1; then
+            npm install -g pnpm@9.15.1
+          fi
+          pnpm --version
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
