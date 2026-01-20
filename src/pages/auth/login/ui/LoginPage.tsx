@@ -15,7 +15,7 @@ export function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-8">
+    <main className="flex min-h-screen w-full flex-col items-center justify-center p-8 text-left">
       <LoginForm onSuccess={handleSuccess} />
     </main>
   );

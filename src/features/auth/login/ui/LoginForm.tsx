@@ -45,7 +45,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
   return (
     <form
-      className="flex w-full max-w-sm flex-col gap-4"
+      className="flex w-full flex-col items-center justify-center gap-4"
       onSubmit={handleSubmit}
     >
       <EmailInput
