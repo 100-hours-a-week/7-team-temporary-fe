@@ -34,12 +34,8 @@ jobs:
           
       # 의존성 설치
       - name: Install dependencies
-        env:
-          PNPM_HOME: ~/.pnpm-store
-          PATH: ~/.pnpm-store:$PATH
         run: |
           set -euo pipefail
-          mkdir -p "$PNPM_HOME"
           pnpm install --frozen-lockfile
 
       - name: Build (Next.js)
