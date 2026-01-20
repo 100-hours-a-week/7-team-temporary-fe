@@ -35,9 +35,9 @@ jobs:
           corepack enable
           corepack prepare pnpm@9.15.1 --activate
 
-      # pnpm 경로오류 수정
-      - name: Set pnpm store dir
-        run: pnpm config set store-dir ~/.pnpm-store
+      # pnpm 경로 강제지정(pnpmrc)
+      - name: Force pnpm store dir
+        run: echo "PNPM_STORE_DIR=$HOME/.pnpm-store" >> $GITHUB_ENV
 
       # 의존성 설치
       - name: Install dependencies
