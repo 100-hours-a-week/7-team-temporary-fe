@@ -102,9 +102,13 @@ jobs:
 
           scp app.tar.gz ${AWS_USER}@${AWS_HOST}:/tmp/app.tar.gz
 
-          ssh ${AWS_USER}@${AWS_HOST} <<'EOSSH'
+          ssh ${AWS_USER}@${AWS_HOST} <<EOSSH
           
             set -euo pipefail
+            TARGET_DIR="${AWS_TARGET_DIR}"
+            case "$TARGET_DIR" in
+              "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\~}";;
+            esac
             if ! command -v node >/dev/null 2>&1; then
               echo "Node.js is required on target host"; exit 1;
             fi
@@ -116,7 +120,6 @@ jobs:
               echo "pm2 is required on target host"; exit 1;
             fi
 
-            TARGET_DIR="${AWS_TARGET_DIR}"
             mkdir -p "${TARGET_DIR}"
             rm -rf "${TARGET_DIR}"/*
 
