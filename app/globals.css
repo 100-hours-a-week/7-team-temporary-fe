@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../src/shared/styles/tokens.css";
 
 :root {
   --foreground-rgb: 0, 0, 0;
