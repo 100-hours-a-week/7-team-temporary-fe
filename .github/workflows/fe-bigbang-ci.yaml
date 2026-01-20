@@ -35,13 +35,15 @@ jobs:
           corepack enable
           corepack prepare pnpm@9.15.1 --activate
 
-      # pnpm 경로 강제지정(pnpmrc)
-      - name: Force pnpm store dir
-        run: echo "PNPM_STORE_DIR=$HOME/.pnpm-store" >> $GITHUB_ENV
-
       # 의존성 설치
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        env:
+          PNPM_HOME: ~/.pnpm-store
+          PATH: ~/.pnpm-store:$PATH
+        run: |
+          set -euo pipefail
+          mkdir -p "$PNPM_HOME"
+          pnpm install --frozen-lockfile
 
       # PR : develop/main/release(린트)
       - name: Lint (PR)
