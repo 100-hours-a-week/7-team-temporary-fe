@@ -16,19 +16,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 체크아웃
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Node.js 설치 (LTS 권장)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      # Corepack 활성화 / pnpm 설치
       - name: Enable Corepack (pnpm)
         run: |
           corepack enable
           corepack prepare pnpm@9.15.1 --activate
 
+      # pnpm 경로오류 수정
+      - name: Set pnpm store dir
+        run: pnpm config set store-dir ~/.pnpm-store
+
+      # 의존성 설치
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

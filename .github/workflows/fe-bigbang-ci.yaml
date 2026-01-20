@@ -35,6 +35,10 @@ jobs:
           corepack enable
           corepack prepare pnpm@9.15.1 --activate
 
+      # pnpm 경로오류 수정
+      - name: Set pnpm store dir
+        run: pnpm config set store-dir ~/.pnpm-store
+
       # 의존성 설치
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
