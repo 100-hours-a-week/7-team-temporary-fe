@@ -23,11 +23,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Node.js 설치 (LTS 권장)
+      # Node.js 설치
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.22
 
       # Corepack 활성화 / pnpm 설치
       - name: Enable Corepack (pnpm)
@@ -37,12 +37,12 @@ jobs:
 
       # 의존성 설치
       - name: Install dependencies
-        env:
-          PNPM_HOME: ~/.pnpm-store
-          PATH: ~/.pnpm-store:$PATH
         run: |
           set -euo pipefail
+          export PNPM_HOME="${PNPM_HOME:-$HOME/.pnpm-store}"
+          export PATH="$PNPM_HOME:$PATH"
           mkdir -p "$PNPM_HOME"
+          pnpm config set store-dir "$PNPM_HOME"
           pnpm install --frozen-lockfile
 
       # PR : develop/main/release(린트)
