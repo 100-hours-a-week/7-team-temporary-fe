@@ -11,3 +11,5 @@ export {
   NICKNAME_ALLOWED_CHAR_REGEX,
   BIRTH_DATE_REGEX,
 } from "./inputRules";
+
+
