@@ -22,28 +22,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          node-version: 20
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.1
-
-      - name: Enable Corepack
+      - name: Enable Corepack (pnpm)
         run: |
-          set -euo pipefail
           corepack enable
           corepack prepare pnpm@9.15.1 --activate
-
-      - name: Ensure pnpm installed
-        run: |
-          set -euo pipefail
-          if ! command -v pnpm >/dev/null 2>&1; then
-            npm install -g pnpm@9.15.1
-          fi
-          pnpm --version
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
