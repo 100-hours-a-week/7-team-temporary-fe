@@ -102,8 +102,7 @@ jobs:
 
           scp app.tar.gz ${AWS_USER}@${AWS_HOST}:/tmp/app.tar.gz
 
-          ssh ${AWS_USER}@${AWS_HOST} <<EOSSH
-          
+          ssh ${AWS_USER}@${AWS_HOST} "AWS_TARGET_DIR='${AWS_TARGET_DIR}' AWS_SERVICE='${AWS_SERVICE:-app}' bash -se" <<'EOSSH'
             set -euo pipefail
             TARGET_DIR="${AWS_TARGET_DIR:-}"
             if [ -z "${TARGET_DIR}" ]; then
@@ -130,7 +129,7 @@ jobs:
             cd "${TARGET_DIR}"
             pnpm install --prod --frozen-lockfile
 
-            pm2 reload "${AWS_SERVICE:-app}" || pm2 start npm --name "${AWS_SERVICE:-app}" -- start
+            pm2 reload "${AWS_SERVICE}" || pm2 start npm --name "${AWS_SERVICE}" -- start
           EOSSH
 
   deploy_gcp:
