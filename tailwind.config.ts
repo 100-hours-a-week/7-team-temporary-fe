@@ -10,7 +10,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        red: { //alpha-value : 투명도 값
+        red: {
+          //alpha-value : 투명도 값
           700: "rgb(var(--color-red-700) / <alpha-value>)",
           600: "rgb(var(--color-red-600) / <alpha-value>)",
           500: "rgb(var(--color-red-500) / <alpha-value>)",
