@@ -5,9 +5,9 @@ import { useState } from "react";
 import { ApiError } from "@/shared/api";
 
 import { useLoginMutation } from "../model";
+import { EmailInput } from "./EmailInput";
 import { GoToSignUpButton } from "./GoToSignUpButton";
 import { LoginButton } from "./LoginButton";
-import { EmailInput } from "./EmailInput";
 import { PasswordInput } from "./PasswordInput";
 
 interface LoginFormProps {
