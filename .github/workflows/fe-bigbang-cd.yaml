@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - "release/**"
+      - cloud-cicd
 
 concurrency:
   group: fe-cd-${{ github.ref }}
@@ -102,28 +103,28 @@ jobs:
           scp app.tar.gz ${AWS_USER}@${AWS_HOST}:/tmp/app.tar.gz
 
           ssh ${AWS_USER}@${AWS_HOST} <<EOSSH
-	set -euo pipefail
-	if ! command -v node >/dev/null 2>&1; then
-	  echo "Node.js is required on target host"; exit 1;
-	fi
-	if command -v corepack >/dev/null 2>&1; then
-	  corepack enable
-	  corepack prepare pnpm@9.15.1 --activate
-	fi
-	if ! command -v pm2 >/dev/null 2>&1; then
-	  echo "pm2 is required on target host"; exit 1;
-	fi
+            set -euo pipefail
+            if ! command -v node >/dev/null 2>&1; then
+              echo "Node.js is required on target host"; exit 1;
+            fi
+            if command -v corepack >/dev/null 2>&1; then
+              corepack enable
+              corepack prepare pnpm@9.15.1 --activate
+            fi
+            if ! command -v pm2 >/dev/null 2>&1; then
+              echo "pm2 is required on target host"; exit 1;
+            fi
 
-	TARGET_DIR="${AWS_TARGET_DIR}"
-	mkdir -p "\${TARGET_DIR}"
-	rm -rf "\${TARGET_DIR}"/*
+            TARGET_DIR="${AWS_TARGET_DIR}"
+            mkdir -p "\${TARGET_DIR}"
+            rm -rf "\${TARGET_DIR}"/*
 
-	tar -xzf /tmp/app.tar.gz -C "\${TARGET_DIR}"
-	cd "\${TARGET_DIR}"
-	pnpm install --prod --frozen-lockfile
+            tar -xzf /tmp/app.tar.gz -C "\${TARGET_DIR}"
+            cd "\${TARGET_DIR}"
+            pnpm install --prod --frozen-lockfile
 
-	pm2 reload "${AWS_SERVICE:-app}" || pm2 start npm --name "${AWS_SERVICE:-app}" -- start
-	EOSSH
+            pm2 reload "${AWS_SERVICE:-app}" || pm2 start npm --name "${AWS_SERVICE:-app}" -- start
+          EOSSH
 
   deploy_gcp:
     name: Deploy to GCP (main)
@@ -165,30 +166,31 @@ jobs:
 
           gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="${GCP_PROJECT}"
 
-          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --command "\
-set -euo pipefail
-if ! command -v node >/dev/null 2>&1; then
-  echo 'Node.js is required on target host'; exit 1;
-fi
-if command -v corepack >/dev/null 2>&1; then
-  corepack enable
-  corepack prepare pnpm@9.15.1 --activate
-fi
-if ! command -v pm2 >/dev/null 2>&1; then
-  echo 'pm2 is required on target host'; exit 1;
-fi
+          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --command "$(cat <<EOSH
+            set -euo pipefail
+            if ! command -v node >/dev/null 2>&1; then
+              echo 'Node.js is required on target host'; exit 1;
+            fi
+            if command -v corepack >/dev/null 2>&1; then
+              corepack enable
+              corepack prepare pnpm@9.15.1 --activate
+            fi
+            if ! command -v pm2 >/dev/null 2>&1; then
+              echo 'pm2 is required on target host'; exit 1;
+            fi
 
-RELEASE_ROOT='${GCP_TARGET_DIR}/releases'
-CURRENT_LINK='${GCP_TARGET_DIR}/current'
-NEXT_RELEASE=\"\${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)\"
-mkdir -p \"\${RELEASE_ROOT}\" \"\${NEXT_RELEASE}\"
+            RELEASE_ROOT=\"${GCP_TARGET_DIR}/releases\"
+            CURRENT_LINK=\"${GCP_TARGET_DIR}/current\"
+            NEXT_RELEASE=\"\${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)\"
+            mkdir -p \"\${RELEASE_ROOT}\" \"\${NEXT_RELEASE}\"
 
-tar -xzf /tmp/app.tar.gz -C \"\${NEXT_RELEASE}\"
-cd \"\${NEXT_RELEASE}\"
-pnpm install --prod --frozen-lockfile
+            tar -xzf /tmp/app.tar.gz -C \"\${NEXT_RELEASE}\"
+            cd \"\${NEXT_RELEASE}\"
+            pnpm install --prod --frozen-lockfile
 
-ln -sfn \"\${NEXT_RELEASE}\" \"\${CURRENT_LINK}\"
-pm2 reload '${GCP_SERVICE:-app}' || pm2 start npm --name '${GCP_SERVICE:-app}' -- start
+            ln -sfn \"\${NEXT_RELEASE}\" \"\${CURRENT_LINK}\"
+            pm2 reload \"${GCP_SERVICE:-app}\" || pm2 start npm --name \"${GCP_SERVICE:-app}\" -- start
 
-ls -dt \${RELEASE_ROOT}/* | tail -n +4 | xargs -r rm -rf
-"
+            ls -dt \${RELEASE_ROOT}/* | tail -n +4 | xargs -r rm -rf
+          EOSH
+          )"
