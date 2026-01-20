@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       # Corepack 활성화 / pnpm 설치
       - name: Enable Corepack (pnpm)
