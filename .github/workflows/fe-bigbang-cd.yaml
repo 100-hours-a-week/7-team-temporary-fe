@@ -188,7 +188,7 @@ jobs:
         run: |
           set -euo pipefail
           gcloud compute ssh "${GCP_USER}@${GCP_INSTANCE}" \
-            --project "${GCP_PROJECT_ID}" \
+            --project "${GCP_PROJECT}" \
             --zone "${GCP_ZONE}" \
             --quiet \
             --command "echo 'SSH_OK'; whoami; hostname; uname -a"
