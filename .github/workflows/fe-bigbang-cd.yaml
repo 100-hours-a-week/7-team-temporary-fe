@@ -180,8 +180,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "GCP_PROJECT env = ${GCP_PROJECT}"
-          gcloud config set project "${GCP_PROJECT}"
+          gcloud config set project "${{ secrets.GCP_PROJECT_ID }}"
           echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
           gcloud config list
 
@@ -215,6 +214,7 @@ jobs:
             --quiet \
             --command "echo 'SSH_OK'; whoami; hostname; uname -a"
 
+            
       - name: Deploy (pm2)
         run: |
           set -euo pipefail
