@@ -219,7 +219,7 @@ jobs:
             fi
 
             RELEASE_ROOT=\"${GCP_TARGET_DIR}/releases\"
-            CURRENT_LINK=\"${GCP_TARGET_DIR}/current\"
+            CURRENT_LINK=\"\${GCP_TARGET_DIR}/current\"
             NEXT_RELEASE=\"\${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)\"
             mkdir -p \"\${RELEASE_ROOT}\" \"\${NEXT_RELEASE}\"
 
