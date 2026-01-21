@@ -5,7 +5,6 @@ on:
     branches:
       - main
       - "release/**"
-
 permissions:
   contents: read
   id-token: write
@@ -156,9 +155,8 @@ jobs:
       GCP_ZONE: ${{ secrets.GCP_ZONE }}
       GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
       GCP_USER: ${{ secrets.GCE_USER }}
-      GCP_TARGET_DIR: ${{ secrets.APP_DIR_AWS }}
+      GCP_TARGET_DIR: ${{ secrets.APP_DIR }}
       GCP_SERVICE: ${{ secrets.PM2_NAME }}
-
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -176,8 +174,9 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.GCP_PROJECT }}
+          install_components: compute
 
-      - name: Force set active project
+      - name: Force set active project (critical)
         shell: bash
         run: |
           set -euo pipefail
@@ -186,16 +185,35 @@ jobs:
           echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
           gcloud config list
 
+      - name: Verify GCP API access
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "== gcloud auth list =="
+          gcloud auth list
+
+          echo "== active project =="
+          gcloud config get-value project
+
+          echo "== project id check =="
+          gcloud projects describe "${GCP_PROJECT}" --format="value(projectId)"
+
+          echo "== compute instance exists check =="
+          gcloud compute instances describe "${GCP_INSTANCE}" \
+            --project "${GCP_PROJECT}" \
+            --zone "${GCP_ZONE}" \
+            --format="value(name)"
+
       - name: SSH into VM (public IP) and run simple commands
         shell: bash
         run: |
           set -euo pipefail
-          gcloud compute ssh "${GCP_INSTANCE}" \
-            --project "${{ env.GCP_PROJECT }}" \
+          echo "Using project=${GCP_PROJECT}, zone=${GCP_ZONE}, instance=${GCP_INSTANCE}, user=${GCP_USER}"
+          gcloud compute ssh "${GCP_USER}@${GCP_INSTANCE}" \
+            --project "${GCP_PROJECT}" \
             --zone "${GCP_ZONE}" \
             --quiet \
-            --command "echo SSH_OK; whoami; hostname; uname -a"
-
+            --command "echo 'SSH_OK'; whoami; hostname; uname -a"
 
       - name: Deploy (pm2)
         run: |
@@ -234,4 +252,3 @@ jobs:
             ls -dt \${RELEASE_ROOT}/* | tail -n +4 | xargs -r rm -rf
           EOSH
           )"
-
