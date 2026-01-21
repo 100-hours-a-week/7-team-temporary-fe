@@ -181,7 +181,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gcloud config set project "${{GCP_PROJECT}}"
+          gcloud config set project "${GCP_PROJECT}"
           echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
           gcloud config list
 
