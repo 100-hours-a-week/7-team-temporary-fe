@@ -187,7 +187,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gcloud compute ssh "${GCE_INSTANCE_NAME}" \
+          gcloud compute ssh "${GCP_USER}@${GCP_INSTANCE}" \
             --project "${GCP_PROJECT_ID}" \
             --zone "${GCP_ZONE}" \
             --quiet \
