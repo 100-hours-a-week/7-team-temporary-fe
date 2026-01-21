@@ -199,13 +199,13 @@ jobs:
       - name: Deploy (pm2)
         run: |
           set -euo pipefail
-          if [ -z "$GCP_PROJECT" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCP_INSTANCE" ] || [ -z "$GCP_USER" ] || [ -z "$GCP_TARGET_DIR" ]; then
+          if [ -z "absolute-surf-484800-i8" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCP_INSTANCE" ] || [ -z "$GCP_USER" ] || [ -z "$GCP_TARGET_DIR" ]; then
             echo "Missing GCP_PROJECT/GCP_ZONE/GCP_INSTANCE/GCP_USER/GCP_TARGET_DIR secrets"; exit 1;
           fi
 
-          gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet
+          gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="absolute-surf-484800-i8" --quiet
 
-          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet --command "$(cat <<EOSH
+          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="absolute-surf-484800-i8" --quiet --command "$(cat <<EOSH
             set -euo pipefail
             if ! command -v node >/dev/null 2>&1; then
               echo 'Node.js is required on target host'; exit 1;
