@@ -175,7 +175,7 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          project_id: ${{ env.GCP_PROJECT }}
 
       - name: Force set active project
         shell: bash
@@ -191,10 +191,10 @@ jobs:
         run: |
           set -euo pipefail
           gcloud compute ssh "${GCP_USER}@${GCP_INSTANCE}" \
-            --project "${GCP_PROJECT}" \
+            --project "${{ env.GCP_PROJECT }}" \
             --zone "${GCP_ZONE}" \
             --quiet \
-            --command "echo 'SSH_OK'; whoami; hostname; uname -a"
+            --command "echo SSH_OK; whoami; hostname; uname -a"
 
 
       - name: Deploy (pm2)
