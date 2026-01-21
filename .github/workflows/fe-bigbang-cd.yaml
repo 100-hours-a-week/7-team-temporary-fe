@@ -117,9 +117,7 @@ jobs:
               echo "Node.js is required on target host"; exit 1;
             fi
             if command -v corepack >/dev/null 2>&1; then
-              mkdir -p "$HOME/.local/bin"
-              export PATH="$HOME/.local/bin:$PATH"
-              corepack enable --install-directory "$HOME/.local/bin"
+              corepack enable
               corepack prepare pnpm@9.15.1 --activate
             fi
             if ! command -v pm2 >/dev/null 2>&1; then
@@ -213,7 +211,7 @@ jobs:
               echo 'Node.js is required on target host'; exit 1;
             fi
             if command -v corepack >/dev/null 2>&1; then
-              corepack enable
+              sudo corepack enable
               corepack prepare pnpm@9.15.1 --activate
             fi
             if ! command -v pm2 >/dev/null 2>&1; then
