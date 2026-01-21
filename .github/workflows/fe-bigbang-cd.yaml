@@ -151,7 +151,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     env:
-      GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_PROJECT: absolute-surf-484800-i8
       GCP_ZONE: ${{ secrets.GCP_ZONE }}
       GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
       GCP_USER: ${{ secrets.GCE_USER }}
@@ -173,43 +173,24 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ env.GCP_PROJECT }}
+          project_id: absolute-surf-484800-i8
           install_components: compute
 
       - name: Force set active project (critical)
         shell: bash
         run: |
           set -euo pipefail
-          gcloud config set project "${{ secrets.GCP_PROJECT_ID }}"
+          gcloud config set project "absolute-surf-484800-i8"
           echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
           gcloud config list
-
-      - name: Verify GCP API access
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "== gcloud auth list =="
-          gcloud auth list
-
-          echo "== active project =="
-          gcloud config get-value project
-
-          echo "== project id check =="
-          gcloud projects describe "${GCP_PROJECT}" --format="value(projectId)"
-
-          echo "== compute instance exists check =="
-          gcloud compute instances describe "${GCP_INSTANCE}" \
-            --project "${GCP_PROJECT}" \
-            --zone "${GCP_ZONE}" \
-            --format="value(name)"
 
       - name: SSH into VM (public IP) and run simple commands
         shell: bash
         run: |
           set -euo pipefail
-          echo "Using project=${GCP_PROJECT}, zone=${GCP_ZONE}, instance=${GCP_INSTANCE}, user=${GCP_USER}"
-          gcloud compute ssh "${GCP_USER}@${GCP_INSTANCE}" \
-            --project "${GCP_PROJECT}" \
+          echo "Using project=absolute-surf-484800-i8, zone=${GCP_ZONE}, instance=${GCP_INSTANCE}, user=${GCP_USER}"
+          gcloud compute ssh "${GCP_INSTANCE}" \
+            --project "absolute-surf-484800-i8" \
             --zone "${GCP_ZONE}" \
             --quiet \
             --command "echo 'SSH_OK'; whoami; hostname; uname -a"
@@ -218,37 +199,38 @@ jobs:
       - name: Deploy (pm2)
         run: |
           set -euo pipefail
-          if [ -z "$GCP_PROJECT" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCP_INSTANCE" ] || [ -z "$GCP_USER" ] || [ -z "$GCP_TARGET_DIR" ]; then
+          if [ -z "absolute-surf-484800-i8" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCP_INSTANCE" ] || [ -z "$GCP_USER" ] || [ -z "$GCP_TARGET_DIR" ]; then
             echo "Missing GCP_PROJECT/GCP_ZONE/GCP_INSTANCE/GCP_USER/GCP_TARGET_DIR secrets"; exit 1;
           fi
 
-          gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet
+          gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="absolute-surf-484800-i8" --quiet
 
-          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet --command "$(cat <<EOSH
+          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="absolute-surf-484800-i8" --quiet --command "$(cat <<EOSH
             set -euo pipefail
             if ! command -v node >/dev/null 2>&1; then
               echo 'Node.js is required on target host'; exit 1;
             fi
             if command -v corepack >/dev/null 2>&1; then
-              corepack enable
+              sudo corepack enable
               corepack prepare pnpm@9.15.1 --activate
             fi
             if ! command -v pm2 >/dev/null 2>&1; then
               echo 'pm2 is required on target host'; exit 1;
             fi
 
-            RELEASE_ROOT=\"${GCP_TARGET_DIR}/releases\"
-            CURRENT_LINK=\"${GCP_TARGET_DIR}/current\"
-            NEXT_RELEASE=\"\${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)\"
-            mkdir -p \"\${RELEASE_ROOT}\" \"\${NEXT_RELEASE}\"
+            RELEASE_ROOT="${TARGET_DIR}/releases"
+            CURRENT_LINK="${TARGET_DIR}/current"
+            NEXT_RELEASE="${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)"
 
-            tar -xzf /tmp/app.tar.gz -C \"\${NEXT_RELEASE}\"
-            cd \"\${NEXT_RELEASE}\"
+            mkdir -p "${RELEASE_ROOT}" "${NEXT_RELEASE}"
+
+            tar -xzf /tmp/app.tar.gz -C "${NEXT_RELEASE}"
+            cd "${NEXT_RELEASE}"
             pnpm install --prod --frozen-lockfile
 
-            ln -sfn \"\${NEXT_RELEASE}\" \"\${CURRENT_LINK}\"
-            pm2 reload \"${GCP_SERVICE:-app}\" || pm2 start npm --name \"${GCP_SERVICE:-app}\" -- start
-
-            ls -dt \${RELEASE_ROOT}/* | tail -n +4 | xargs -r rm -rf
+            ln -sfn "${NEXT_RELEASE}" "${CURRENT_LINK}"
+            pm2 reload "${SERVICE}" || pm2 start npm --name "${SERVICE}" -- start
+            
+            ls -dt "${RELEASE_ROOT}"/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
           EOSH
           )"
