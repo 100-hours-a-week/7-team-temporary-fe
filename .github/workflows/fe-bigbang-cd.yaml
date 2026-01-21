@@ -150,14 +150,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    env:
-      GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-      GCP_ZONE: ${{ secrets.GCP_ZONE }}
-      GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
-      GCP_USER: ${{ secrets.GCE_USER }}
-      GCP_TARGET_DIR: ${{ secrets.APP_DIR_AWS }}
-      GCP_SERVICE: ${{ secrets.PM2_NAME }}
-
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -173,29 +165,47 @@ jobs:
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.GCP_PROJECT }}
+      
 
-      - name: Force set active project
+      - name: Force set active project (critical)
         shell: bash
         run: |
           set -euo pipefail
-          echo "GCP_PROJECT env = ${GCP_PROJECT}"
-          gcloud config set project "${GCP_PROJECT}"
+          gcloud config set project "${{ secrets.GCP_PROJECT_ID }}"
           echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
           gcloud config list
+
+      - name: Verify GCP API access
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "== gcloud auth list =="
+          gcloud auth list
+
+          echo "== project id check =="
+          gcloud projects describe "${GCP_PROJECT_ID}" --format="value(projectId)"
+
+          echo "== compute instance exists check (force project) =="
+          gcloud compute instances describe "${GCE_INSTANCE_NAME}" \
+            --project "${GCP_PROJECT_ID}" \
+            --zone "${GCP_ZONE}" \
+            --format="value(name)"
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCE_INSTANCE_NAME: ${{ secrets.GCE_INSTANCE_NAME }}
+          GCP_ZONE: ${{ secrets.GCP_ZONE }}
 
       - name: SSH into VM (public IP) and run simple commands
         shell: bash
         run: |
           set -euo pipefail
-          gcloud compute ssh "${GCP_INSTANCE}" \
-            --project "${{ env.GCP_PROJECT }}" \
+          gcloud compute ssh "${GCE_INSTANCE_NAME}" \
+            --project "${GCP_PROJECT_ID}" \
             --zone "${GCP_ZONE}" \
             --quiet \
-            --command "echo SSH_OK; whoami; hostname; uname -a"
+            --command "echo 'SSH_OK'; whoami; hostname; uname -a"
 
-
+            
       - name: Deploy (pm2)
         run: |
           set -euo pipefail
