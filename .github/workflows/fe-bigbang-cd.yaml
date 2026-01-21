@@ -188,8 +188,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Using project=${GCP_PROJECT}, zone=${GCP_ZONE}, instance=${GCP_INSTANCE}, user=${GCP_USER}"
-          gcloud compute ssh "${GCP_USER}@${GCP_INSTANCE}" \
+          echo "Using project=${{ secrets.GCP_PROJECT_ID }}, zone=${GCP_ZONE}, instance=${GCP_INSTANCE}, user=${GCP_USER}"
+          gcloud compute ssh "${GCP_INSTANCE}" \
             --project "${GCP_PROJECT}" \
             --zone "${GCP_ZONE}" \
             --quiet \
