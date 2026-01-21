@@ -173,14 +173,14 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: ${{ env.GCP_PROJECT }}
+          project_id: absolute-surf-484800-i8
           install_components: compute
 
       - name: Force set active project (critical)
         shell: bash
         run: |
           set -euo pipefail
-          gcloud config set project "${{ secrets.GCP_PROJECT_ID }}"
+          gcloud config set project "absolute-surf-484800-i8"
           echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
           gcloud config list
 
@@ -188,9 +188,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Using project=${{ secrets.GCP_PROJECT_ID }}, zone=${GCP_ZONE}, instance=${GCP_INSTANCE}, user=${GCP_USER}"
+          echo "Using project=absolute-surf-484800-i8, zone=${GCP_ZONE}, instance=${GCP_INSTANCE}, user=${GCP_USER}"
           gcloud compute ssh "${GCP_INSTANCE}" \
-            --project "${GCP_PROJECT}" \
+            --project "absolute-surf-484800-i8" \
             --zone "${GCP_ZONE}" \
             --quiet \
             --command "echo 'SSH_OK'; whoami; hostname; uname -a"
