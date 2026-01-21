@@ -218,18 +218,19 @@ jobs:
               echo 'pm2 is required on target host'; exit 1;
             fi
 
-            RELEASE_ROOT=\"${GCP_TARGET_DIR}/releases\"
-            CURRENT_LINK=\"\${GCP_TARGET_DIR}/current\"
-            NEXT_RELEASE=\"\${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)\"
-            mkdir -p \"\${RELEASE_ROOT}\" \"\${NEXT_RELEASE}\"
+            RELEASE_ROOT="${TARGET_DIR}/releases"
+            CURRENT_LINK="${TARGET_DIR}/current"
+            NEXT_RELEASE="${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)"
 
-            tar -xzf /tmp/app.tar.gz -C \"\${NEXT_RELEASE}\"
-            cd \"\${NEXT_RELEASE}\"
+            mkdir -p "${RELEASE_ROOT}" "${NEXT_RELEASE}"
+
+            tar -xzf /tmp/app.tar.gz -C "${NEXT_RELEASE}"
+            cd "${NEXT_RELEASE}"
             pnpm install --prod --frozen-lockfile
 
-            ln -sfn \"\${NEXT_RELEASE}\" \"\${CURRENT_LINK}\"
-            pm2 reload \"${GCP_SERVICE:-app}\" || pm2 start npm --name \"${GCP_SERVICE:-app}\" -- start
-
-            ls -dt \${RELEASE_ROOT}/* | tail -n +4 | xargs -r rm -rf
-          EOSH
+            ln -sfn "${NEXT_RELEASE}" "${CURRENT_LINK}"
+            pm2 reload "${SERVICE}" || pm2 start npm --name "${SERVICE}" -- start
+            
+            ls -dt "${RELEASE_ROOT}"/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
+            EOSH
           )"
