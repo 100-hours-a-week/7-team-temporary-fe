@@ -232,5 +232,5 @@ jobs:
             pm2 reload "${SERVICE}" || pm2 start npm --name "${SERVICE}" -- start
             
             ls -dt "${RELEASE_ROOT}"/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
-            EOSH
+          EOSH
           )"
