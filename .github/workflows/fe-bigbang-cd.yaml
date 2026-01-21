@@ -150,6 +150,13 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    env:
+      GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_ZONE: ${{ secrets.GCP_ZONE }}
+      GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
+      GCP_USER: ${{ secrets.GCE_USER }}
+      GCP_TARGET_DIR: ${{ secrets.APP_DIR }}
+      GCP_SERVICE: ${{ secrets.PM2_NAME }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -165,7 +172,9 @@ jobs:
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
-      
+        with:
+          project_id: ${{ env.GCP_PROJECT }}
+          install_components: compute
 
       - name: Force set active project (critical)
         shell: bash
@@ -182,25 +191,25 @@ jobs:
           echo "== gcloud auth list =="
           gcloud auth list
 
-          echo "== project id check =="
-          gcloud projects describe "${GCP_PROJECT_ID}" --format="value(projectId)"
+          echo "== active project =="
+          gcloud config get-value project
 
-          echo "== compute instance exists check (force project) =="
-          gcloud compute instances describe "${GCE_INSTANCE_NAME}" \
-            --project "${GCP_PROJECT_ID}" \
+          echo "== project id check =="
+          gcloud projects describe "${GCP_PROJECT}" --format="value(projectId)"
+
+          echo "== compute instance exists check =="
+          gcloud compute instances describe "${GCP_INSTANCE}" \
+            --project "${GCP_PROJECT}" \
             --zone "${GCP_ZONE}" \
             --format="value(name)"
-        env:
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          GCE_INSTANCE_NAME: ${{ secrets.GCE_INSTANCE_NAME }}
-          GCP_ZONE: ${{ secrets.GCP_ZONE }}
 
       - name: SSH into VM (public IP) and run simple commands
         shell: bash
         run: |
           set -euo pipefail
-          gcloud compute ssh "${GCE_INSTANCE_NAME}" \
-            --project "${GCP_PROJECT_ID}" \
+          echo "Using project=${GCP_PROJECT}, zone=${GCP_ZONE}, instance=${GCP_INSTANCE}, user=${GCP_USER}"
+          gcloud compute ssh "${GCP_USER}@${GCP_INSTANCE}" \
+            --project "${GCP_PROJECT}" \
             --zone "${GCP_ZONE}" \
             --quiet \
             --command "echo 'SSH_OK'; whoami; hostname; uname -a"
@@ -243,4 +252,3 @@ jobs:
             ls -dt \${RELEASE_ROOT}/* | tail -n +4 | xargs -r rm -rf
           EOSH
           )"
-
