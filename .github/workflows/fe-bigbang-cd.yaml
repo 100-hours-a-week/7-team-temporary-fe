@@ -151,10 +151,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     env:
-      CLOUDSDK_CORE_PROJECT: absolute-surf-484800-i8
-      GOOGLE_CLOUD_PROJECT: absolute-surf-484800-i8
-      GCLOUD_PROJECT: absolute-surf-484800-i8
-      GCP_PROJECT: absolute-surf-484800-i8
+      GCP_PROJECT: {{ secrets.GCP_PROJECT_ID }}
       GCP_ZONE: ${{ secrets.GCP_ZONE }}
       GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
       GCP_USER: ${{ secrets.GCE_USER }}
@@ -175,30 +172,9 @@ jobs:
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Assert project id (no leak)
-        shell: bash
-        run: |
-          set -euo pipefail
-          EXPECTED="absolute-surf-484800-i8"
-          if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
-            echo "GCP_PROJECT is not the expected project id, ${GCP_PROJECT}";
-            exit 1
-          fi
-          echo "project id looks correct"
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
-
-        - name: Assert project id (no leak)
-        shell: bash
-        run: |
-          set -euo pipefail
-          EXPECTED="absolute-surf-484800-i8"
-          if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
-            echo "GCP_PROJECT is not the expected project id, ${GCP_PROJECT}";
-            exit 1
-          fi
-          echo "project id looks correct"
 
       - name: Force set active project (critical)
         shell: bash
@@ -208,17 +184,6 @@ jobs:
           echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
           gcloud config list
           
-      - name: Assert project id (no leak)
-        shell: bash
-        run: |
-          set -euo pipefail
-          EXPECTED="absolute-surf-484800-i8"
-          if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
-            echo "GCP_PROJECT is not the expected project id, ${GCP_PROJECT}";
-            exit 1
-          fi
-          echo "project id looks correct"
-
       - name: SSH into VM (public IP) and run simple commands
         shell: bash
         run: |
