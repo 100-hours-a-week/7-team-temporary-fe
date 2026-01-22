@@ -187,7 +187,7 @@ jobs:
           set -euo pipefail
           EXPECTED="absolute-surf-484800-i8"
           if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
-            echo "GCP_PROJECT is not the expected project id";
+            echo "GCP_PROJECT is not the expected project id, ${GCP_PROJECT}";
             exit 1
           fi
           echo "project id looks correct"
