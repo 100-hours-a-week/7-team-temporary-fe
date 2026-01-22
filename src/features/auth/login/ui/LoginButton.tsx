@@ -1,16 +1,19 @@
-interface LoginButtonProps {
-  isDisabled?: boolean;
-  isLoading?: boolean;
-}
+import type { ComponentProps } from "react";
 
-export function LoginButton({ isDisabled, isLoading }: LoginButtonProps) {
+import { PrimaryButton } from "@/shared/ui";
+
+//Omit : 특정 속성을 제외한 타입 생성 예시 : Omit<햄버거세트, "콜라">
+type LoginButtonProps = Omit<ComponentProps<typeof PrimaryButton>, "children">;
+
+export function LoginButton({ className, ...props }: LoginButtonProps) {
   return (
-    <button
-      className="w-full rounded-md bg-black px-4 py-2 text-sm text-white disabled:opacity-50"
-      disabled={isDisabled || isLoading}
+    <PrimaryButton
+      className={className}
+      loadingText="로그인 중..."
       type="submit"
+      {...props}
     >
-      {isLoading ? "로그인 중..." : "로그인"}
-    </button>
+      로그인
+    </PrimaryButton>
   );
 }

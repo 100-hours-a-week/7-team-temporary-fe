@@ -7,7 +7,11 @@ import { useAuthStore } from "@/entities/auth/model";
 import { useLoginForm } from "../model/useLoginForm";
 import { LoginForm } from "./LoginForm";
 
-export function LoginFormContainer() {
+interface LoginFormContainerProps {
+  onGoToSignUp?: () => void;
+}
+
+export function LoginFormContainer({ onGoToSignUp }: LoginFormContainerProps) {
   const router = useRouter();
   const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
 
@@ -25,6 +29,7 @@ export function LoginFormContainer() {
       isSubmitting={isSubmitting}
       errorMessage={errorMessage}
       onSubmit={onSubmit}
+      onGoToSignUp={onGoToSignUp}
     />
   );
 }

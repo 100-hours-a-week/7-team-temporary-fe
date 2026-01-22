@@ -4,12 +4,9 @@ import type { BaseSyntheticEvent } from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 
 import type { LoginFormModel } from "../model";
-import { FormField } from "@/shared/form/ui";
-
-import { EmailInput } from "./EmailInput";
+import { EmailInput, FormField, PasswordInput } from "@/shared/form/ui";
 import { GoToSignUpButton } from "./GoToSignUpButton";
 import { LoginButton } from "./LoginButton";
-import { PasswordInput } from "./PasswordInput";
 
 interface LoginFormProps {
   register: UseFormRegister<LoginFormModel>;
@@ -17,6 +14,7 @@ interface LoginFormProps {
   isSubmitting: boolean;
   errorMessage?: string | null;
   onSubmit: (event?: BaseSyntheticEvent) => void;
+  onGoToSignUp?: () => void;
 }
 
 export function LoginForm({
@@ -25,13 +23,14 @@ export function LoginForm({
   isSubmitting,
   errorMessage,
   onSubmit,
+  onGoToSignUp,
 }: LoginFormProps) {
   const emailError = errors.email?.message?.toString();
   const passwordError = errors.password?.message?.toString();
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex w-full flex-col gap-4"
       onSubmit={onSubmit}
     >
       <FormField
@@ -40,6 +39,7 @@ export function LoginForm({
       >
         <EmailInput
           isDisabled={isSubmitting}
+          invalid={!!errors.email}
           register={register("email")}
         />
       </FormField>
@@ -49,19 +49,20 @@ export function LoginForm({
       >
         <PasswordInput
           isDisabled={isSubmitting}
+          invalid={!!errors.password}
           register={register("password")}
         />
       </FormField>
       {errorMessage && (
         <p
-          className="text-sm text-red-500"
+          className="text-sm text-red-600"
           role="alert"
         >
           {errorMessage}
         </p>
       )}
       <LoginButton isLoading={isSubmitting} />
-      <GoToSignUpButton />
+      <GoToSignUpButton onClick={onGoToSignUp} />
     </form>
   );
 }
