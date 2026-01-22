@@ -1,0 +1,24 @@
+---
+description: Core frontend architecture rules (FSD + App Router)
+scope: repository
+priority: highest
+alwaysApply: true
+---
+
+## Architecture / FSD
+- Layer order: `shared → entities → features → widgets → pages`.
+- Lower layers must not import higher layers (no reverse dependency).
+- Slice internals must only be accessed via `index.ts` (public API).
+- `app` layer is a composition root and must not be imported by other layers.
+
+## Next.js App Router
+- Routing entries exist only under `app/`.
+- `app/**/page.tsx` acts as a routing adapter only.
+- Allowed responsibilities in `page.tsx`:
+  - params / searchParams parsing
+  - access guard wrapping
+  - delegating to `src/pages/**`
+- Screen composition and business logic live in `src/pages/**`.
+- Access level is expressed via `app/(public)` and `app/(protected)`.
+- `layout.tsx` provides UI shell and secondary protection only.
+- Do not place page business logic inside layouts.

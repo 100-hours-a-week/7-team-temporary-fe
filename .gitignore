@@ -42,4 +42,6 @@ next-env.d.ts
 *.swp
 *.swo
 *~
+.code_workspace
 
+.npmrc
