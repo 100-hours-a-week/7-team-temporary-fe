@@ -15,12 +15,12 @@ import {
 //refine 내가 만든 규칙으로 검증하겠다.
 
 import type { SignUpFormModel } from "./types";
-import { BIRTH_ERRORS } from "@/shared/validation/birth";
-import { EMAIL_ERRORS } from "@/shared/validation/email";
-import { PASSWORD_ERRORS } from "@/shared/validation/password";
-import { NICKNAME_ERRORS } from "@/shared/validation/nickname";
-import { GENDER_ERRORS } from "@/shared/validation/gender";
-import { DAY_END_TIME_ERRORS } from "@/shared/validation/dayEndTime";
+import { BIRTH_ERRORS } from "@/shared/validation";
+import { EMAIL_ERRORS } from "@/shared/validation";
+import { PASSWORD_ERRORS } from "@/shared/validation";
+import { NICKNAME_ERRORS } from "@/shared/validation";
+import { GENDER_ERRORS } from "@/shared/validation";
+import { DAY_END_TIME_ERRORS } from "@/shared/validation";
 
 export const signUpFormSchema = z.object({
   email: z.string().trim().refine(isEmailValid, EMAIL_ERRORS.INVALID_FORMAT),
