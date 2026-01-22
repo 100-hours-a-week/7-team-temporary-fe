@@ -155,7 +155,7 @@ jobs:
       GCP_ZONE: ${{ secrets.GCP_ZONE }}
       GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
       GCP_USER: ${{ secrets.GCE_USER }}
-      GCP_TARGET_DIR: ${{ secrets.APP_DIR }}
+      GCP_TARGET_DIR: ${{ secrets.APP_DIR_AWS }}
       GCP_SERVICE: ${{ secrets.PM2_NAME }}
     steps:
 
