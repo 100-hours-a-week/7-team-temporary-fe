@@ -161,6 +161,17 @@ jobs:
       GCP_TARGET_DIR: ${{ secrets.APP_DIR }}
       GCP_SERVICE: ${{ secrets.PM2_NAME }}
     steps:
+      - name: Assert project id (no leak)
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED="absolute-surf-484800-i8"
+          if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
+            echo "GCP_PROJECT is not the expected project id, ${GCP_PROJECT}";
+            exit 1
+          fi
+          echo "project id looks correct"
+          
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
