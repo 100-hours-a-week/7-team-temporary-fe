@@ -1,5 +1,5 @@
 import { BaseButton } from "./BaseButton";
-import { cn } from "@/shared/lib/utils";
+import { cn } from "@/shared/lib";
 
 interface SelectCardProps {
   title: string;

@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 
-import { cn } from "@/shared/lib/utils";
+import { cn } from "@/shared/lib";
 import { BaseButton } from "./BaseButton";
 
 export function PrimaryButton({ className, ...props }: ComponentProps<typeof BaseButton>) {
