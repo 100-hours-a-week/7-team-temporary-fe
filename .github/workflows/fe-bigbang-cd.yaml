@@ -172,15 +172,12 @@ jobs:
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: "absolute-surf-484800-i8"
-          install_components: compute
 
       - name: Force set active project (critical)
         shell: bash
         run: |
           set -euo pipefail
-          gcloud config set project "absolute-surf-484800-i8"
+          gcloud config set project "${{ secrets.GCP_PROJECT_ID }}"
           echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
           gcloud config list
 
