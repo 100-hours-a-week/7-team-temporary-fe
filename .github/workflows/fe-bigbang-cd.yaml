@@ -173,7 +173,7 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          project_id: ${GCP_PROJECT}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Assert project id (no leak)
         shell: bash
