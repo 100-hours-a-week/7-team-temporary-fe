@@ -151,7 +151,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     env:
-      GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_PROJECT: absolute-surf-484800-i8
       GCP_ZONE: ${{ secrets.GCP_ZONE }}
       GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
       GCP_USER: ${{ secrets.GCE_USER }}
