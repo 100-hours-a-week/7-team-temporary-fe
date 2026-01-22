@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { UseFormReturn } from "react-hook-form";
 import { useForm } from "react-hook-form";
 
 import { normalizeProfileImageKey } from "@/shared/validation";
@@ -20,16 +21,6 @@ const DEFAULT_FORM: SignUpFormModel = {
   profileImageKey: undefined,
 };
 
-const REQUIRED_FIELDS: Array<keyof SignUpFormModel> = [
-  "email",
-  "password",
-  "nickname",
-  "gender",
-  "birth",
-  "focusTimeZone",
-  "dayEndTime",
-];
-
 //타입 : idle 초기 상태, valid 유효, invalid 실패
 type NicknameCheckStatus = "idle" | "valid" | "invalid";
 
@@ -39,24 +30,27 @@ interface UseSignUpFormOptions {
 }
 
 //회원가입 폼의 상태를 한 곳에 모아둔 묶음
-export const useSignUpForm = (options: UseSignUpFormOptions = {}) => {
+export const useSignUpForm = (
+  options: UseSignUpFormOptions = {},
+): UseFormReturn<SignUpFormModel> & {
+  nicknameStatus: NicknameCheckStatus;
+  canSubmit: boolean;
+  handleNicknameCheck: () => Promise<void>;
+  submitForm: () => Promise<void>;
+} => {
   const [nicknameStatus, setNicknameStatus] = useState<NicknameCheckStatus>("idle");
 
-  const {
-    register,
-    handleSubmit,
-    trigger,
-    watch,
-    formState: {
-      errors, //error반환
-      isValid, //값이 모두 맞는지
-      isSubmitting, //제출 진행 중
-    },
-  } = useForm<SignUpFormModel>({
+  const form = useForm<SignUpFormModel>({
     defaultValues: DEFAULT_FORM,
     mode: "onBlur",
     resolver: zodResolver(signUpFormSchema),
   });
+  const {
+    handleSubmit,
+    trigger,
+    watch,
+    formState: { isValid, isSubmitting },
+  } = form;
 
   const nickname = watch("nickname");
 
@@ -80,11 +74,10 @@ export const useSignUpForm = (options: UseSignUpFormOptions = {}) => {
   });
 
   return {
-    register,
-    errors,
+    ...form,
     nicknameStatus,
     canSubmit,
     handleNicknameCheck,
-    handleSubmit: onSubmit,
+    submitForm: onSubmit,
   };
 };
