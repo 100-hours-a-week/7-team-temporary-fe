@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from "react";
 
-import { cn } from "@/shared/lib/utils";
+import { cn } from "@/shared/lib";
 import { Icon, type IconName } from "@/shared/ui/icon";
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
