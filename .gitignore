@@ -43,5 +43,5 @@ next-env.d.ts
 *.swo
 *~
 .code_workspace
-
+/.pnpm-store/v3
 .npmrc

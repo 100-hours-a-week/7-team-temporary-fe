@@ -1,7 +1,7 @@
 /* globals.css */
 @import "tailwindcss";
 
-@layer @theme {
+@layer theme {
   /* ========= Palette ========= */
   /* Red */
   --color-red-700: 239 77 77;
