@@ -1,24 +1,26 @@
 import type { UseFormRegisterReturn } from "react-hook-form";
-
 import { BaseInput } from "./BaseInput";
 
 interface EmailInputProps {
   register: UseFormRegisterReturn;
-  placeholder?: string;
+  invalid?: boolean;
   isDisabled?: boolean;
+  placeholder?: string;
 }
 
 export function EmailInput({
   register,
-  placeholder = "email@email.com",
+  invalid,
   isDisabled,
+  placeholder = "이메일을 입력해주세요",
 }: EmailInputProps) {
   return (
     <BaseInput
-      disabled={isDisabled}
-      placeholder={placeholder}
-      register={register}
       type="email"
+      placeholder={placeholder}
+      disabled={isDisabled}
+      invalid={invalid}
+      register={register}
     />
   );
 }
