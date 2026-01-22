@@ -1,0 +1,133 @@
+/* globals.css */
+@import "tailwindcss";
+
+@layer theme {
+  /* ========= Palette ========= */
+  /* Red */
+  --color-red-700: 239 77 77;
+  --color-red-600: 255 109 109;
+  --color-red-500: 255 134 134;
+  --color-red-400: 255 158 158;
+  --color-red-200: 255 219 219;
+  --color-red-100: 255 237 237;
+
+  /* Green */
+  --color-green-700: 22 163 74;
+  --color-green-600: 34 197 94;
+  --color-green-500: 74 222 128;
+  --color-green-400: 134 239 172;
+  --color-green-300: 187 247 208;
+  --color-green-200: 220 252 231;
+  --color-green-100: 240 253 244;
+
+  /* Neutral */
+  --color-neutral-900: 57 22 22;
+  --color-neutral-800: 31 41 55;
+  --color-neutral-700: 55 65 81;
+  --color-neutral-600: 75 85 99;
+  --color-neutral-500: 107 114 128;
+  --color-neutral-400: 156 163 175;
+  --color-neutral-300: 209 213 219;
+  --color-neutral-200: 229 231 235;
+  --color-neutral-100: 243 244 246;
+  --color-neutral-50: 249 250 251;
+
+  /* ========= Semantic ========= */
+  --color-error-600: var(--color-red-600);
+  --color-primary-400: var(--color-red-400);
+  --color-secondary-700: var(--color-neutral-900);
+  --color-text-700: var(--color-neutral-700);
+
+  /*========fonts=========*/
+  --font-base: "Pretendard", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/*Tailwind의 “기본 스타일 레이어”*/
+@layer base {
+  body {
+    @apply text-neutral-700;
+    font-family: var(--font-base), serif;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+@layer utilities {
+  /* .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  } */
+}
+
+html {
+  background-color: rgba(89, 89, 89, 1);
+  height: fit-content;
+}
+
+body {
+  background-color: rgba(255, 255, 255, 1);
+  background-image: none;
+  max-width: 420px;
+  min-width: 200px;
+  /*  */
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: left;
+  font-family: "Liberation Mono", monospace;
+}
+
+@keyframes stack-page-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+.stack-page-overlay {
+  animation: stack-page-slide-in 500ms cubic-bezier(0.1, 0.8, 0.2, 1);
+}
+
+@keyframes stack-page-slide-out {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.stack-page-overlay-exit {
+  animation: stack-page-slide-out 300ms ease-out;
+  /* animation-fill-mode: forwards;
+  pointer-events: none; */
+}
+.stack-page-base {
+  transform: translateX(-40%);
+  transition: transform 240ms ease-out;
+}
+
+.stack-page-base-exit {
+  transform: translateX(0);
+  transition: transform 300ms ease-out;
+}
+
+main {
+  width: 100%;
+  margin: 0 auto;
+}
