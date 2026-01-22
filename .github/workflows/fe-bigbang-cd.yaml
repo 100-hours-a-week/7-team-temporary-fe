@@ -175,7 +175,7 @@ jobs:
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
-
+        
       - name: Force set active project (critical)
         shell: bash
         run: |
