@@ -2,7 +2,7 @@
 
 import type { ElementType, ReactNode } from "react";
 
-import { cn } from "@/shared/lib/utils";
+import { cn } from "@/shared/lib";
 import { AppHeader } from "@/widgets/app-header";
 
 import {
