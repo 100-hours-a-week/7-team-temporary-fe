@@ -180,11 +180,11 @@ jobs:
           gcloud config set project "${{ secrets.GCP_PROJECT_ID }}"
           echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
           gcloud config list
-          
+
       - name: Assert project id (no leak)
-        if: ${{ secrets.GCP_PROJECT_ID != 'absolute-surf-484800-i8' }}
+        if: ${{ secrets.GCP_PROJECT_ID }} != 'absolute-surf-484800-i8'
         run: |
-          echo "❌ GCP_PROJECT_ID is not the expected value"; exit 1
+          echo "GCP_PROJECT_ID is not the expected value"; exit 1
 
       - name: SSH into VM (public IP) and run simple commands
         shell: bash
