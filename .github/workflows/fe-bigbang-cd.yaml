@@ -1,0 +1,194 @@
+name: BigBang-FE-CD
+
+on:
+  push:
+    branches:
+      - main
+      - "release/**"
+
+concurrency:
+  group: fe-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Artifact
+    runs-on: ubuntu-latest
+
+    steps:
+      # 체크아웃
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node.js 설치 (LTS 권장)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Corepack 활성화 / pnpm 설치
+      - name: Enable Corepack (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.1 --activate
+          
+      # 의존성 설치
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+
+      - name: Build (Next.js)
+        run: pnpm run build
+
+      - name: Package artifact
+        run: |
+          set -euo pipefail
+          if [ ! -d ".next" ]; then
+            echo "Build output (.next) not found"; exit 1;
+          fi
+          mkdir -p release_bundle
+          cp -r .next release_bundle/
+          for path in public package.json pnpm-lock.yaml next.config.ts; do
+            if [ -e "$path" ]; then
+              cp -r "$path" release_bundle/
+            fi
+          done
+          tar -czf app.tar.gz -C release_bundle .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build
+          path: app.tar.gz
+          retention-days: 3
+
+  deploy_aws:
+    name: Deploy to AWS (release)
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/release/')
+    env:
+      AWS_HOST: ${{ secrets.AWS_HOST }}
+      AWS_USER: ${{ secrets.AWS_USER }}
+      AWS_TARGET_DIR: ${{ secrets.AWS_TARGET_DIR }}
+      AWS_SERVICE: ${{ secrets.AWS_SERVICE }}
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-build
+          path: .
+
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.AWS_SSH_KEY }}
+
+      - name: Add host key
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$AWS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy (pm2)
+        run: |
+          set -euo pipefail
+          if [ -z "$AWS_HOST" ] || [ -z "$AWS_USER" ] || [ -z "$AWS_TARGET_DIR" ]; then
+            echo "Missing AWS_HOST/AWS_USER/AWS_TARGET_DIR secrets"; exit 1;
+          fi
+
+          scp app.tar.gz ${AWS_USER}@${AWS_HOST}:/tmp/app.tar.gz
+
+          ssh ${AWS_USER}@${AWS_HOST} <<EOSSH
+	set -euo pipefail
+	if ! command -v node >/dev/null 2>&1; then
+	  echo "Node.js is required on target host"; exit 1;
+	fi
+	if command -v corepack >/dev/null 2>&1; then
+	  corepack enable
+	  corepack prepare pnpm@9.15.1 --activate
+	fi
+	if ! command -v pm2 >/dev/null 2>&1; then
+	  echo "pm2 is required on target host"; exit 1;
+	fi
+
+	TARGET_DIR="${AWS_TARGET_DIR}"
+	mkdir -p "\${TARGET_DIR}"
+	rm -rf "\${TARGET_DIR}"/*
+
+	tar -xzf /tmp/app.tar.gz -C "\${TARGET_DIR}"
+	cd "\${TARGET_DIR}"
+	pnpm install --prod --frozen-lockfile
+
+	pm2 reload "${AWS_SERVICE:-app}" || pm2 start npm --name "${AWS_SERVICE:-app}" -- start
+	EOSSH
+
+  deploy_gcp:
+    name: Deploy to GCP (main)
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    env:
+      GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_ZONE: ${{ secrets.GCP_ZONE }}
+      GCP_INSTANCE: ${{ secrets.GCP_INSTANCE }}
+      GCP_USER: ${{ secrets.GCP_USER }}
+      GCP_TARGET_DIR: ${{ secrets.GCP_TARGET_DIR }}
+      GCP_SERVICE: ${{ secrets.GCP_SERVICE }}
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-build
+          path: .
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          install_components: compute
+
+      - name: Deploy (blue-green)
+        run: |
+          set -euo pipefail
+          if [ -z "$GCP_PROJECT" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCP_INSTANCE" ] || [ -z "$GCP_USER" ] || [ -z "$GCP_TARGET_DIR" ]; then
+            echo "Missing GCP_PROJECT/GCP_ZONE/GCP_INSTANCE/GCP_USER/GCP_TARGET_DIR secrets"; exit 1;
+          fi
+
+          gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="${GCP_PROJECT}"
+
+          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --command "\
+set -euo pipefail
+if ! command -v node >/dev/null 2>&1; then
+  echo 'Node.js is required on target host'; exit 1;
+fi
+if command -v corepack >/dev/null 2>&1; then
+  corepack enable
+  corepack prepare pnpm@9.15.1 --activate
+fi
+if ! command -v pm2 >/dev/null 2>&1; then
+  echo 'pm2 is required on target host'; exit 1;
+fi
+
+RELEASE_ROOT='${GCP_TARGET_DIR}/releases'
+CURRENT_LINK='${GCP_TARGET_DIR}/current'
+NEXT_RELEASE=\"\${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)\"
+mkdir -p \"\${RELEASE_ROOT}\" \"\${NEXT_RELEASE}\"
+
+tar -xzf /tmp/app.tar.gz -C \"\${NEXT_RELEASE}\"
+cd \"\${NEXT_RELEASE}\"
+pnpm install --prod --frozen-lockfile
+
+ln -sfn \"\${NEXT_RELEASE}\" \"\${CURRENT_LINK}\"
+pm2 reload '${GCP_SERVICE:-app}' || pm2 start npm --name '${GCP_SERVICE:-app}' -- start
+
+ls -dt \${RELEASE_ROOT}/* | tail -n +4 | xargs -r rm -rf
+"
