@@ -8,7 +8,7 @@ import { SignUpFormContainer, useSignUpFormContext } from "@/features/auth/sign-
 import { FocusTimeStep, ProfileStep, SleepTimeStep, StartStep, TermsStep } from "./ui/steps/index";
 import { PrimaryButton } from "@/shared/ui/button";
 import { OnboardingStepBar } from "@/widgets/auth/onboarding/ui";
-import { useStackPage } from "@/shared/ui/stack";
+import { useStackPage } from "@/widgets/stack";
 
 /**
  * 회원가입 인트로 화면
