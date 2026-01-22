@@ -177,14 +177,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gcloud config set project "${{ secrets.GCP_PROJECT_ID }}"
+          gcloud config set project "${GCP_PROJECT}"
           echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
           gcloud config list
-
+          
       - name: Assert project id (no leak)
-        if: ${{ secrets.GCP_PROJECT_ID }} != 'absolute-surf-484800-i8'
+        shell: bash
         run: |
-          echo "GCP_PROJECT_ID is not the expected value"; exit 1
+          set -euo pipefail
+          EXPECTED="absolute-surf-484800-i8"
+          if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
+            echo "GCP_PROJECT is not the expected project id";
+            exit 1
+          fi
+          echo "project id looks correct"
 
       - name: SSH into VM (public IP) and run simple commands
         shell: bash
