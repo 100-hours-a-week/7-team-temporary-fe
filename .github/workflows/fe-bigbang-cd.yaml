@@ -5,6 +5,9 @@ on:
     branches:
       - main
       - "release/**"
+permissions:
+  contents: read
+  id-token: write
 
 concurrency:
   group: fe-cd-${{ github.ref }}
@@ -16,23 +19,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 체크아웃
+      #체크아웃
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Node.js 설치 (LTS 권장)
+      #Node.js 설치 (LTS 권장)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      # Corepack 활성화 / pnpm 설치
+      #Corepack 활성화 / pnpm 설치
       - name: Enable Corepack (pnpm)
         run: |
           corepack enable
           corepack prepare pnpm@9.15.1 --activate
           
-      # 의존성 설치
+      #의존성 설치
       - name: Install dependencies
         run: |
           set -euo pipefail
@@ -69,10 +72,10 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/heads/release/')
     env:
-      AWS_HOST: ${{ secrets.AWS_HOST }}
-      AWS_USER: ${{ secrets.AWS_USER }}
-      AWS_TARGET_DIR: ${{ secrets.AWS_TARGET_DIR }}
-      AWS_SERVICE: ${{ secrets.AWS_SERVICE }}
+      AWS_HOST: ${{ secrets.HOST_STAGING }}
+      AWS_USER: ${{ secrets.USER_STAGING }}
+      AWS_TARGET_DIR: ${{ secrets.APP_DIR_AWS }}
+      AWS_SERVICE: ${{ secrets.PM2_NAME }}
 
     steps:
       - name: Download artifact
@@ -84,7 +87,7 @@ jobs:
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.AWS_SSH_KEY }}
+          ssh-private-key: ${{ secrets.SSH_KEY_STAGING }}
 
       - name: Add host key
         run: |
@@ -101,29 +104,46 @@ jobs:
 
           scp app.tar.gz ${AWS_USER}@${AWS_HOST}:/tmp/app.tar.gz
 
-          ssh ${AWS_USER}@${AWS_HOST} <<EOSSH
-	set -euo pipefail
-	if ! command -v node >/dev/null 2>&1; then
-	  echo "Node.js is required on target host"; exit 1;
-	fi
-	if command -v corepack >/dev/null 2>&1; then
-	  corepack enable
-	  corepack prepare pnpm@9.15.1 --activate
-	fi
-	if ! command -v pm2 >/dev/null 2>&1; then
-	  echo "pm2 is required on target host"; exit 1;
-	fi
+          ssh ${AWS_USER}@${AWS_HOST} "AWS_TARGET_DIR='${AWS_TARGET_DIR}' AWS_SERVICE='${AWS_SERVICE:-app}' bash -se" <<'EOSSH'
+            set -euo pipefail
+            TARGET_DIR="${AWS_TARGET_DIR:-}"
+            if [ -z "${TARGET_DIR}" ]; then
+              echo "AWS_TARGET_DIR is empty"; exit 1;
+            fi
+            case "$TARGET_DIR" in
+              "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\~}";;
+            esac
+            if ! command -v node >/dev/null 2>&1; then
+              echo "Node.js is required on target host"; exit 1;
+            fi
+            if command -v corepack >/dev/null 2>&1; then
+              corepack enable
+              corepack prepare pnpm@9.15.1 --activate
+            fi
+            if ! command -v pm2 >/dev/null 2>&1; then
+              echo "pm2 is required on target host"; exit 1;
+            fi
 
-	TARGET_DIR="${AWS_TARGET_DIR}"
-	mkdir -p "\${TARGET_DIR}"
-	rm -rf "\${TARGET_DIR}"/*
+            # 타임스탬프 기반 릴리즈 디렉토리 사용 (권한 문제 회피)
+            RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
+            CURRENT_LINK="${TARGET_DIR}/current"
+              
+            mkdir -p "${RELEASE_DIR}"
 
-	tar -xzf /tmp/app.tar.gz -C "\${TARGET_DIR}"
-	cd "\${TARGET_DIR}"
-	pnpm install --prod --frozen-lockfile
+            tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
+            cd "${RELEASE_DIR}"
+            pnpm install --prod --frozen-lockfile
 
-	pm2 reload "${AWS_SERVICE:-app}" || pm2 start npm --name "${AWS_SERVICE:-app}" -- start
-	EOSSH
+            # current 심볼릭 링크 업데이트
+            ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
+              
+            # PM2는 current 링크 경로 사용
+            cd "${CURRENT_LINK}"
+            pm2 reload "${AWS_SERVICE}" || pm2 start npm --name "${AWS_SERVICE}" -- start
+              
+            # 오래된 릴리즈 정리 (최근 3개만 유지)
+            ls -dt ${TARGET_DIR}/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
+          EOSSH
 
   deploy_gcp:
     name: Deploy to GCP (main)
@@ -133,12 +153,12 @@ jobs:
     env:
       GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
       GCP_ZONE: ${{ secrets.GCP_ZONE }}
-      GCP_INSTANCE: ${{ secrets.GCP_INSTANCE }}
-      GCP_USER: ${{ secrets.GCP_USER }}
-      GCP_TARGET_DIR: ${{ secrets.GCP_TARGET_DIR }}
-      GCP_SERVICE: ${{ secrets.GCP_SERVICE }}
-
+      GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
+      GCP_USER: ${{ secrets.GCE_USER }}
+      GCP_TARGET_DIR: ${{ secrets.APP_DIR }}
+      GCP_SERVICE: ${{ secrets.PM2_NAME }}
     steps:
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -148,47 +168,69 @@ jobs:
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          install_components: compute
+        
+      - name: Force set active project (critical)
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud config set project "${GCP_PROJECT}"
+          echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
+          gcloud config list
+          
+      - name: SSH into VM (public IP) and run simple commands
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Using project=${GCP_PROJECT}, zone=${GCP_ZONE}, instance=${GCP_INSTANCE}, user=${GCP_USER}"
+          gcloud compute ssh "${GCP_INSTANCE}" \
+            --project "${GCP_PROJECT}" \
+            --zone "${GCP_ZONE}" \
+            --quiet \
+            --command "echo 'SSH_OK'; whoami; hostname; uname -a"
 
-      - name: Deploy (blue-green)
+            
+      - name: Deploy (pm2)
         run: |
           set -euo pipefail
           if [ -z "$GCP_PROJECT" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCP_INSTANCE" ] || [ -z "$GCP_USER" ] || [ -z "$GCP_TARGET_DIR" ]; then
             echo "Missing GCP_PROJECT/GCP_ZONE/GCP_INSTANCE/GCP_USER/GCP_TARGET_DIR secrets"; exit 1;
           fi
 
-          gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="${GCP_PROJECT}"
+          gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet
 
-          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --command "\
-set -euo pipefail
-if ! command -v node >/dev/null 2>&1; then
-  echo 'Node.js is required on target host'; exit 1;
-fi
-if command -v corepack >/dev/null 2>&1; then
-  corepack enable
-  corepack prepare pnpm@9.15.1 --activate
-fi
-if ! command -v pm2 >/dev/null 2>&1; then
-  echo 'pm2 is required on target host'; exit 1;
-fi
+          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet --command "$(cat <<EOSH
+            set -euo pipefail
+            if ! command -v node >/dev/null 2>&1; then
+              echo 'Node.js is required on target host'; exit 1;
+            fi
+            if command -v corepack >/dev/null 2>&1; then
+              sudo corepack enable
+              corepack prepare pnpm@9.15.1 --activate
+            fi
+            if ! command -v pm2 >/dev/null 2>&1; then
+              echo 'pm2 is required on target host'; exit 1;
+            fi
 
-RELEASE_ROOT='${GCP_TARGET_DIR}/releases'
-CURRENT_LINK='${GCP_TARGET_DIR}/current'
-NEXT_RELEASE=\"\${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)\"
-mkdir -p \"\${RELEASE_ROOT}\" \"\${NEXT_RELEASE}\"
+            RELEASE_ROOT="${TARGET_DIR}/releases"
+            CURRENT_LINK="${TARGET_DIR}/current"
+            NEXT_RELEASE="${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)"
 
-tar -xzf /tmp/app.tar.gz -C \"\${NEXT_RELEASE}\"
-cd \"\${NEXT_RELEASE}\"
-pnpm install --prod --frozen-lockfile
+            mkdir -p "${RELEASE_ROOT}" "${NEXT_RELEASE}"
 
-ln -sfn \"\${NEXT_RELEASE}\" \"\${CURRENT_LINK}\"
-pm2 reload '${GCP_SERVICE:-app}' || pm2 start npm --name '${GCP_SERVICE:-app}' -- start
+            tar -xzf /tmp/app.tar.gz -C "${NEXT_RELEASE}"
+            cd "${NEXT_RELEASE}"
+            pnpm install --prod --frozen-lockfile
 
-ls -dt \${RELEASE_ROOT}/* | tail -n +4 | xargs -r rm -rf
-"
+            ln -sfn "${NEXT_RELEASE}" "${CURRENT_LINK}"
+            pm2 reload "${SERVICE}" || pm2 start npm --name "${SERVICE}" -- start
+            
+            ls -dt "${RELEASE_ROOT}"/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
+          EOSH
+          )"

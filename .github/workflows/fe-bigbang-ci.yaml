@@ -58,4 +58,4 @@ jobs:
             github.ref == 'refs/heads/main' ||
             startsWith(github.ref, 'refs/heads/release/')
           )
-        run: pnpm audit --audit-level=moderate
+        run: pnpm audit --audit-level=high
