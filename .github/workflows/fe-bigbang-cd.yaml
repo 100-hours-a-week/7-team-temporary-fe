@@ -171,12 +171,23 @@ jobs:
             exit 1
           fi
           echo "project id looks correct"
-          
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: app-build
           path: .
+
+      - name: Assert project id (no leak)
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED="absolute-surf-484800-i8"
+          if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
+            echo "GCP_PROJECT is not the expected project id, ${GCP_PROJECT}";
+            exit 1
+          fi
+          echo "project id looks correct"
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
@@ -184,8 +195,30 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
 
+      - name: Assert project id (no leak)
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED="absolute-surf-484800-i8"
+          if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
+            echo "GCP_PROJECT is not the expected project id, ${GCP_PROJECT}";
+            exit 1
+          fi
+          echo "project id looks correct"
+
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
+
+        - name: Assert project id (no leak)
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED="absolute-surf-484800-i8"
+          if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
+            echo "GCP_PROJECT is not the expected project id, ${GCP_PROJECT}";
+            exit 1
+          fi
+          echo "project id looks correct"
 
       - name: Force set active project (critical)
         shell: bash
