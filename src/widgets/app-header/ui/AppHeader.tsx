@@ -10,7 +10,6 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({
-  title = "App Header",
   actionLabel = "Action",
   onActionClick,
   headerContent,
