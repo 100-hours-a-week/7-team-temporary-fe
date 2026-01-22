@@ -230,7 +230,9 @@ jobs:
             RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
             CURRENT_LINK="${TARGET_DIR}/current"
 
-            sudo mkdir -p "${RELEASE_DIR}"
+            sudo su
+
+            mkdir -p "${RELEASE_DIR}"
 
             tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
             cd "${RELEASE_DIR}"
