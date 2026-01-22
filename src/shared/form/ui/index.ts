@@ -1,6 +1,5 @@
 export { BaseInput } from "./BaseInput";
 export { BirthDateInput } from "./BirthDateInput";
-export { DayEndTimeInput } from "./DayEndTimeInput";
 export { EmailInput } from "./EmailInput";
 export { FocusTimeZoneSelect } from "./FocusTimeZoneSelect";
 export { FormField } from "./FormField";
