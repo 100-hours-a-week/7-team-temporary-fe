@@ -209,7 +209,7 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-        - name: Assert project id (no leak)
+      - name: Assert project id (no leak)
         shell: bash
         run: |
           set -euo pipefail
