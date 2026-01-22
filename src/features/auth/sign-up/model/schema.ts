@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import {
-  BIRTH_DATE_REGEX,
   isBirthValid,
   isDayEndTimeValid,
   isEmailValid,
