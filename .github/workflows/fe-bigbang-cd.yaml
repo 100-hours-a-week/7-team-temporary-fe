@@ -173,7 +173,7 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
-          project_id: "${{ secrets.GCP_PROJECT_ID }}"
+          project_id: "absolute-surf-484800-i8"
           install_components: compute
 
       - name: Force set active project (critical)
