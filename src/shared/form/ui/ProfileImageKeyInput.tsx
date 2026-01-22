@@ -1,7 +1,7 @@
 import type { ChangeEvent } from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 
-import { cn } from "@/shared/lib/utils";
+import { cn } from "@/shared/lib";
 import { Icon } from "@/shared/ui";
 
 interface ProfileImageKeyInputProps {
