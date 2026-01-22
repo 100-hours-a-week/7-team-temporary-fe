@@ -2,7 +2,7 @@ import type { InputHTMLAttributes } from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 
 import { Input } from "@/shared/ui";
-import { cn } from "@/shared/lib/utils";
+import { cn } from "@/shared/lib";
 
 //BaseInput : HTML <input>의 wrapper
 //form 라이브러리(RHF)와의 연결을 위해 사용
