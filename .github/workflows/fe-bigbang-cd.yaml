@@ -161,16 +161,6 @@ jobs:
       GCP_TARGET_DIR: ${{ secrets.APP_DIR }}
       GCP_SERVICE: ${{ secrets.PM2_NAME }}
     steps:
-      - name: Assert project id (no leak)
-        shell: bash
-        run: |
-          set -euo pipefail
-          EXPECTED="absolute-surf-484800-i8"
-          if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
-            echo "GCP_PROJECT is not the expected project id, ${GCP_PROJECT}";
-            exit 1
-          fi
-          echo "project id looks correct"
 
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -178,22 +168,12 @@ jobs:
           name: app-build
           path: .
 
-      - name: Assert project id (no leak)
-        shell: bash
-        run: |
-          set -euo pipefail
-          EXPECTED="absolute-surf-484800-i8"
-          if [ "${GCP_PROJECT}" != "${EXPECTED}" ]; then
-            echo "GCP_PROJECT is not the expected project id, ${GCP_PROJECT}";
-            exit 1
-          fi
-          echo "project id looks correct"
-
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+          project_id: ${GCP_PROJECT}
 
       - name: Assert project id (no leak)
         shell: bash
