@@ -1,18 +1,19 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
   theme: {
     extend: {
       colors: {
-        testRed: "rgb(255 0 0 / <alpha-value>)",
-        error: {
-          DEFAULT: "rgb(var(--color-red-600) / <alpha-value>)",
-        },
         red: {
           //alpha-value : 투명도 값
           700: "rgb(var(--color-red-700) / <alpha-value>)",
-          600: "rgb(255 109 109 / <alpha-value>)",
+          600: "rgb(var(--color-red-600) / <alpha-value>)",
           500: "rgb(var(--color-red-500) / <alpha-value>)",
           400: "rgb(var(--color-red-400) / <alpha-value>)",
           200: "rgb(var(--color-red-200) / <alpha-value>)",
