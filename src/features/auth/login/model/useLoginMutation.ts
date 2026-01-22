@@ -9,7 +9,7 @@ interface UseLoginMutationOptions {
 
 export function useLoginMutation(options: UseLoginMutationOptions = {}) {
   return useApiMutation<LoginFormModel, LoginRequestDto, LoginResponse>({
-    url: Endpoint.AUTH.LOGIN,
+    url: Endpoint.TOKEN.BASE,
     method: "POST",
     dtoFn: (form) => ({
       email: form.email,
