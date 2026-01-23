@@ -29,7 +29,7 @@ export function FocusTimeZoneSelect({ register, isDisabled, invalid }: FocusTime
 
   return (
     <div
-      className="flex w-full flex-col gap-3"
+      className="flex w-full flex-col gap-3 py-[52px]"
       data-invalid={invalid || undefined}
     >
       <input

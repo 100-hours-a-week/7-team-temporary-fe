@@ -3,6 +3,7 @@ import type { UseFormRegisterReturn } from "react-hook-form";
 
 import { cn } from "@/shared/lib";
 import { Icon } from "@/shared/ui";
+import Image from "next/image";
 
 interface ProfileImageKeyInputProps {
   register: UseFormRegisterReturn;
@@ -73,7 +74,7 @@ export function ProfileImageKeyInput({
           htmlFor={inputId}
           aria-label="이미지 다시 선택하기"
         >
-          <img
+          <Image
             src={previewUrl}
             alt="선택한 이미지 미리보기"
             className="h-24 w-24 rounded-full object-cover"
