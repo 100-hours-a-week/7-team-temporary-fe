@@ -13,7 +13,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
     <StackPageRoot>
       <StackPageScope
         as="main"
-        className="flex min-h-screen w-full flex-col items-center px-10 py-10 text-left"
+        className="flex h-dvh w-full flex-col items-center overflow-hidden px-10 py-10 text-left"
       >
         {children}
       </StackPageScope>

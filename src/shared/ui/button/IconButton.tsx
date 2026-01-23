@@ -6,9 +6,10 @@ import { Icon, type IconName } from "@/shared/ui/icon";
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: IconName;
   label: string;
+  iconClassName?: string;
 }
 
-export function IconButton({ icon, label, className, ...props }: IconButtonProps) {
+export function IconButton({ icon, label, className, iconClassName, ...props }: IconButtonProps) {
   return (
     <button
       type="button"
@@ -25,7 +26,10 @@ export function IconButton({ icon, label, className, ...props }: IconButtonProps
     >
       <Icon
         name={icon}
-        className="h-fit w-fit flex-wrap items-center justify-center text-center"
+        className={cn(
+          "h-fit w-fit flex-wrap items-center justify-center text-center",
+          iconClassName,
+        )}
         aria-hidden="true"
         focusable="false"
       />
