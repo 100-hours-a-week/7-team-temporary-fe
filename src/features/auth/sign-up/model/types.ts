@@ -2,9 +2,9 @@ export interface SignUpFormModel {
   email: string;
   password: string;
   nickname: string;
-  gender: "MALE" | "FEMALE";
+  gender: "MALE" | "FEMALE" | "";
   birth: string; // YYYY.MM.DD
-  focusTimeZone: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT";
+  focusTimeZone: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT" | "";
   dayEndTime: string; // HH:MM
   profileImageKey?: string;
 }

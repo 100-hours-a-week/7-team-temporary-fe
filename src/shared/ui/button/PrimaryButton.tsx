@@ -7,7 +7,7 @@ export function PrimaryButton({ className, ...props }: ComponentProps<typeof Bas
   return (
     <BaseButton
       className={cn(
-        "h-12 w-full rounded-xl bg-red-400 font-bold text-white hover:bg-red-500",
+        "bg-primary-600 hover:bg-primary-500 h-12 w-full rounded-xl font-bold text-white",
         className,
       )}
       {...props}

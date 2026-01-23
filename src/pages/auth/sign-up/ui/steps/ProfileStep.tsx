@@ -14,9 +14,12 @@ import {
   PasswordInput,
   ProfileImageKeyInput,
 } from "@/shared/form/ui";
+import { SplitText } from "@/shared/ui";
 import { OnboardingQuestionLayout } from "@/widgets/auth/onboarding/ui";
 
 export function ProfileStep() {
+  const titleText = "당신을 알고 싶어요. 당신은 어떤 사람인가요?";
+  const handleAnimationComplete = () => {};
   const {
     register,
     formState: { errors },
@@ -38,13 +41,22 @@ export function ProfileStep() {
   return (
     <OnboardingQuestionLayout
       title={
-        <>
-          <span>당신을 알고 싶어요.</span>
-          <br />
-          <span>당신은 어떤 사람인가요?</span>
-        </>
+        <SplitText
+          text={titleText}
+          delay={30}
+          duration={1.25}
+          ease="power3.out"
+          splitType="chars"
+          from={{ opacity: 0, y: 40 }}
+          to={{ opacity: 1, y: 0 }}
+          threshold={0.1}
+          rootMargin="-100px"
+          textAlign="left"
+          tag="span"
+          onLetterAnimationComplete={handleAnimationComplete}
+        />
       }
-      description=""
+      description="가입을 위해 개인정보를 입력해주세요."
     >
       <div className="flex flex-col gap-4">
         <FormField
@@ -123,6 +135,7 @@ export function ProfileStep() {
             register={register("birth")}
           />
         </FormField>
+        <div className="flex h-20"></div>
       </div>
     </OnboardingQuestionLayout>
   );

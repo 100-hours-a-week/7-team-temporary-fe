@@ -5,6 +5,7 @@ interface OnboardingQuestionLayoutProps {
   description?: string;
   children: ReactNode;
   className?: string;
+  contentClassName?: string;
 }
 
 export function OnboardingQuestionLayout({
@@ -12,11 +13,12 @@ export function OnboardingQuestionLayout({
   description,
   children,
   className,
+  contentClassName,
 }: OnboardingQuestionLayoutProps) {
   return (
     <section className={`w-full ${className ?? ""}`.trim()}>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl leading-snug font-bold text-neutral-900">{title}</h1>
+      <div className="flex flex-col">
+        <h1 className="max-w-[240px] text-2xl leading-snug font-bold text-neutral-900">{title}</h1>
 
         <p
           className={`min-h-[1.25rem] text-sm text-neutral-500 ${description ? "" : "invisible"}`.trim()}
@@ -25,7 +27,7 @@ export function OnboardingQuestionLayout({
         </p>
       </div>
 
-      <div className="flex flex-col gap-4">{children}</div>
+      <div className={`flex flex-col ${contentClassName ?? ""}`.trim()}>{children}</div>
     </section>
   );
 }

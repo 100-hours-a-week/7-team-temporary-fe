@@ -14,9 +14,9 @@ const DEFAULT_FORM: SignUpFormModel = {
   email: "",
   password: "",
   nickname: "",
-  gender: "MALE",
+  gender: "",
   birth: "",
-  focusTimeZone: "MORNING",
+  focusTimeZone: "",
   dayEndTime: "",
   profileImageKey: undefined,
 };
@@ -52,20 +52,22 @@ export const useSignUpForm = (
     formState: { isValid, isSubmitting },
   } = form;
 
-  const nickname = watch("nickname");
+  //##### 닉네임 검사 전에는 nicknameStatus가 'idle' 상태 -> 닉네임 검사 시 'valid' or 'invalid' 상태로 변경 #####//
+  const nickname = watch("nickname"); //닉네임 중복검사를 위해 닉네임 값 감시
 
   useEffect(() => {
     setNicknameStatus("idle");
-  }, [nickname]);
+  }, [nickname]); //닉네임 값이 변경될 때마다 nicknameStatus를 'idle'로 초기화
 
   const handleNicknameCheck = async () => {
     const isValidNickname = await trigger("nickname");
-    setNicknameStatus(isValidNickname ? "valid" : "invalid");
+    setNicknameStatus(isValidNickname ? "valid" : "invalid"); //검사 결과에 따라 상태 변경
   };
 
   const canSubmit = isValid && nicknameStatus === "valid" && !isSubmitting;
 
-  //제출 시 이미지 있을 경우 함께 제출
+  //handleSubmit은 form 유효성 검사를 통과했을때, 기본적으로 onValid 콜백을 실행
+  //nomalizeProfileImageKey로 프로필 이미지 키를 정규화
   const onSubmit = handleSubmit((data) => {
     options.onValid?.({
       ...data,

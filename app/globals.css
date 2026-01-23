@@ -1,52 +1,42 @@
 /* globals.css */
 @import "tailwindcss";
 
-@layer theme {
-  /* ========= Palette ========= */
-  /* Red */
-  --color-red-700: 239 77 77;
-  --color-red-600: 255 109 109;
-  --color-red-500: 255 134 134;
-  --color-red-400: 255 158 158;
-  --color-red-200: 255 219 219;
-  --color-red-100: 255 237 237;
+/* 이게 먼저 반영 */
+@theme {
+  /* Primary (Red) */
+  --color-primary-100: rgb(255, 237, 237);
+  --color-primary-200: rgb(255, 219, 219);
+  --color-primary-300: rgb(255, 189, 189);
+  --color-primary-400: rgb(255, 158, 158);
+  --color-primary-500: rgb(255, 134, 134);
+  --color-primary-600: rgb(255, 109, 109);
+  --color-primary-700: rgb(238, 77, 77);
 
-  /* Green */
-  --color-green-700: 22 163 74;
-  --color-green-600: 34 197 94;
-  --color-green-500: 74 222 128;
-  --color-green-400: 134 239 172;
-  --color-green-300: 187 247 208;
-  --color-green-200: 220 252 231;
-  --color-green-100: 240 253 244;
+  /* Ink (Gray) */
+  --color-ink-100: rgb(238, 238, 238);
+  --color-ink-200: rgb(210, 206, 206);
+  --color-ink-300: rgb(187, 182, 182);
+  --color-ink-400: rgb(150, 143, 143);
+  --color-ink-500: rgb(108, 98, 98);
+  --color-ink-600: rgb(51, 47, 47);
+  --color-ink-700: rgb(37, 32, 32);
+  --color-ink-800: rgb(57, 29, 22);
+  --color-ink-900: rgb(84, 30, 15);
 
-  /* Neutral */
-  --color-neutral-900: 57 22 22;
-  --color-neutral-800: 31 41 55;
-  --color-neutral-700: 55 65 81;
-  --color-neutral-600: 75 85 99;
-  --color-neutral-500: 107 114 128;
-  --color-neutral-400: 156 163 175;
-  --color-neutral-300: 209 213 219;
-  --color-neutral-200: 229 231 235;
-  --color-neutral-100: 243 244 246;
-  --color-neutral-50: 249 250 251;
-
-  /* ========= Semantic ========= */
-  --color-error-600: var(--color-red-600);
-  --color-primary-400: var(--color-red-400);
-  --color-secondary-700: var(--color-neutral-900);
-  --color-text-700: var(--color-neutral-700);
-
-  /*========fonts=========*/
-  --font-base: "Pretendard", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Accent (Green) */
+  --color-accent-700: rgb(78, 124, 81);
+  --color-accent-600: rgb(98, 149, 101);
+  --color-accent-500: rgb(117, 177, 121);
+  --color-accent-400: rgb(147, 202, 151);
+  --color-accent-300: rgb(179, 222, 181);
+  --color-accent-200: rgb(213, 236, 214);
+  --color-accent-100: rgb(241, 250, 241);
 }
 
 /*Tailwind의 “기본 스타일 레이어”*/
 @layer base {
   body {
     @apply text-neutral-700;
-    font-family: var(--font-base), serif;
   }
 }
 
@@ -59,18 +49,25 @@
 }
 
 @layer utilities {
-  /* .scrollbar-hide::-webkit-scrollbar {
+  .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
-  } */
+  }
 }
 
 html {
   background-color: rgba(89, 89, 89, 1);
   height: fit-content;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -98,6 +95,74 @@ body {
   }
 }
 
+.animate-float-rotate {
+  animation: float-rotate 3.2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.animate-pop-in {
+  animation: pop-in 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: 180ms;
+}
+
+.word-reveal {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: word-reveal 420ms ease-out both;
+}
+
+@keyframes float-rotate {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+
+  50% {
+    transform: translateY(-12px) rotate(10deg) scale(1.08);
+  }
+
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes word-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-rotate {
+    animation: none;
+  }
+
+  .animate-pop-in {
+    animation: none;
+  }
+
+  .word-reveal {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .stack-page-overlay {
   animation: stack-page-slide-in 500ms cubic-bezier(0.1, 0.8, 0.2, 1);
 }
@@ -115,7 +180,7 @@ body {
 .stack-page-overlay-exit {
   animation: stack-page-slide-out 300ms ease-out;
   /* animation-fill-mode: forwards;
-  pointer-events: none; */
+    pointer-events: none; */
 }
 .stack-page-base {
   transform: translateX(-40%);

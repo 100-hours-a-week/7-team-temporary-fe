@@ -55,9 +55,14 @@ function SignUpIntroContent() {
     <div className="flex h-full w-full flex-1 flex-col gap-6 px-[30px] pt-5 pb-5">
       <SignUpStepRenderer step={step} />
 
-      <div className="mb-2.5 flex w-full gap-2">
+      <div className="fixed right-0 bottom-6 left-0 mx-auto flex w-full max-w-[408px] gap-2 px-4">
         {!isOnboarding ? (
-          <PrimaryButton onClick={next}>시작하기</PrimaryButton>
+          <PrimaryButton
+            className="w-full"
+            onClick={next}
+          >
+            시작하기
+          </PrimaryButton>
         ) : (
           <>
             {isFirstOnboardingStep ? null : (
@@ -85,9 +90,8 @@ function SignUpIntroContent() {
   );
 }
 
-/**
- * 스텝에 따른 인트로 텍스트
- */
+//스텝에 따른 인트로 텍스트
+
 function SignUpStepRenderer({ step }: { step: SignUpFlowStep }) {
   const content = (() => {
     switch (step) {
@@ -108,5 +112,5 @@ function SignUpStepRenderer({ step }: { step: SignUpFlowStep }) {
     }
   })();
 
-  return <section className="flex flex-1 justify-center">{content}</section>;
+  return <section className="flex flex-1 flex-col gap-4">{content}</section>;
 }
