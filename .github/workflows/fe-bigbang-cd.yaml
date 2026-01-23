@@ -250,7 +250,7 @@ jobs:
 
             # PM2는 current 링크 경로 사용
             cd /home/ubuntu/fe/7-team-temporary-fe/
-            pm2 reload "${GCP_SERVICE}" || pm2 start npm --name "${GCP_SERVICE}" -- start
+            pm2 reload molip-fe || pm2 start npm --name molip-fe -- start
 
             
 
