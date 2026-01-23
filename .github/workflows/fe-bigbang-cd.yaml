@@ -139,7 +139,7 @@ jobs:
               
             # PM2는 current 링크 경로 사용
             cd "${CURRENT_LINK}"
-            pm2 reload "${AWS_SERVICE}" || pm2 start npm --name "${AWS_SERVICE}" -- start
+            pm2 reload "${AWS_SERVICE}" || pm2 start pnpm --name "${AWS_SERVICE}" -- start
               
             # 오래된 릴리즈 정리 (최근 3개만 유지)
             ls -dt ${TARGET_DIR}/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
@@ -250,7 +250,7 @@ jobs:
 
             # PM2는 current 링크 경로 사용
             cd /home/ubuntu/fe/7-team-temporary-fe/
-            pm2 reload molip-fe || pm2 start npm --name molip-fe -- start
+            pm2 reload molip-fe || pm2 start pnpm --name molip-fe -- start
 
             
 
