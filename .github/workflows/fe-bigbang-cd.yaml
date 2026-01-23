@@ -208,7 +208,7 @@ jobs:
           gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet --command "bash -se -- '${GCP_TARGET_DIR}' '${GCP_SERVICE:-app}'" <<'EOSSH'
             set -euo pipefail
             TARGET_DIR="${1:-}"
-            SERVICE="${2:-app}"
+            SERVICE="molip-fe"
 
             if [ -z "${TARGET_DIR}" ]; then
               echo "GCP_TARGET_DIR is empty"; exit 1;
