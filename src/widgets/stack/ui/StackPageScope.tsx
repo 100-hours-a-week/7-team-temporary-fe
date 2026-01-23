@@ -26,15 +26,19 @@ interface StackPageScopeProps {
 }
 
 const renderBasePage = (content: ReactNode) => (
-  <div className="flex min-h-screen w-full flex-col">
-    <div className="flex w-full flex-1 flex-col gap-5">{content}</div>
+  <div className="flex h-full w-full flex-col">
+    <div className="scrollbar-hide flex w-full flex-1 flex-col gap-5 overflow-y-auto">
+      {content}
+    </div>
   </div>
 );
 
 const renderOverlayPage = (content: ReactNode, header: ReactNode) => (
-  <div className="flex min-h-screen w-full flex-col">
-    {header}
-    <div className="flex w-full flex-1 flex-col gap-5">{content}</div>
+  <div className="flex h-full w-full flex-col">
+    <div className="shrink-0">{header}</div>
+    <div className="scrollbar-hide flex w-full flex-1 flex-col gap-5 overflow-y-auto">
+      {content}
+    </div>
   </div>
 );
 
