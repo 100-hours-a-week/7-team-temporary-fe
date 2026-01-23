@@ -188,27 +188,88 @@ jobs:
             --command "echo 'SSH_OK'; whoami; hostname; uname -a"
 
             
+      # - name: Deploy (pm2)
+      #   run: |
+      #     set -euo pipefail
+      #     if [ -z "$GCP_PROJECT" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCP_INSTANCE" ] || [ -z "$GCP_USER" ] || [ -z "$GCP_TARGET_DIR" ]; then
+      #       echo "Missing GCP_PROJECT/GCP_ZONE/GCP_INSTANCE/GCP_USER/GCP_TARGET_DIR secrets"; exit 1;
+      #     fi
+
+      #     gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet
+
+      #     gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet --command "bash -se -- '${GCP_TARGET_DIR}' '${GCP_SERVICE:-app}'" <<'EOSSH'
+      #       set -euo pipefail
+      #       TARGET_DIR="${1:-}"
+      #       SERVICE="molip-fe"
+
+      #       if [ -z "${TARGET_DIR}" ]; then
+      #         echo "GCP_TARGET_DIR is empty"; exit 1;
+      #       fi
+      #       case "$TARGET_DIR" in
+      #         "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\~}";;
+      #       esac
+
+      #       if ! command -v node >/dev/null 2>&1; then
+      #         echo "Node.js is required on target host"; exit 1;
+      #       fi
+      #       if command -v corepack >/dev/null 2>&1; then
+      #         corepack enable
+      #         corepack prepare pnpm@9.15.1 --activate
+      #       fi
+      #       if ! command -v pm2 >/dev/null 2>&1; then
+      #         echo "pm2 is required on target host"; exit 1;
+      #       fi
+
+      #       # 타임스탬프 기반 릴리즈 디렉토리 사용
+      #       RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
+      #       CURRENT_LINK="${TARGET_DIR}/current"
+
+      #       # TARGET_DIR 쓰기 권한이 없으면 sudo로 디렉토리 생성 후 현재 사용자에게 소유권 부여
+      #       if ! mkdir -p "${TARGET_DIR}/releases" 2>/dev/null; then
+      #         echo "No write permission to ${TARGET_DIR}. Trying sudo + chown..."
+      #         sudo mkdir -p "${TARGET_DIR}/releases"
+      #         sudo chown -R "$(id -un)":"$(id -gn)" "${TARGET_DIR}"
+      #       fi
+
+      #       mkdir -p "${RELEASE_DIR}"
+
+      #       tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
+      #       cd "${RELEASE_DIR}"
+      #       pnpm install --prod --frozen-lockfile
+
+      #       # current 심볼릭 링크 업데이트
+      #       ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
+
+      #       # PM2는 current 링크 경로 사용
+      #       cd /home/ubuntu/fe/7-team-temporary-fe/
+      #       pm2 reload molip-fe || pm2 start pnpm --name molip-fe -- start
+            
+      #       # 오래된 릴리즈 정리 (최근 3개만 유지)
+      #       ls -dt ${TARGET_DIR}/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
+      #     EOSSH
+
       - name: Deploy (pm2)
         run: |
           set -euo pipefail
-          if [ -z "$GCP_PROJECT" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCP_INSTANCE" ] || [ -z "$GCP_USER" ] || [ -z "$GCP_TARGET_DIR" ]; then
-            echo "Missing GCP_PROJECT/GCP_ZONE/GCP_INSTANCE/GCP_USER/GCP_TARGET_DIR secrets"; exit 1;
-          fi
-
-          gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet
-
-          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet --command "bash -se -- '${GCP_TARGET_DIR}' '${GCP_SERVICE:-app}'" <<'EOSSH'
+          gcloud compute scp app.tar.gz \
+            ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz \
+            --zone="${GCP_ZONE}" \
+            --project="${GCP_PROJECT}" \
+            --quiet
+          
+          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} \
+            --zone "${GCP_ZONE}" \
+            --project "${GCP_PROJECT}" \
+            --quiet \
+            --command "GCP_TARGET_DIR='${GCP_TARGET_DIR}' GCP_SERVICE='${GCP_SERVICE:-app}' bash -se" <<'EOSSH'
             set -euo pipefail
-            TARGET_DIR="${1:-}"
-            SERVICE="molip-fe"
-
+            TARGET_DIR="${GCP_TARGET_DIR:-}"
             if [ -z "${TARGET_DIR}" ]; then
               echo "GCP_TARGET_DIR is empty"; exit 1;
             fi
             case "$TARGET_DIR" in
               "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\~}";;
             esac
-
             if ! command -v node >/dev/null 2>&1; then
               echo "Node.js is required on target host"; exit 1;
             fi
@@ -219,33 +280,14 @@ jobs:
             if ! command -v pm2 >/dev/null 2>&1; then
               echo "pm2 is required on target host"; exit 1;
             fi
-
-            # 타임스탬프 기반 릴리즈 디렉토리 사용
             RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
             CURRENT_LINK="${TARGET_DIR}/current"
-
-            # TARGET_DIR 쓰기 권한이 없으면 sudo로 디렉토리 생성 후 현재 사용자에게 소유권 부여
-            if ! mkdir -p "${TARGET_DIR}/releases" 2>/dev/null; then
-              echo "No write permission to ${TARGET_DIR}. Trying sudo + chown..."
-              sudo mkdir -p "${TARGET_DIR}/releases"
-              sudo chown -R "$(id -un)":"$(id -gn)" "${TARGET_DIR}"
-            fi
-
             mkdir -p "${RELEASE_DIR}"
-
             tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
             cd "${RELEASE_DIR}"
             pnpm install --prod --frozen-lockfile
-
-            # current 심볼릭 링크 업데이트
             ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
-
-            # PM2는 current 링크 경로 사용
-            cd /home/ubuntu/fe/7-team-temporary-fe/
-            pm2 reload molip-fe || pm2 start pnpm --name molip-fe -- start
-
-            
-
-            # 오래된 릴리즈 정리 (최근 3개만 유지)
+            cd "${TARGET_DIR}"
+            pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js
             ls -dt ${TARGET_DIR}/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
           EOSSH
