@@ -9,7 +9,7 @@ export function StartStep() {
       <AnimatedStar />
       <SplitText
         text={lines.join(" ")}
-        className="text-center text-2xl font-semibold mb-12"
+        className="mb-12 text-center text-2xl font-semibold"
         delay={30}
         duration={1.25}
         ease="power3.out"
