@@ -208,7 +208,7 @@ jobs:
           gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet --command "bash -se -- '${GCP_TARGET_DIR}' '${GCP_SERVICE:-app}'" <<'EOSSH'
             set -euo pipefail
             TARGET_DIR="${1:-}"
-            SERVICE="${2:-app}"
+            SERVICE="molip-fe"
 
             if [ -z "${TARGET_DIR}" ]; then
               echo "GCP_TARGET_DIR is empty"; exit 1;
@@ -250,7 +250,7 @@ jobs:
 
             # PM2는 current 링크 경로 사용
             cd "${CURRENT_LINK}"
-            pm2 reload "${GCP_SERVICE}" || pm2 start npm --name "${GCP_SERVICE}" -- start
+            pm2 reload "${SERVICE}" || pm2 start npm --name "${SERVICE}" -- start
 
             # 오래된 릴리즈 정리 (최근 3개만 유지)
             ls -dt ${TARGET_DIR}/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
