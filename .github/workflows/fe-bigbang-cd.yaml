@@ -250,7 +250,8 @@ jobs:
 
             # PM2는 current 링크 경로 사용
             cd "${CURRENT_LINK}"
-            pm2 reload "${SERVICE}" || pm2 start npm --name "${SERVICE}" -- start
+            pm2 reload "${SERVICE}" --update-env || \
+            pm2 start npm --name "${SERVICE}" --cwd "${CURRENT_LINK}" -- start
 
             # 오래된 릴리즈 정리 (최근 3개만 유지)
             ls -dt ${TARGET_DIR}/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
