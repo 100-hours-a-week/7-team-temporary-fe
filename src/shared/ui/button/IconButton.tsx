@@ -17,7 +17,7 @@ export function IconButton({ icon, label, className, ...props }: IconButtonProps
       className={cn(
         "inline-flex items-center justify-center",
         "rounded-md",
-        "focus:ring-error/30 focus:ring-2 focus:outline-none",
+        "focus:ring-error/30 focus:outline-none",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
