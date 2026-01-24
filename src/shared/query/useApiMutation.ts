@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch } from "@/shared/api";
 
-interface UseApiMutationProps<TForm, TDto, TResult> {
+interface UseApiMutationProps<TForm, TDto, TResult = void> {
   url: string | ((form: TForm) => string);
   method: "POST" | "PUT" | "PATCH" | "DELETE";
   dtoFn?: (form: TForm) => TDto;
@@ -10,7 +10,7 @@ interface UseApiMutationProps<TForm, TDto, TResult> {
   invalidateKeys?: Array<readonly unknown[]>;
 }
 
-export function useApiMutation<TForm, TDto, TResult>({
+export function useApiMutation<TForm, TDto, TResult = void>({
   url,
   method,
   dtoFn,
@@ -26,6 +26,7 @@ export function useApiMutation<TForm, TDto, TResult>({
       return apiFetch<TResult, TDto>(apiUrl, { method, body: dto });
     },
     onSuccess: (data) => {
+      console.log(data);
       invalidateKeys.forEach((key) => {
         queryClient.invalidateQueries({ queryKey: key });
       });
