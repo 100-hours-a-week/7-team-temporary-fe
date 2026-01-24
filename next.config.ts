@@ -1,20 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+
   reactStrictMode: true,
+
   compiler: {
     emotion: true,
   },
-  experimental: {
-    turbo: {
-      rules: {
-        "*.svg": {
-          loaders: ["@svgr/webpack"],
-          as: "*.js",
-        },
-      },
-    },
-  },
+
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/i,
@@ -22,6 +15,15 @@ const nextConfig: NextConfig = {
       use: ["@svgr/webpack"],
     });
     return config;
+  },
+
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
+      },
+    },
   },
 };
 
