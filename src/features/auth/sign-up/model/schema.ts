@@ -29,7 +29,7 @@ export const signUpFormSchema = z.object({
   birth: z.string().refine(isBirthValid, BIRTH_ERRORS.INVALID_FORMAT),
   focusTimeZone: z.enum(["MORNING", "AFTERNOON", "EVENING", "NIGHT"]),
   dayEndTime: z.string().refine(isDayEndTimeValid, DAY_END_TIME_ERRORS.INVALID_FORMAT),
-  profileImageKey: z.string().optional().refine(isProfileImageKeyValid),
+  profileImageKey: z.string().nullable().optional().refine(isProfileImageKeyValid),
 }) satisfies z.ZodType<SignUpFormModel>;
 
 export type SignUpFormErrors = Partial<Record<keyof SignUpFormModel, string>>;

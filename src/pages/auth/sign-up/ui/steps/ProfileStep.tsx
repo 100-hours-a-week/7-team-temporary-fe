@@ -24,6 +24,23 @@ export function ProfileStep() {
     register,
     formState: { errors },
   } = useFormContext<SignUpFormModel>();
+  const profileImageKeyRegister = register("profileImageKey", {
+    setValueAs: (value: unknown) => {
+      if (value instanceof FileList) {
+        return value[0]?.name ?? null;
+      }
+      if (Array.isArray(value) && value[0] instanceof File) {
+        return value[0]?.name ?? null;
+      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        const parts = trimmed.split(/[/\\]/);
+        return parts[parts.length - 1] ?? null;
+      }
+      return null;
+    },
+  });
   const { nicknameStatus, handleNicknameCheck } = useSignUpFormContext();
   const {
     getPresignedUploadUrl,
@@ -60,12 +77,12 @@ export function ProfileStep() {
     >
       <div className="flex flex-col gap-4">
         <FormField
-          label="프로필 선택"
+          label="프로필 이미지 (선택)"
           error={profileImageKeyError}
           className="items-center"
         >
           <ProfileImageKeyInput
-            register={register("profileImageKey")}
+            register={profileImageKeyRegister}
             invalid={!!errors.profileImageKey}
             getPresignedUploadUrl={getPresignedUploadUrl}
             onPresignedUploadUrlChange={handlePresignedUploadUrlChange}

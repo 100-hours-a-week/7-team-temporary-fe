@@ -6,7 +6,7 @@ export interface SignUpFormModel {
   birth: string; // YYYY.MM.DD
   focusTimeZone: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT" | "";
   dayEndTime: string; // HH:MM
-  profileImageKey?: string;
+  profileImageKey?: string | null;
 }
 
 export interface SignUpRequestDto {
@@ -17,5 +17,5 @@ export interface SignUpRequestDto {
   birth: string; // YYYY.MM.DD
   focusTimeZone: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT";
   dayEndTime: string; // HH:MM
-  profileImageKey?: string;
+  profileImageKey?: string | null;
 }
