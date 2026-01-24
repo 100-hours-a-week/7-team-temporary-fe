@@ -3,15 +3,33 @@
 import { useState } from "react";
 import Picker from "react-mobile-picker";
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i + 1);
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = [0, 10, 20, 30, 40, 50];
 
 //수면시간 휠 컴포넌트
-export function SleepTimePicker() {
-  const [value, setValue] = useState({
-    hour: 22,
-    minute: 30,
-  });
+type SleepTimeValue = {
+  hour: number;
+  minute: number;
+};
+
+interface SleepTimePickerProps {
+  value?: SleepTimeValue;
+  onChange?: (value: SleepTimeValue) => void;
+}
+
+const DEFAULT_VALUE: SleepTimeValue = { hour: 22, minute: 30 };
+
+export function SleepTimePicker({ value: valueProp, onChange }: SleepTimePickerProps) {
+  const [internalValue, setInternalValue] = useState(DEFAULT_VALUE);
+  const isControlled = valueProp !== undefined;
+  const value = isControlled ? valueProp : internalValue;
+
+  const handleChange = (nextValue: SleepTimeValue) => {
+    if (!isControlled) {
+      setInternalValue(nextValue);
+    }
+    onChange?.(nextValue);
+  };
 
   return (
     <div className="relative w-full">
@@ -19,7 +37,7 @@ export function SleepTimePicker() {
 
       <Picker
         value={value}
-        onChange={setValue}
+        onChange={handleChange}
         height={180}
         itemHeight={56}
       >
@@ -29,7 +47,7 @@ export function SleepTimePicker() {
               key={hour}
               value={hour}
             >
-              <div className="text-xl font-semibold">{hour}시</div>
+              <div className="text-xl font-semibold">{String(hour).padStart(2, "0")}시</div>
             </Picker.Item>
           ))}
         </Picker.Column>
