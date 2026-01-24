@@ -64,7 +64,8 @@ export const useSignUpForm = (
     setNicknameStatus(isValidNickname ? "valid" : "invalid"); //검사 결과에 따라 상태 변경
   };
 
-  const canSubmit = isValid && nicknameStatus === "valid" && !isSubmitting;
+  const canSubmit = isValid && !isSubmitting;
+  //const canSubmit = isValid && nicknameStatus === "valid" && !isSubmitting;
 
   //handleSubmit은 form 유효성 검사를 통과했을때, 기본적으로 onValid 콜백을 실행
   //nomalizeProfileImageKey로 프로필 이미지 키를 정규화

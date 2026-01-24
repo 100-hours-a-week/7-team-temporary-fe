@@ -2,11 +2,11 @@
 
 import type { ReactNode } from "react";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 
 import { FormProvider } from "react-hook-form";
 
-import { useSignUpForm } from "../../model";
+import { useSignUpForm, useSignUpMutation } from "../../model";
 
 type SignUpFormContextValue = ReturnType<typeof useSignUpForm>;
 // useSignUpForm 훅이 반환하는 객체의 타입을 Context 값 타입으로 정의
@@ -19,7 +19,18 @@ interface SignUpFormContainerProps {
 }
 
 export function SignUpFormContainer({ children }: SignUpFormContainerProps) {
-  const form = useSignUpForm();
+  const mutation = useSignUpMutation();
+
+  const form = useSignUpForm({
+    onValid: (formData) => mutation.mutate(formData),
+  });
+
+  useEffect(() => {
+    const subscription = form.watch((value, info) => {
+      console.log("[SignUpForm] change", { name: info.name, type: info.type, value });
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   return (
     <SignUpFormContext.Provider value={form}>
