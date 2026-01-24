@@ -29,18 +29,22 @@ export function ProfileImageKeyInput({
   const inputId = register.name;
   const { onChange: handleRegisterChange, ...registerProps } = register;
 
+  //파일 선택 시 실행되는 핸들러
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     // react-hook-form에 변경을 알리고 미리보기 URL을 갱신합니다.
     handleRegisterChange(event);
     const file = event.target.files?.[0] ?? null; //사용자가 선택한 file
-
+    //외부에서 파일 선택 감지
     onFileSelect?.(file);
+    //기존 url 초기화
     onPresignedUploadUrlChange?.(null);
 
     if (!file || !getPresignedUploadUrl) return;
 
     try {
+      //presignedURL 요청
       const url = await getPresignedUploadUrl(file);
+      //발급된 url 전달
       onPresignedUploadUrlChange?.(url);
     } catch (error) {
       onUploadError?.(error);
