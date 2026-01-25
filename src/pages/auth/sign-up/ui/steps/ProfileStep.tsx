@@ -3,8 +3,8 @@
 import { useFormContext } from "react-hook-form";
 
 import type { SignUpFormModel } from "@/features/auth/sign-up/model";
-import { useProfileImagePresign } from "@/features/auth/sign-up/model";
-import { useSignUpFormContext } from "@/features/auth/sign-up/ui";
+import { useProfileImagePresign } from "@/features/image/model";
+import { useSignUpFormContext } from "@/pages/auth/sign-up/ui/SignUpFormContainer";
 import {
   BirthDateInput,
   EmailInput,
