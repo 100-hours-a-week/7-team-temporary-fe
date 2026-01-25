@@ -9,6 +9,9 @@ import StarYellow from "./assets/Star-Yellow.svg";
 import Unliked from "./assets/UnLiked-icon.svg";
 import Prev from "./assets/Prev-icon.svg";
 import Next from "./assets/Next-icon.svg";
+import Info from "./assets/Info-icon.svg";
+import Success from "./assets/Success-icon.svg";
+import Error from "./assets/Error-icon.svg";
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -22,6 +25,9 @@ export const IconMap = {
   unliked: Unliked,
   prev: Prev,
   next: Next,
+  info: Info,
+  success: Success,
+  error: Error,
 } as const satisfies Record<string, SvgComponent>;
 
 export type IconName = keyof typeof IconMap;
