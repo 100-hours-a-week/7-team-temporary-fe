@@ -84,7 +84,7 @@ export function StackPageScope({
         <div
           key={entry.key}
           className={cn(
-            "absolute inset-0 bg-white",
+            "absolute inset-0 bg-[var(--color-neutral-100)]",
             STACK_PAGE_OVERLAY_CLASS,
             entry.key === poppingKey && STACK_PAGE_OVERLAY_EXIT_CLASS,
             pageClassName,
