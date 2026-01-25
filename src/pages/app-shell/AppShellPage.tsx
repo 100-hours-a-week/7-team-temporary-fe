@@ -1,5 +1,10 @@
-import { BottomNav, TabRoot, TabScope } from "@/widgets/tab-stack";
+"use client";
+
+import { AppHeader } from "@/widgets/app-header";
+import { BottomNav, TabRoot, TabScope, useTab, type AppTab } from "@/widgets/tab-stack";
 import { StackPageRoot, StackPageScope } from "@/widgets/stack";
+import { HomePage } from "@/pages/home";
+import { ProfilePage } from "@/pages/profile";
 
 function TabStack({ children }: { children: React.ReactNode }) {
   return (
@@ -14,24 +19,33 @@ function TabStack({ children }: { children: React.ReactNode }) {
   );
 }
 
-function HomeTab() {
-  return <div className="px-6 py-10">홈 탭</div>;
-}
+const TAB_LABELS: Record<AppTab, string> = {
+  home: "홈",
+  profile: "프로필",
+};
 
-function ProfileTab() {
-  return <div className="px-6 py-10">프로필 탭</div>;
+function AppShellHeader() {
+  const { activeTab } = useTab();
+
+  return (
+    <AppHeader
+      actionLabel={null}
+      headerContent={<span>{TAB_LABELS[activeTab]}</span>}
+    />
+  );
 }
 
 export function AppShellPage() {
   return (
     <TabRoot initialTab="home">
       <div className="relative min-h-dvh w-full">
+        <AppShellHeader />
         <TabScope
           tab="home"
           className="h-full"
         >
           <TabStack>
-            <HomeTab />
+            <HomePage />
           </TabStack>
         </TabScope>
         <TabScope
@@ -39,7 +53,7 @@ export function AppShellPage() {
           className="h-full"
         >
           <TabStack>
-            <ProfileTab />
+            <ProfilePage />
           </TabStack>
         </TabScope>
         <BottomNav />
