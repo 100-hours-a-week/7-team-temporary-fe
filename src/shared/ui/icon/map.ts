@@ -11,6 +11,7 @@ import Prev from "./assets/Prev-icon.svg";
 import Next from "./assets/Next-icon.svg";
 import Info from "./assets/Info-icon.svg";
 import Success from "./assets/Success-icon.svg";
+import Notification from "./assets/Notification-icon.svg";
 import Error from "./assets/Error-icon.svg";
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
@@ -27,6 +28,7 @@ export const IconMap = {
   next: Next,
   info: Info,
   success: Success,
+  notification: Notification,
   error: Error,
 } as const satisfies Record<string, SvgComponent>;
 
