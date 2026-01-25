@@ -3,7 +3,6 @@
 import type { ElementType, ReactNode } from "react";
 
 import { cn } from "@/shared/lib";
-import { AppHeader } from "@/widgets/app-header";
 
 import {
   STACK_PAGE_BASE_CLASS,
@@ -12,6 +11,7 @@ import {
   STACK_PAGE_OVERLAY_EXIT_CLASS,
 } from "../model/constants";
 import { useStackPage } from "../model/stackPageContext";
+import { StackHeader } from "./StackHeader";
 
 interface StackPageScopeProps {
   children: ReactNode;
@@ -48,7 +48,7 @@ export function StackPageScope({
   className,
   pageClassName,
   overlayClassName,
-  headerTitle = "App Header",
+  headerTitle = "",
   headerActionLabel = "뒤로",
   onHeaderActionClick,
   showHeader = true,
@@ -60,7 +60,7 @@ export function StackPageScope({
   const handleHeaderAction = onHeaderActionClick ?? pop;
 
   const header = showHeader ? (
-    <AppHeader
+    <StackHeader
       actionLabel={headerActionLabel}
       onActionClick={handleHeaderAction}
       title={headerTitle}
