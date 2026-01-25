@@ -9,7 +9,7 @@ import {
   useSignUpFormContext,
 } from "@/pages/auth/sign-up/ui/SignUpFormContainer";
 import { FocusTimeStep, ProfileStep, SleepTimeStep, StartStep, TermsStep } from "./ui/steps/index";
-import { PrimaryButton } from "@/shared/ui/button";
+import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { OnboardingStepBar } from "@/widgets/auth/onboarding/ui";
 import { useStackPage } from "@/widgets/stack";
 
@@ -58,7 +58,7 @@ function SignUpIntroContent() {
     <div className="flex h-full w-full flex-1 flex-col gap-6 px-[30px] pt-5 pb-5">
       <SignUpStepRenderer step={step} />
 
-      <div className="fixed right-0 bottom-6 left-0 mx-auto flex w-full max-w-[408px] gap-2 px-4">
+      <FixedActionBar>
         {!isOnboarding ? (
           <PrimaryButton
             className="w-full"
@@ -88,7 +88,7 @@ function SignUpIntroContent() {
             )}
           </>
         )}
-      </div>
+      </FixedActionBar>
     </div>
   );
 }
