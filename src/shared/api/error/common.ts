@@ -1,0 +1,11 @@
+// shared/api/error/common.ts
+export const COMMON_ERROR_CODE = {
+  INVALID_REQUEST: "INVALID_REQUEST",
+  UNAUTHORIZED: "UNAUTHORIZED",
+  FORBIDDEN: "FORBIDDEN",
+  NOT_FOUND: "NOT_FOUND",
+  INTERNAL_ERROR: "INTERNAL_ERROR",
+  NETWORK_ERROR: "NETWORK_ERROR",
+} as const;
+
+export type CommonErrorCode = (typeof COMMON_ERROR_CODE)[keyof typeof COMMON_ERROR_CODE];

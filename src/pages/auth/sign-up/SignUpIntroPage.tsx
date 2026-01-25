@@ -2,9 +2,12 @@
 
 import { useEffect } from "react";
 
-import type { SignUpFlowStep } from "@/features/auth/sign-up/model";
-import { useSignUpSteps } from "@/features/auth/sign-up/model";
-import { SignUpFormContainer, useSignUpFormContext } from "@/features/auth/sign-up/ui";
+import type { SignUpFlowStep } from "@/pages/auth/sign-up/model";
+import { useSignUpSteps } from "@/pages/auth/sign-up/model";
+import {
+  SignUpFormContainer,
+  useSignUpFormContext,
+} from "@/pages/auth/sign-up/ui/SignUpFormContainer";
 import { FocusTimeStep, ProfileStep, SleepTimeStep, StartStep, TermsStep } from "./ui/steps/index";
 import { PrimaryButton } from "@/shared/ui/button";
 import { OnboardingStepBar } from "@/widgets/auth/onboarding/ui";

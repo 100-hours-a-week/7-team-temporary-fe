@@ -12,6 +12,11 @@
   --color-primary-600: rgb(255, 109, 109);
   --color-primary-700: rgb(238, 77, 77);
 
+  --color-secondary-200: rgb(222, 211, 211);
+  --color-secondary-300: rgb(200, 190, 190);
+  --color-secondary-400: rgb(175, 165, 165);
+  --color-secondary-500: rgb(150, 140, 140);
+  --color-secondary-600: rgb(138, 87, 87);
   /* Ink (Gray) */
   --color-ink-100: rgb(238, 238, 238);
   --color-ink-200: rgb(210, 206, 206);

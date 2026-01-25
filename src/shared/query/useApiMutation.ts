@@ -1,5 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-
 import { apiFetch } from "@/shared/api";
 
 interface UseApiMutationProps<TForm, TDto, TResult = void> {
@@ -7,15 +5,28 @@ interface UseApiMutationProps<TForm, TDto, TResult = void> {
   method: "POST" | "PUT" | "PATCH" | "DELETE";
   dtoFn?: (form: TForm) => TDto;
   onSuccess?: (data: TResult) => void;
+  onError?: (error: unknown) => void;
   invalidateKeys?: Array<readonly unknown[]>;
+  errorMapper?: (error: unknown) => Error;
 }
+import { useMutation } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
+/**
+ * API 뮤테이션 공통 훅 모듈
+ * - dto 변환 후 apiFetch 호출
+ * - 성공 시 캐시 무효화 및 onSuccess 실행
+ * - 에러는 호출부에서 처리
+ * - 항상 틀만 제공, 구체적인 API 정보 및 에러는 호출부에서 전달
+ */
 export function useApiMutation<TForm, TDto, TResult = void>({
   url,
   method,
   dtoFn,
   onSuccess,
+  onError: handleError,
   invalidateKeys = [],
+  errorMapper,
 }: UseApiMutationProps<TForm, TDto, TResult>) {
   const queryClient = useQueryClient();
 
@@ -23,7 +34,17 @@ export function useApiMutation<TForm, TDto, TResult = void>({
     mutationFn: async (form: TForm) => {
       const apiUrl = typeof url === "function" ? url(form) : url;
       const dto = dtoFn ? dtoFn(form) : undefined;
-      return apiFetch<TResult, TDto>(apiUrl, { method, body: dto });
+      try {
+        return await apiFetch<TResult, TDto>(apiUrl, {
+          method,
+          body: dto,
+        });
+      } catch (error) {
+        if (errorMapper) {
+          throw errorMapper(error);
+        }
+        throw error;
+      }
     },
     onSuccess: (data) => {
       console.log(data);

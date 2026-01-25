@@ -1,23 +1,25 @@
-import { Endpoint } from "@/shared/api";
+import { ApiError, Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
-import { normalizeProfileImageKey } from "@/shared/validation";
+import type { SignUpFormModel, SignUpRequestDto, SignUpResult } from "./types";
+import { toSignUpRequestDto } from "./dto";
+import { mapAuthError } from "../../api/error.mapper";
 
-import type { SignUpFormModel, SignUpRequestDto } from "./types";
-
-export function useSignUpMutation(options: { onSuccess?: () => void } = {}) {
-  return useApiMutation<SignUpFormModel, SignUpRequestDto, void>({
+export function useSignUpMutation(options: { onSuccess?: (data: SignUpResult) => void } = {}) {
+  return useApiMutation<SignUpFormModel, SignUpRequestDto, SignUpResult>({
     url: Endpoint.USER.BASE,
     method: "POST",
-    dtoFn: (form) => ({
-      email: form.email,
-      password: form.password,
-      nickname: form.nickname,
-      gender: form.gender as "MALE" | "FEMALE",
-      birth: form.birth,
-      focusTimeZone: form.focusTimeZone as "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT",
-      dayEndTime: form.dayEndTime,
-      profileImageKey: normalizeProfileImageKey(form.profileImageKey),
-    }),
-    onSuccess: () => options.onSuccess?.(),
+    dtoFn: toSignUpRequestDto,
+    onSuccess: (data) => options.onSuccess?.(data),
+    errorMapper: (error) => {
+      if (error instanceof ApiError) {
+        return mapAuthError(error);
+      }
+
+      if (error instanceof Error) {
+        return error;
+      }
+
+      return new Error("알 수 없는 오류가 발생했습니다.");
+    },
   });
 }
