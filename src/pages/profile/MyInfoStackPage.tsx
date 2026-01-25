@@ -4,11 +4,13 @@ import { useEffect } from "react";
 
 import { useStackPage } from "@/widgets/stack";
 
-import { MyInfoField } from "./ui/MyInfoField";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
+import { FormField } from "@/shared/form/ui";
 
 export function MyInfoStackPage() {
   const { setHeaderContent } = useStackPage();
+  const inputClassName =
+    "h-12 w-full rounded-xl border px-3 py-2 text-sm bg-neutral-50 placeholder:text-gray-400 border border-transparent focus:outline-none focus:ring-error/20 focus:ring-2 focus:ring-inset not-placeholder-shown:border-gray-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400";
 
   useEffect(() => {
     setHeaderContent(<span className="text-xl font-semibold text-black">내 정보</span>);
@@ -20,38 +22,59 @@ export function MyInfoStackPage() {
       <div className="flex w-full flex-1 items-start justify-center">
         <div className="w-full rounded-3xl p-0">
           <div className="m-0 flex flex-col gap-[25px]">
-            <MyInfoField
+            <FormField
               label="이메일"
               labelAdornment={<span className="text-sm font-semibold text-red-500">변경불가</span>}
-              value="happy7yong@naver.com"
               className="w-full flex-col items-start gap-3"
-              labelClassName="text-base font-semibold text-neutral-900"
-              inputClassName="w-full min-w-0 bg-neutral-200 text-neutral-400 pointer-events-none"
-            />
+              labelClassName="flex items-center gap-2 text-base font-semibold text-neutral-900"
+            >
+              <input
+                type="email"
+                value="happy7yong@naver.com"
+                readOnly
+                className={inputClassName}
+                disabled
+              />
+            </FormField>
             <div className="flex gap-6">
-              <MyInfoField
+              <FormField
                 label="성별"
-                value="여"
                 className="flex-1"
                 labelClassName="text-lg font-semibold text-neutral-900"
-                inputClassName="w-full min-w-0 max-w-[78px] text-neutral-700"
-              />
-              <MyInfoField
+              >
+                <input
+                  type="text"
+                  value="여"
+                  readOnly
+                  className={inputClassName}
+                />
+              </FormField>
+              <FormField
                 label="생년월일"
-                value="1990.01.01"
                 className="w-full max-w-[187px]"
                 labelClassName="text-base font-semibold text-neutral-900"
-                inputClassName="w-full min-w-0 text-neutral-700"
-              />
+              >
+                <input
+                  type="text"
+                  value="1990.01.01"
+                  readOnly
+                  className={inputClassName}
+                />
+              </FormField>
             </div>
             <div className="flex items-end justify-end gap-4">
-              <MyInfoField
+              <FormField
                 label="닉네임"
-                value="쿠쿠루삥뽕"
                 className="flex-1 flex-col items-start gap-3"
                 labelClassName="text-base font-semibold text-neutral-900"
-                inputClassName="w-full min-w-0 text-neutral-700"
-              />
+              >
+                <input
+                  type="text"
+                  value="쿠쿠루삥뽕"
+                  readOnly
+                  className={inputClassName}
+                />
+              </FormField>
               <div>
                 <button
                   type="button"
@@ -71,20 +94,30 @@ export function MyInfoStackPage() {
               </button>
             </div>
             <div className="h-px w-full bg-neutral-200" />
-            <MyInfoField
+            <FormField
               label="하루 집중 시간대"
-              value="오전 8시 - 12시"
               className="flex-col items-start gap-3"
               labelClassName="text-lg font-semibold text-neutral-900"
-              inputClassName="w-full min-w-0 text-neutral-900"
-            />
-            <MyInfoField
+            >
+              <input
+                type="text"
+                value="오전 8시 - 12시"
+                readOnly
+                className={inputClassName}
+              />
+            </FormField>
+            <FormField
               label="하루 마무리 시간"
-              value="오후 11시"
               className="flex-col items-start gap-3"
               labelClassName="text-lg font-semibold text-neutral-900"
-              inputClassName="w-full min-w-0 text-neutral-900"
-            />
+            >
+              <input
+                type="text"
+                value="오후 11시"
+                readOnly
+                className={inputClassName}
+              />
+            </FormField>
           </div>
         </div>
       </div>

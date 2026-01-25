@@ -37,7 +37,7 @@ export function MyInfoField({
         defaultValue={isControlled ? undefined : value}
         onChange={(event) => onChange?.(event.target.value)}
         className={cn(
-          "min-w-[220px] rounded-full bg-white px-6 py-3 text-center text-[16px] font-semibold text-neutral-400",
+          "min-w-[220px] rounded-full bg-white px-[27px] py-3 text-center text-[16px] font-semibold text-neutral-400",
           inputClassName,
         )}
       />
