@@ -9,6 +9,10 @@ function isPublicPath(pathname: string) {
 }
 
 export function middleware(request: NextRequest) {
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.next();
+  }
+
   const { pathname } = request.nextUrl;
   const hasRefreshToken = request.cookies.has("refreshToken");
 

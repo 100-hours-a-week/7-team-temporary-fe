@@ -1,35 +1,25 @@
-import type { ReactNode } from "react";
-
 import { IconButton } from "@/shared/ui/button";
 
+import { HeaderFrame } from "@/widgets/app-header/ui/HeaderFrame";
+
 interface AppHeaderProps {
-  title?: string;
-  actionLabel?: string | null;
-  onActionClick?: () => void;
-  headerContent?: ReactNode;
+  title: string;
+  onNotificationClick?: () => void;
 }
 
-export function AppHeader({
-  actionLabel = "Action",
-  onActionClick,
-  headerContent,
-}: AppHeaderProps) {
+export function AppHeader({ title, onNotificationClick }: AppHeaderProps) {
   return (
-    <header className="grid h-[52px] w-full grid-cols-3 grid-cols-[auto_1fr_auto] items-center gap-x-6 px-4 py-3">
-      <div className="justify-self-start">
-        {actionLabel && (
-          <IconButton
-            icon="prev"
-            label={actionLabel}
-            onClick={onActionClick}
-            className="w-fit p-0 align-middle text-sm text-black"
-          />
-        )}
-      </div>
-      <div className="w-full justify-self-center align-middle">
-        {headerContent ? <div className="flex w-full items-center">{headerContent}</div> : null}
-      </div>
-      <div className="h-full w-[30px]" />
-    </header>
+    <HeaderFrame
+      leftSlot={<span className="text-xl font-semibold text-black">{title}</span>}
+      rightSlot={
+        <IconButton
+          icon="notification"
+          label="알림"
+          onClick={onNotificationClick}
+          className="p-0"
+          iconClassName="h-7 w-7 text-black [&>path]:h-[18px] [&>path]:w-[18px]"
+        />
+      }
+    />
   );
 }
