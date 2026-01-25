@@ -13,6 +13,10 @@ import Info from "./assets/Info-icon.svg";
 import Success from "./assets/Success-icon.svg";
 import Notification from "./assets/Notification-icon.svg";
 import Error from "./assets/Error-icon.svg";
+import Home_filled from "./assets/Home-filled-icon.svg";
+import Home_outline from "./assets/Home-outline-icon.svg";
+import User_filled from "./assets/User-filled-icon.svg";
+import User_outline from "./assets/User-outline-icon.svg";
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -30,6 +34,10 @@ export const IconMap = {
   success: Success,
   notification: Notification,
   error: Error,
+  home_filled: Home_filled,
+  home_outline: Home_outline,
+  user_filled: User_filled,
+  user_outline: User_outline,
 } as const satisfies Record<string, SvgComponent>;
 
 export type IconName = keyof typeof IconMap;
