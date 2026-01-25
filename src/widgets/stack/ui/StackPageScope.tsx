@@ -69,7 +69,7 @@ export function StackPageScope({
   ) : null;
 
   return (
-    <Component className={cn("relative overflow-hidden", className)}>
+    <Component className={cn("relative w-full overflow-hidden", className)}>
       <div
         className={cn(
           "relative z-0 w-full bg-white py-10 transition-transform duration-300 ease-out",
