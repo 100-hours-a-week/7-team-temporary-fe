@@ -97,53 +97,45 @@ jobs:
 
       - name: Deploy (pm2)
         run: |
-          set -euo pipefail
-          if [ -z "$AWS_HOST" ] || [ -z "$AWS_USER" ] || [ -z "$AWS_TARGET_DIR" ]; then
-            echo "Missing AWS_HOST/AWS_USER/AWS_TARGET_DIR secrets"; exit 1;
-          fi
-
-          scp app.tar.gz ${AWS_USER}@${AWS_HOST}:/tmp/app.tar.gz
-
-          ssh ${AWS_USER}@${AWS_HOST} "AWS_TARGET_DIR='${AWS_TARGET_DIR}' AWS_SERVICE='${AWS_SERVICE:-app}' bash -se" <<'EOSSH'
             set -euo pipefail
-            TARGET_DIR="${AWS_TARGET_DIR:-}"
-            if [ -z "${TARGET_DIR}" ]; then
-              echo "AWS_TARGET_DIR is empty"; exit 1;
+            if [ -z "$AWS_HOST" ] || [ -z "$AWS_USER" ] || [ -z "$AWS_TARGET_DIR" ]; then
+              echo "Missing AWS_HOST/AWS_USER/AWS_TARGET_DIR secrets"; exit 1;
             fi
-            case "$TARGET_DIR" in
-              "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\~}";;
-            esac
-            if ! command -v node >/dev/null 2>&1; then
-              echo "Node.js is required on target host"; exit 1;
-            fi
-            if command -v corepack >/dev/null 2>&1; then
-              corepack enable
-              corepack prepare pnpm@9.15.1 --activate
-            fi
-            if ! command -v pm2 >/dev/null 2>&1; then
-              echo "pm2 is required on target host"; exit 1;
-            fi
-
-            # 타임스탬프 기반 릴리즈 디렉토리 사용 (권한 문제 회피)
-            RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
-            CURRENT_LINK="${TARGET_DIR}/current"
+            scp app.tar.gz ${AWS_USER}@${AWS_HOST}:/tmp/app.tar.gz
+            ssh ${AWS_USER}@${AWS_HOST} "AWS_TARGET_DIR='${AWS_TARGET_DIR}' AWS_SERVICE='${AWS_SERVICE:-app}' bash -se" <<'EOSSH'
+              set -euo pipefail
+              TARGET_DIR="${AWS_TARGET_DIR:-}"
+              if [ -z "${TARGET_DIR}" ]; then
+                echo "AWS_TARGET_DIR is empty"; exit 1;
+              fi
+              case "$TARGET_DIR" in
+                "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\~}";;
+              esac
+              if ! command -v node >/dev/null 2>&1; then
+                echo "Node.js is required on target host"; exit 1;
+              fi
+              if command -v corepack >/dev/null 2>&1; then
+                corepack enable
+                corepack prepare pnpm@9.15.1 --activate
+              fi
+              if ! command -v pm2 >/dev/null 2>&1; then
+                echo "pm2 is required on target host"; exit 1;
+              fi
+              RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
+              CURRENT_LINK="${TARGET_DIR}/current"
               
-            mkdir -p "${RELEASE_DIR}"
-
-            tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
-            cd "${RELEASE_DIR}"
-            pnpm install --prod --frozen-lockfile
-
-            # current 심볼릭 링크 업데이트
-            ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
+              mkdir -p "${RELEASE_DIR}"
+              tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
+              cd "${RELEASE_DIR}"
+              pnpm install --prod --frozen-lockfile
+              ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
               
-            # PM2는 current 링크 경로 사용
-            cd "${CURRENT_LINK}"
-            pm2 reload "${AWS_SERVICE}" || pm2 start npm --name "${AWS_SERVICE}" -- start
+              cd "${TARGET_DIR}"
+              pm2 restart ecosystem.config.js --update-env || pm2 start ecosystem.config.js
               
-            # 오래된 릴리즈 정리 (최근 3개만 유지)
-            ls -dt ${TARGET_DIR}/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
-          EOSSH
+              ls -dt ${TARGET_DIR}/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
+            EOSSH
+
 
   deploy_gcp:
     name: Deploy to GCP (main)
@@ -155,7 +147,7 @@ jobs:
       GCP_ZONE: ${{ secrets.GCP_ZONE }}
       GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
       GCP_USER: ${{ secrets.GCE_USER }}
-      GCP_TARGET_DIR: ${{ secrets.APP_DIR }}
+      GCP_TARGET_DIR: ${{ secrets.APP_DIR_GCP }}
       GCP_SERVICE: ${{ secrets.PM2_NAME }}
     steps:
 
@@ -195,42 +187,46 @@ jobs:
             --quiet \
             --command "echo 'SSH_OK'; whoami; hostname; uname -a"
 
-            
       - name: Deploy (pm2)
         run: |
           set -euo pipefail
-          if [ -z "$GCP_PROJECT" ] || [ -z "$GCP_ZONE" ] || [ -z "$GCP_INSTANCE" ] || [ -z "$GCP_USER" ] || [ -z "$GCP_TARGET_DIR" ]; then
-            echo "Missing GCP_PROJECT/GCP_ZONE/GCP_INSTANCE/GCP_USER/GCP_TARGET_DIR secrets"; exit 1;
-          fi
-
-          gcloud compute scp app.tar.gz ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet
-
-          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} --zone="${GCP_ZONE}" --project="${GCP_PROJECT}" --quiet --command "$(cat <<EOSH
+          gcloud compute scp app.tar.gz \
+            ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz \
+            --zone="${GCP_ZONE}" \
+            --project="${GCP_PROJECT}" \
+            --quiet
+          
+          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} \
+            --zone "${GCP_ZONE}" \
+            --project "${GCP_PROJECT}" \
+            --quiet \
+            --command "GCP_TARGET_DIR='${GCP_TARGET_DIR}' GCP_SERVICE='${GCP_SERVICE:-app}' bash -se" <<'EOSSH'
             set -euo pipefail
+            TARGET_DIR="${GCP_TARGET_DIR:-}"
+            if [ -z "${TARGET_DIR}" ]; then
+              echo "GCP_TARGET_DIR is empty"; exit 1;
+            fi
+            case "$TARGET_DIR" in
+              "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\~}";;
+            esac
             if ! command -v node >/dev/null 2>&1; then
-              echo 'Node.js is required on target host'; exit 1;
+              echo "Node.js is required on target host"; exit 1;
             fi
             if command -v corepack >/dev/null 2>&1; then
-              sudo corepack enable
+              corepack enable
               corepack prepare pnpm@9.15.1 --activate
             fi
             if ! command -v pm2 >/dev/null 2>&1; then
-              echo 'pm2 is required on target host'; exit 1;
+              echo "pm2 is required on target host"; exit 1;
             fi
-
-            RELEASE_ROOT="${TARGET_DIR}/releases"
+            RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
             CURRENT_LINK="${TARGET_DIR}/current"
-            NEXT_RELEASE="${RELEASE_ROOT}/$(date +%Y%m%d%H%M%S)"
-
-            mkdir -p "${RELEASE_ROOT}" "${NEXT_RELEASE}"
-
-            tar -xzf /tmp/app.tar.gz -C "${NEXT_RELEASE}"
-            cd "${NEXT_RELEASE}"
+            mkdir -p "${RELEASE_DIR}"
+            tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
+            cd "${RELEASE_DIR}"
             pnpm install --prod --frozen-lockfile
-
-            ln -sfn "${NEXT_RELEASE}" "${CURRENT_LINK}"
-            pm2 reload "${SERVICE}" || pm2 start npm --name "${SERVICE}" -- start
-            
-            ls -dt "${RELEASE_ROOT}"/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
-          EOSH
-          )"
+            ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
+            cd "${TARGET_DIR}"
+            pm2 restart ecosystem.config.js --update-env || pm2 start ecosystem.config.js
+            ls -dt ${TARGET_DIR}/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
+          EOSSH
