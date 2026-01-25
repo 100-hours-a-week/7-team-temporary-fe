@@ -46,3 +46,5 @@ next-env.d.ts
 .code_workspace
 /.pnpm-store/v3
 .npmrc
+*storybook.log
+storybook-static
