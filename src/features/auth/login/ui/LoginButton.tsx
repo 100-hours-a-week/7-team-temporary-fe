@@ -19,7 +19,11 @@ export function LoginButton({
   onClick,
   ...props
 }: LoginButtonProps) {
+  const { showToast } = useToast();
+
   const handleClick: LoginButtonProps["onClick"] = (event) => {
+    showToast(toastMessage, toastType);
+
     onClick?.(event);
   };
 

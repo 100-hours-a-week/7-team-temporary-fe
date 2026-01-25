@@ -23,18 +23,16 @@ export const useProfileImagePresign = () => {
       contentType: file.type,
     };
     const response = await apiFetch<PresignedUploadUrlResponse | string, PresignedUploadUrlRequest>(
-      Endpoint.UPLOAD.PRESIGNED_URL("USERS"),
+      Endpoint.UPLOAD.PRESIGNED_URL,
       {
         method: "POST",
         body: payload,
       },
     );
-    console.log(response);
     const url = typeof response === "string" ? response : (response.url ?? response.presignedUrl);
     if (!url) {
       throw new Error("프리사인 URL 응답에 url이 없습니다.");
     }
-    console.log(url);
     return url;
   }, []);
 

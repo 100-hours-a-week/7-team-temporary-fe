@@ -20,8 +20,7 @@ export const Endpoint = {
     PASSWORD: path("/users/password"),
   },
   UPLOAD: {
-    PRESIGNED_URL: (type: "USERS" | "REFLECTIONS" | "MESSAGES") =>
-      path(`/images?type=${encodeURIComponent(type)}`),
+    PRESIGNED_URL: path("/images"),
     UPLOAD: (imageKey: string) => path(`/images/${imageKey}`),
   },
 } as const;
