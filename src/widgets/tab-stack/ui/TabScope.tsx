@@ -19,7 +19,7 @@ export function TabScope({ tab, children, className }: TabScopeProps) {
 
   return (
     <div
-      className={cn(isActive ? "block" : "hidden", className)}
+      className={cn("w-full", isActive ? "block" : "hidden", className)}
       data-tab={tab}
     >
       {children}
