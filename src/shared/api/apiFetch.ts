@@ -9,6 +9,7 @@ interface FetchOptions<TBody> {
   headers?: HeadersInit;
   signal?: AbortSignal;
   authRequired?: boolean;
+  credentials?: RequestCredentials;
 }
 
 type ApiResponse<T> = {
@@ -28,12 +29,15 @@ export async function apiFetch<TResponse, TBody = unknown>(
   options: FetchOptions<TBody> = {},
 ): Promise<TResponse> {
   const { method = "GET", body, headers, signal, authRequired } = options;
+  const { credentials } = options;
+  const resolvedCredentials = authRequired && !credentials ? "include" : credentials;
 
   const mergedHeaders: HeadersInit = {
     "Content-Type": "application/json",
     ...headers,
   };
 
+  //AToken 존재 시 Authorization 헤더 추가
   if (authRequired) {
     const accessToken = useAuthStore.getState().accessToken;
     if (accessToken && !("Authorization" in (mergedHeaders as Record<string, string>))) {
@@ -51,6 +55,7 @@ export async function apiFetch<TResponse, TBody = unknown>(
     headers: mergedHeaders,
     body: body && method !== "GET" ? JSON.stringify(body) : undefined,
     signal,
+    credentials: resolvedCredentials,
   });
 
   if (res.status === 204) {
@@ -58,14 +63,22 @@ export async function apiFetch<TResponse, TBody = unknown>(
   }
 
   const text = await res.text();
-  const json = text ? (JSON.parse(text) as ApiResponse<TResponse>) : null;
+  let json: ApiResponse<TResponse> | null = null;
+  if (text) {
+    try {
+      json = JSON.parse(text) as ApiResponse<TResponse>;
+    } catch (error) {
+      console.warn("[apiFetch] failed to parse JSON response", { url, status: res.status, error });
+    }
+  }
   console.log(json);
 
   // HTTP 실패
   if (!res.ok) {
+    const fallbackCode = res.status === 401 ? "UNAUTHORIZED" : "HTTP_ERROR";
     throw new ApiError(
       res.status,
-      json?.code ?? json?.status ?? "HTTP_ERROR",
+      json?.code ?? json?.status ?? fallbackCode,
       json?.message ?? res.statusText,
     );
   }
