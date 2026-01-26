@@ -1,5 +1,5 @@
 import { ApiError } from "./error";
-import { AuthService } from "@/shared/auth";
+import { useAuthStore } from "@/shared/auth";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -8,6 +8,7 @@ interface FetchOptions<TBody> {
   body?: TBody;
   headers?: HeadersInit;
   signal?: AbortSignal;
+  authRequired?: boolean;
 }
 
 type ApiResponse<T> = {
@@ -26,14 +27,28 @@ export async function apiFetch<TResponse, TBody = unknown>(
   url: string,
   options: FetchOptions<TBody> = {},
 ): Promise<TResponse> {
-  const { method = "GET", body, headers, signal } = options;
+  const { method = "GET", body, headers, signal, authRequired } = options;
+
+  const mergedHeaders: HeadersInit = {
+    "Content-Type": "application/json",
+    ...headers,
+  };
+
+  if (authRequired) {
+    const accessToken = useAuthStore.getState().accessToken;
+    if (accessToken && !("Authorization" in (mergedHeaders as Record<string, string>))) {
+      (mergedHeaders as Record<string, string>).Authorization = `Bearer ${accessToken}`;
+    }
+    console.log("[apiFetch] authRequired request", {
+      url,
+      hasAccessToken: Boolean(accessToken),
+      accessTokenPreview: accessToken ? `${accessToken.slice(0, 8)}...` : null,
+    });
+  }
 
   const res = await fetch(url, {
     method,
-    headers: {
-      "Content-Type": "application/json",
-      ...headers,
-    },
+    headers: mergedHeaders,
     body: body && method !== "GET" ? JSON.stringify(body) : undefined,
     signal,
   });
