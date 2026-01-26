@@ -1,18 +1,16 @@
-"use client";
-
 import type { BaseSyntheticEvent } from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 
-import type { LoginFormModel } from "../model";
 import { EmailInput, FormField, PasswordInput } from "@/shared/form/ui";
 import { GoToSignUpButton } from "./GoToSignUpButton";
 import { LoginButton } from "./LoginButton";
+import type { LoginFormModel } from "../model";
 
 interface LoginFormProps {
   register: UseFormRegister<LoginFormModel>;
   errors: FieldErrors<LoginFormModel>;
   isSubmitting: boolean;
-  errorMessage?: string | null;
+  errorMessage: string | null;
   onSubmit: (event?: BaseSyntheticEvent) => void;
   onGoToSignUp?: () => void;
 }
