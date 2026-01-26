@@ -20,8 +20,8 @@ export const Endpoint = {
     NICKNAME: path("/users/nickname"),
     PASSWORD: path("/users/password"),
   },
-  UPLOAD: {
+  IMAGES: {
     PRESIGNED_URL: path("/images"),
-    UPLOAD: (imageKey: string) => path(`/images/${imageKey}`),
+    VIEW: (imageKey: string) => path(`/images/${imageKey}`), // GET
   },
 } as const;

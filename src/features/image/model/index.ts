@@ -1,1 +1,1 @@
-export { useProfileImagePresign } from "./useProfileImagePresign";
+export { useProfileImageUpload as useProfileImagePresign } from "./useProfileImagePresign";

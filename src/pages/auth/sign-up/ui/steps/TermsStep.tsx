@@ -9,19 +9,19 @@ const TERMS = [
     id: "service",
     label: "[필수] 서비스 이용약관 동의",
     required: true,
-    href: "https://wry-bumper-f91.notion.site/1df9a71925b4807ab48bc5df3b4cfee0",
+    href: "https://wide-legend-7e1.notion.site/2f4ee90a967f8141bb7dc3cc8968fa79?source=copy_link",
   },
   {
     id: "privacy",
     label: "[필수] 개인정보 수집 및 이용 동의",
     required: true,
-    href: "https://wry-bumper-f91.notion.site/1df9a71925b48086b06cdb84070c13a1?pvs=4",
+    href: "https://wide-legend-7e1.notion.site/2f4ee90a967f8155a0ebc4c9616ba4e7?pvs=73",
   },
   {
     id: "marketing",
     label: "[선택] 마케팅 정보 수신 동의",
     required: false,
-    href: "https://wry-bumper-f91.notion.site/1df9a71925b4806eaa43f72b40809344?pvs=4",
+    href: "https://wide-legend-7e1.notion.site/2f4ee90a967f81f080eec2327efef776?source=copy_link",
   },
 ];
 

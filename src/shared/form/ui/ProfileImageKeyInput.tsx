@@ -10,9 +10,7 @@ interface ProfileImageKeyInputProps {
   isDisabled?: boolean;
   invalid?: boolean;
   previewUrl?: string | null;
-  getPresignedUploadUrl?: (file: File) => Promise<string>;
-  onPresignedUploadUrlChange?: (url: string | null) => void;
-  onFileSelect?: (file: File | null) => void;
+  onFileSelect?: (file: File | null) => void | Promise<void>;
   onUploadError?: (error: unknown) => void;
 }
 
@@ -21,46 +19,39 @@ export function ProfileImageKeyInput({
   isDisabled,
   invalid,
   previewUrl,
-  getPresignedUploadUrl,
-  onPresignedUploadUrlChange,
   onFileSelect,
   onUploadError,
 }: ProfileImageKeyInputProps) {
   const inputId = register.name;
-  const { onChange: handleRegisterChange, ...registerProps } = register;
+  const { onChange: _ignoredOnChange, ...registerProps } = register;
 
   //파일 선택 시 실행되는 핸들러
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    // react-hook-form에 변경을 알리고 미리보기 URL을 갱신합니다.
-    handleRegisterChange(event);
     const file = event.target.files?.[0] ?? null; //사용자가 선택한 file
     //외부에서 파일 선택 감지
-    onFileSelect?.(file);
-    //기존 url 초기화
-    onPresignedUploadUrlChange?.(null);
-
-    if (!file || !getPresignedUploadUrl) return;
-
     try {
-      //presignedURL 요청
-      const url = await getPresignedUploadUrl(file);
-      //발급된 url 전달
-      onPresignedUploadUrlChange?.(url);
+      await onFileSelect?.(file);
     } catch (error) {
       onUploadError?.(error);
       if (!onUploadError) {
-        console.error("프리사인 URL 요청 실패:", error);
+        console.error("프로필 이미지 업로드 실패:", error);
       }
     }
   };
 
   return (
     <div
-      className="flex w-full flex-col items-center justify-center gap-3 [background-clip:unset] text-[rgba(64,64,64,1)] [-webkit-background-clip:unset]"
+      className={cn(
+        "relative flex h-28 w-28 items-center justify-center rounded-full",
+        "data-[invalid=true]:ring-error/20 data-[invalid=true]:ring-2",
+      )}
       data-invalid={invalid || undefined}
     >
       <input
+        type="hidden"
         {...registerProps}
+      />
+      <input
         id={inputId}
         type="file"
         accept="image/*"
@@ -69,10 +60,14 @@ export function ProfileImageKeyInput({
         onChange={handleFileChange}
         disabled={isDisabled}
       />
+      <Icon
+        name="edit"
+        className="absolute right-0 bottom-0 z-10 h-8 w-8 rounded-full bg-[var(--color-neutral-800)] p-1.5 text-white shadow-md"
+      />
       {previewUrl ? (
         <label
           className={cn(
-            "flex w-full items-center justify-center rounded-xl border-0 bg-transparent p-4",
+            "flex w-full items-center justify-center rounded-xl border-0 bg-transparent",
             "data-[invalid=true]:ring-error/20 data-[invalid=true]:ring-2",
           )}
           htmlFor={inputId}
@@ -81,7 +76,9 @@ export function ProfileImageKeyInput({
           <Image
             src={previewUrl}
             alt="선택한 이미지 미리보기"
-            className="h-24 w-24 rounded-full object-cover"
+            width={120}
+            height={120}
+            className="h-28 w-28 rounded-full object-cover"
           />
         </label>
       ) : (
@@ -92,12 +89,7 @@ export function ProfileImageKeyInput({
             "data-[invalid=true]:ring-error/20 data-[invalid=true]:ring-2",
           )}
           htmlFor={inputId}
-        >
-          <Icon
-            name="edit"
-            className="absolute right-[10px] bottom-0 h-5 w-5 rounded-[500px] bg-[var(--color-neutral-800)] p-[13px] text-white"
-          />
-        </label>
+        ></label>
       )}
     </div>
   );
