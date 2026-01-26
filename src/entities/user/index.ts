@@ -7,4 +7,7 @@ export type {
   UserFocusTimeZone,
   UserDayEndTime,
   UserProfileImageKey,
+  MyProfileModel,
 } from "./model/types";
+
+export { useMyProfileQuery, userQueryKeys, toMyProfileModel } from "./model";

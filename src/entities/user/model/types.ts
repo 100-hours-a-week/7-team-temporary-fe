@@ -15,3 +15,8 @@ export interface UserEntity {
   dayEndTime: UserDayEndTime;
   profileImageKey?: UserProfileImageKey;
 }
+
+export interface MyProfileModel extends UserEntity {
+  profileImageUrl: string | null;
+  profileImageExpiresAt: string | null;
+}
