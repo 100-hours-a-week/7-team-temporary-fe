@@ -1,4 +1,4 @@
-import type { ApiError } from "@/shared/api";
+import { ApiError } from "@/shared/api";
 import { apiFetch } from "@/shared/api";
 import { mapCommonError } from "@/shared/api/error/common";
 
