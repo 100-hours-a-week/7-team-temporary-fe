@@ -8,6 +8,13 @@ export type {
   UserDayEndTime,
   UserProfileImageKey,
   MyProfileModel,
+  UpdateMyProfileModel,
 } from "./model/types";
 
-export { useMyProfileQuery, userQueryKeys, toMyProfileModel } from "./model";
+export {
+  useMyProfileQuery,
+  useUpdateMyProfileMutation,
+  userQueryKeys,
+  toMyProfileModel,
+  toUpdateMyProfileRequestDto,
+} from "./model";

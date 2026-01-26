@@ -20,3 +20,11 @@ export interface MyProfileModel extends UserEntity {
   profileImageUrl: string | null;
   profileImageExpiresAt: string | null;
 }
+
+export interface UpdateMyProfileModel {
+  gender: UserGender;
+  birth: UserBirth;
+  focusTimeZone: UserFocusTimeZone;
+  dayEndTime: UserDayEndTime;
+  nickname: UserNickname;
+}

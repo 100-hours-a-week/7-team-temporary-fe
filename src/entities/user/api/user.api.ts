@@ -1,9 +1,9 @@
 import { apiFetch, Endpoint } from "@/shared/api";
 import { AuthService } from "@/shared/auth";
 
-import type { MyProfileResponseDto } from "./types";
-import type { MyProfileModel } from "../model/types";
-import { toMyProfileModel } from "../model/mappers";
+import type { MyProfileResponseDto, UpdateMyProfileRequestDto } from "./types";
+import type { MyProfileModel, UpdateMyProfileModel } from "../model/types";
+import { toMyProfileModel, toUpdateMyProfileRequestDto } from "../model/mappers";
 
 export async function fetchMyProfile(signal?: AbortSignal): Promise<MyProfileModel> {
   return AuthService.refreshAndRetry(async () => {
@@ -12,5 +12,15 @@ export async function fetchMyProfile(signal?: AbortSignal): Promise<MyProfileMod
       authRequired: true,
     });
     return toMyProfileModel(res);
+  });
+}
+
+export async function updateMyProfile(model: UpdateMyProfileModel): Promise<void> {
+  return AuthService.refreshAndRetry(async () => {
+    await apiFetch<void, UpdateMyProfileRequestDto>(Endpoint.USER.BASE, {
+      method: "PATCH",
+      body: toUpdateMyProfileRequestDto(model),
+      authRequired: true,
+    });
   });
 }
