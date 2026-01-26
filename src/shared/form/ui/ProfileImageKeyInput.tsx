@@ -10,9 +10,7 @@ interface ProfileImageKeyInputProps {
   isDisabled?: boolean;
   invalid?: boolean;
   previewUrl?: string | null;
-  getPresignedUploadUrl?: (file: File) => Promise<string>;
-  onPresignedUploadUrlChange?: (url: string | null) => void;
-  onFileSelect?: (file: File | null) => void;
+  onFileSelect?: (file: File | null) => void | Promise<void>;
   onUploadError?: (error: unknown) => void;
 }
 
@@ -21,8 +19,6 @@ export function ProfileImageKeyInput({
   isDisabled,
   invalid,
   previewUrl,
-  getPresignedUploadUrl,
-  onPresignedUploadUrlChange,
   onFileSelect,
   onUploadError,
 }: ProfileImageKeyInputProps) {
@@ -35,21 +31,12 @@ export function ProfileImageKeyInput({
     handleRegisterChange(event);
     const file = event.target.files?.[0] ?? null; //사용자가 선택한 file
     //외부에서 파일 선택 감지
-    onFileSelect?.(file);
-    //기존 url 초기화
-    onPresignedUploadUrlChange?.(null);
-
-    if (!file || !getPresignedUploadUrl) return;
-
     try {
-      //presignedURL 요청
-      const url = await getPresignedUploadUrl(file);
-      //발급된 url 전달
-      onPresignedUploadUrlChange?.(url);
+      await onFileSelect?.(file);
     } catch (error) {
       onUploadError?.(error);
       if (!onUploadError) {
-        console.error("프리사인 URL 요청 실패:", error);
+        console.error("프로필 이미지 업로드 실패:", error);
       }
     }
   };
@@ -72,7 +59,7 @@ export function ProfileImageKeyInput({
       {previewUrl ? (
         <label
           className={cn(
-            "flex w-full items-center justify-center rounded-xl border-0 bg-transparent p-4",
+            "flex w-full items-center justify-center rounded-xl border-0 bg-transparent",
             "data-[invalid=true]:ring-error/20 data-[invalid=true]:ring-2",
           )}
           htmlFor={inputId}
@@ -81,7 +68,9 @@ export function ProfileImageKeyInput({
           <Image
             src={previewUrl}
             alt="선택한 이미지 미리보기"
-            className="h-24 w-24 rounded-full object-cover"
+            width={120}
+            height={120}
+            className="h-28 w-28 rounded-full object-cover"
           />
         </label>
       ) : (

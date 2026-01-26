@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useFormContext } from "react-hook-form";
 
 import type { SignUpFormModel } from "@/features/auth/sign-up/model";
@@ -23,37 +24,24 @@ export function ProfileStep() {
   const {
     register,
     formState: { errors },
+    setValue,
   } = useFormContext<SignUpFormModel>();
-  const profileImageKeyRegister = register("profileImageKey", {
-    setValueAs: (value: unknown) => {
-      if (value instanceof FileList) {
-        return value[0]?.name ?? null;
-      }
-      if (Array.isArray(value) && value[0] instanceof File) {
-        return value[0]?.name ?? null;
-      }
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        if (!trimmed) return null;
-        const parts = trimmed.split(/[/\\]/);
-        return parts[parts.length - 1] ?? null;
-      }
-      return null;
-    },
-  });
+  const profileImageKeyRegister = register("profileImageKey");
   const { nicknameStatus, handleNicknameCheck } = useSignUpFormContext();
-  const {
-    getPresignedUploadUrl,
-    handlePresignedUploadUrlChange,
-    handleFileSelect,
-    handleUploadError,
-  } = useProfileImagePresign();
+  const { handleFileSelect, previewUrl, imageKey, isUploading } = useProfileImagePresign();
   const emailError = errors.email?.message?.toString();
   const passwordError = errors.password?.message?.toString();
   const nicknameError = errors.nickname?.message?.toString();
   const genderError = errors.gender?.message?.toString();
   const birthError = errors.birth?.message?.toString();
   const profileImageKeyError = errors.profileImageKey?.message?.toString();
+
+  useEffect(() => {
+    setValue("profileImageKey", imageKey ?? null, {
+      shouldValidate: true,
+      shouldDirty: false,
+    });
+  }, [imageKey, setValue]);
 
   return (
     <OnboardingQuestionLayout
@@ -84,10 +72,9 @@ export function ProfileStep() {
           <ProfileImageKeyInput
             register={profileImageKeyRegister}
             invalid={!!errors.profileImageKey}
-            getPresignedUploadUrl={getPresignedUploadUrl}
-            onPresignedUploadUrlChange={handlePresignedUploadUrlChange}
             onFileSelect={handleFileSelect}
-            onUploadError={handleUploadError}
+            previewUrl={previewUrl}
+            isDisabled={isUploading}
           />
         </FormField>
         <FormField
