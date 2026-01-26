@@ -27,7 +27,6 @@ export function ProfileStep() {
     setValue,
   } = useFormContext<SignUpFormModel>();
   const profileImageKeyRegister = register("profileImageKey");
-  const { nicknameStatus, handleNicknameCheck } = useSignUpFormContext();
   const { handleFileSelect, previewUrl, imageKey, isUploading } = useProfileImagePresign();
   const emailError = errors.email?.message?.toString();
   const passwordError = errors.password?.message?.toString();
@@ -109,17 +108,7 @@ export function ProfileStep() {
                 register={register("nickname")}
                 placeholder="닉네임을 입력해주세요."
               />
-              <button
-                className="rounded-xl border px-3 py-2 text-sm whitespace-nowrap"
-                type="button"
-                onClick={handleNicknameCheck}
-              >
-                중복 확인
-              </button>
             </div>
-            {nicknameStatus === "valid" && (
-              <span className="text-xs text-green-600">사용 가능한 닉네임입니다.</span>
-            )}
           </>
         </FormField>
         <FormField

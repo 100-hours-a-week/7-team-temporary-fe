@@ -57,6 +57,7 @@ export function ProfilePage() {
         label=""
         error={errors.profileImageKey}
         className="items-center"
+        contentClassName="flex flex-col items-center justify-center"
       >
         <ProfileImageKeyInput
           register={profileImageKeyRegister}

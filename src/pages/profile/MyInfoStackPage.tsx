@@ -1,56 +1,70 @@
 "use client";
 
 import { useEffect } from "react";
+import { useForm } from "react-hook-form";
 
 import { useStackPage } from "@/widgets/stack";
-import { useMyProfileQuery } from "@/entities/user";
+import {
+  useMyProfileQuery,
+  useUpdateMyProfileMutation,
+  type UpdateMyProfileModel,
+} from "@/entities/user";
 
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { FormField } from "@/shared/form/ui";
 
+const focusTimeOptions = [
+  { value: "MORNING", label: "오전" },
+  { value: "AFTERNOON", label: "오후" },
+  { value: "EVENING", label: "저녁" },
+  { value: "NIGHT", label: "밤" },
+] as const;
+
 export function MyInfoStackPage() {
   const { setHeaderContent } = useStackPage();
   const { data: myProfile } = useMyProfileQuery();
+  const updateMutation = useUpdateMyProfileMutation();
+
+  const form = useForm<UpdateMyProfileModel>({
+    defaultValues: {
+      gender: "MALE",
+      birth: "",
+      focusTimeZone: "MORNING",
+      dayEndTime: "",
+      nickname: "",
+    },
+  });
+
   const inputClassName =
     "h-12 w-full rounded-xl border px-3 py-2 text-sm bg-neutral-50 placeholder:text-gray-400 border border-transparent focus:outline-none focus:ring-error/20 focus:ring-2 focus:ring-inset not-placeholder-shown:border-gray-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400";
 
-  const genderLabel =
-    myProfile?.gender === "MALE" ? "남" : myProfile?.gender === "FEMALE" ? "여" : "";
-
-  const focusTimeLabel = (() => {
-    switch (myProfile?.focusTimeZone) {
-      case "MORNING":
-        return "오전";
-      case "AFTERNOON":
-        return "오후";
-      case "EVENING":
-        return "저녁";
-      case "NIGHT":
-        return "밤";
-      default:
-        return "";
-    }
-  })();
-
-  const dayEndTimeLabel = (() => {
-    const time = myProfile?.dayEndTime;
-    if (!time) return "";
-    const [hourText, minuteText] = time.split(":");
-    const hour = Number(hourText);
-    if (Number.isNaN(hour)) return time;
-    const period = hour < 12 ? "오전" : "오후";
-    const hour12 = hour % 12 === 0 ? 12 : hour % 12;
-    const minutes = minuteText && minuteText !== "00" ? ` ${minuteText}분` : "";
-    return `${period} ${hour12}시${minutes}`;
-  })();
+  const selectClassName = `${inputClassName} appearance-none`;
 
   useEffect(() => {
     setHeaderContent(<span className="text-xl font-semibold text-black">내 정보</span>);
     return () => setHeaderContent(null);
   }, [setHeaderContent]);
 
+  useEffect(() => {
+    if (!myProfile) return;
+    form.reset({
+      gender: myProfile.gender,
+      birth: myProfile.birth,
+      focusTimeZone: myProfile.focusTimeZone,
+      dayEndTime: myProfile.dayEndTime,
+      nickname: myProfile.nickname,
+    });
+  }, [form, myProfile]);
+
+  const isSaving = updateMutation.isPending || form.formState.isSubmitting;
+
+  const handleSave = form.handleSubmit((values) => updateMutation.mutate(values));
+
   return (
-    <div className="flex h-fit w-full flex-col items-center justify-center px-10 py-[30px]">
+    <form
+      onSubmit={handleSave}
+      className="flex h-fit w-full flex-col items-center justify-center px-10 py-[30px]"
+    >
       <div className="flex w-full flex-1 items-start justify-center">
         <div className="w-full rounded-3xl p-0">
           <div className="m-0 flex flex-col gap-[25px]">
@@ -74,12 +88,13 @@ export function MyInfoStackPage() {
                 className="flex-1"
                 labelClassName="text-lg font-semibold text-neutral-900"
               >
-                <input
-                  type="text"
-                  value={genderLabel}
-                  readOnly
-                  className={inputClassName}
-                />
+                <select
+                  {...form.register("gender")}
+                  className={selectClassName}
+                >
+                  <option value="MALE">남</option>
+                  <option value="FEMALE">여</option>
+                </select>
               </FormField>
               <FormField
                 label="생년월일"
@@ -88,9 +103,9 @@ export function MyInfoStackPage() {
               >
                 <input
                   type="text"
-                  value={myProfile?.birth ?? ""}
-                  readOnly
+                  placeholder="YYYY.MM.DD"
                   className={inputClassName}
+                  {...form.register("birth")}
                 />
               </FormField>
             </div>
@@ -102,19 +117,10 @@ export function MyInfoStackPage() {
               >
                 <input
                   type="text"
-                  value={myProfile?.nickname ?? ""}
-                  readOnly
                   className={inputClassName}
+                  {...form.register("nickname")}
                 />
               </FormField>
-              <div>
-                <button
-                  type="button"
-                  className="h-12 shrink-0 rounded-full border border-neutral-900 px-5 py-2 text-base font-semibold text-neutral-900"
-                >
-                  중복확인
-                </button>
-              </div>
             </div>
             <div className="flex items-center justify-between">
               <div className="text-base font-semibold text-neutral-900">비밀번호 변경</div>
@@ -131,12 +137,19 @@ export function MyInfoStackPage() {
               className="flex-col items-start gap-3"
               labelClassName="text-lg font-semibold text-neutral-900"
             >
-              <input
-                type="text"
-                value={focusTimeLabel}
-                readOnly
-                className={inputClassName}
-              />
+              <select
+                {...form.register("focusTimeZone")}
+                className={selectClassName}
+              >
+                {focusTimeOptions.map((option) => (
+                  <option
+                    key={option.value}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </FormField>
             <FormField
               label="하루 마무리 시간"
@@ -144,10 +157,9 @@ export function MyInfoStackPage() {
               labelClassName="text-lg font-semibold text-neutral-900"
             >
               <input
-                type="text"
-                value={dayEndTimeLabel}
-                readOnly
+                type="time"
                 className={inputClassName}
+                {...form.register("dayEndTime")}
               />
             </FormField>
           </div>
@@ -156,12 +168,13 @@ export function MyInfoStackPage() {
       <div className="h-[70px]"></div>
       <FixedActionBar>
         <PrimaryButton
-          onClick={() => {}}
+          type="submit"
           className="w-full"
+          disabled={isSaving}
         >
-          저장
+          {isSaving ? "저장 중..." : "저장"}
         </PrimaryButton>
       </FixedActionBar>
-    </div>
+    </form>
   );
 }
