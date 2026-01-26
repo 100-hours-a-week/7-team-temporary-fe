@@ -7,4 +7,4 @@ export type {
   UserFocusTimeZone,
   UserDayEndTime,
   UserProfileImageKey,
-} from "./types";
+} from "./model/types";
