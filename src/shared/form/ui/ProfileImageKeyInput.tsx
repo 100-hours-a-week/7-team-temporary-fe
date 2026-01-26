@@ -43,7 +43,10 @@ export function ProfileImageKeyInput({
 
   return (
     <div
-      className="flex w-full flex-col items-center justify-center gap-3 [background-clip:unset] text-[rgba(64,64,64,1)] [-webkit-background-clip:unset]"
+      className={cn(
+        "relative flex h-28 w-28 items-center justify-center rounded-full",
+        "data-[invalid=true]:ring-error/20 data-[invalid=true]:ring-2",
+      )}
       data-invalid={invalid || undefined}
     >
       <input
@@ -55,6 +58,10 @@ export function ProfileImageKeyInput({
         className="sr-only text-[rgba(112,112,112,1)]"
         onChange={handleFileChange}
         disabled={isDisabled}
+      />
+      <Icon
+        name="edit"
+        className="absolute right-0 bottom-0 z-10 h-8 w-8 rounded-full bg-[var(--color-neutral-800)] p-1.5 text-white shadow-md"
       />
       {previewUrl ? (
         <label
@@ -81,12 +88,7 @@ export function ProfileImageKeyInput({
             "data-[invalid=true]:ring-error/20 data-[invalid=true]:ring-2",
           )}
           htmlFor={inputId}
-        >
-          <Icon
-            name="edit"
-            className="absolute right-[10px] bottom-0 h-5 w-5 rounded-[500px] bg-[var(--color-neutral-800)] p-[13px] text-white"
-          />
-        </label>
+        ></label>
       )}
     </div>
   );

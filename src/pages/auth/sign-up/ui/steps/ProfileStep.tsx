@@ -68,6 +68,7 @@ export function ProfileStep() {
           label="프로필 이미지 (선택)"
           error={profileImageKeyError}
           className="items-center"
+          contentClassName="flex items-center justify-center text-center"
         >
           <ProfileImageKeyInput
             register={profileImageKeyRegister}
