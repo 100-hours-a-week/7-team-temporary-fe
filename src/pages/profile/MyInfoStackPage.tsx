@@ -3,14 +3,46 @@
 import { useEffect } from "react";
 
 import { useStackPage } from "@/widgets/stack";
+import { useMyProfileQuery } from "@/entities/user";
 
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { FormField } from "@/shared/form/ui";
 
 export function MyInfoStackPage() {
   const { setHeaderContent } = useStackPage();
+  const { data: myProfile } = useMyProfileQuery();
   const inputClassName =
     "h-12 w-full rounded-xl border px-3 py-2 text-sm bg-neutral-50 placeholder:text-gray-400 border border-transparent focus:outline-none focus:ring-error/20 focus:ring-2 focus:ring-inset not-placeholder-shown:border-gray-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400";
+
+  const genderLabel =
+    myProfile?.gender === "MALE" ? "남" : myProfile?.gender === "FEMALE" ? "여" : "";
+
+  const focusTimeLabel = (() => {
+    switch (myProfile?.focusTimeZone) {
+      case "MORNING":
+        return "오전";
+      case "AFTERNOON":
+        return "오후";
+      case "EVENING":
+        return "저녁";
+      case "NIGHT":
+        return "밤";
+      default:
+        return "";
+    }
+  })();
+
+  const dayEndTimeLabel = (() => {
+    const time = myProfile?.dayEndTime;
+    if (!time) return "";
+    const [hourText, minuteText] = time.split(":");
+    const hour = Number(hourText);
+    if (Number.isNaN(hour)) return time;
+    const period = hour < 12 ? "오전" : "오후";
+    const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+    const minutes = minuteText && minuteText !== "00" ? ` ${minuteText}분` : "";
+    return `${period} ${hour12}시${minutes}`;
+  })();
 
   useEffect(() => {
     setHeaderContent(<span className="text-xl font-semibold text-black">내 정보</span>);
@@ -30,7 +62,7 @@ export function MyInfoStackPage() {
             >
               <input
                 type="email"
-                value="happy7yong@naver.com"
+                value={myProfile?.email ?? ""}
                 readOnly
                 className={inputClassName}
                 disabled
@@ -44,7 +76,7 @@ export function MyInfoStackPage() {
               >
                 <input
                   type="text"
-                  value="여"
+                  value={genderLabel}
                   readOnly
                   className={inputClassName}
                 />
@@ -56,7 +88,7 @@ export function MyInfoStackPage() {
               >
                 <input
                   type="text"
-                  value="1990.01.01"
+                  value={myProfile?.birth ?? ""}
                   readOnly
                   className={inputClassName}
                 />
@@ -70,7 +102,7 @@ export function MyInfoStackPage() {
               >
                 <input
                   type="text"
-                  value="쿠쿠루삥뽕"
+                  value={myProfile?.nickname ?? ""}
                   readOnly
                   className={inputClassName}
                 />
@@ -101,7 +133,7 @@ export function MyInfoStackPage() {
             >
               <input
                 type="text"
-                value="오전 8시 - 12시"
+                value={focusTimeLabel}
                 readOnly
                 className={inputClassName}
               />
@@ -113,7 +145,7 @@ export function MyInfoStackPage() {
             >
               <input
                 type="text"
-                value="오후 11시"
+                value={dayEndTimeLabel}
                 readOnly
                 className={inputClassName}
               />

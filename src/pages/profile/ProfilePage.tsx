@@ -1,10 +1,11 @@
 "use client";
 
 import type { UseFormRegisterReturn } from "react-hook-form";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { FormField, ProfileImageKeyInput } from "@/shared/form/ui";
 import { useStackPage } from "@/widgets/stack";
+import { useMyProfileQuery } from "@/entities/user";
 
 import { MyInfoStackPage } from "./MyInfoStackPage";
 
@@ -12,6 +13,7 @@ export function ProfilePage() {
   const { push } = useStackPage();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const previousPreviewUrlRef = useRef<string | null>(null);
+  const { data: myProfile } = useMyProfileQuery();
 
   const profileImageKeyRegister: UseFormRegisterReturn = {
     name: "profileImageKey",
@@ -21,7 +23,13 @@ export function ProfilePage() {
   };
 
   const errors = { profileImageKey: undefined as string | undefined };
-  const username = "쿠쿠루삥뽕";
+  const username = myProfile?.nickname ?? "";
+
+  useEffect(() => {
+    if (!previewUrl && myProfile?.profileImageUrl) {
+      setPreviewUrl(myProfile.profileImageUrl);
+    }
+  }, [myProfile?.profileImageUrl, previewUrl]);
 
   const handleFileSelect = (file: File | null) => {
     if (previousPreviewUrlRef.current) {
