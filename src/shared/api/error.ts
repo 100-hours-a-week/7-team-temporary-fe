@@ -14,3 +14,14 @@ export class ApiError<TData = unknown> extends Error {
     this.name = "ApiError";
   }
 }
+
+/**
+ * UiError (shared/infra)
+ * - 기준: 프론트 UX(type)
+ * - 목적: UI 분기 처리
+ */
+export interface UiError {
+  readonly code: string;
+  readonly expose: boolean;
+  readonly userMessage: string;
+}

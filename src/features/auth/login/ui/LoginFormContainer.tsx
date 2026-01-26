@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 
 import type { AuthState } from "@/shared/auth";
 import { useAuthStore } from "@/entities";
+import { useMutationErrorEffect } from "@/shared/query";
+
 import { useLoginForm, useLoginMutation } from "../model";
 import { useLoginErrorEffect } from "../model/useLoginErrorEffect";
 import { LoginForm } from "./LoginForm";
@@ -25,6 +27,7 @@ export function LoginFormContainer({ onGoToSignUp }: LoginFormContainerProps) {
 
   const onSubmit = handleSubmit((data) => mutation.mutate(data));
 
+  useMutationErrorEffect(mutation);
   useLoginErrorEffect(mutation, form);
 
   return (

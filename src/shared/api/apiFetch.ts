@@ -1,4 +1,4 @@
-import { ApiError } from "./error/error";
+import { ApiError } from "./error";
 import { AuthService } from "@/shared/auth";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -38,25 +38,33 @@ export async function apiFetch<TResponse, TBody = unknown>(
     signal,
   });
 
-  const json = (await res.json()) as ApiResponse<TResponse>;
+  if (res.status === 204) {
+    return undefined as TResponse;
+  }
+
+  const text = await res.text();
+  const json = text ? (JSON.parse(text) as ApiResponse<TResponse>) : null;
   console.log(json);
 
   // HTTP 실패
   if (!res.ok) {
-    //401 Unauthorized 면 토큰 갱신 시도
-    if (res.status === 401) {
-      await AuthService.refresh();
-    }
-
     throw new ApiError(
       res.status,
-      json?.status ?? "HTTP_ERROR",
-      json?.message ?? `HTTP ${res.status}`,
+      json?.code ?? json?.status ?? "HTTP_ERROR",
+      json?.message ?? res.statusText,
     );
   }
 
+  if (!text) {
+    return undefined as TResponse;
+  }
+
+  if (!json) {
+    return undefined as TResponse;
+  }
+
   // 비즈니스 실패 (HTTP 200이지만 status FAIL)
-  if (json?.status != "SUCCESS") {
+  if (json.status != "SUCCESS") {
     throw new ApiError(
       res.status,
       json.status ?? "BUSINESS_ERROR",
