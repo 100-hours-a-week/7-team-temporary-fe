@@ -36,7 +36,7 @@ export function MyInfoStackPage() {
                 disabled
               />
             </FormField>
-            <div className="flex gap-6">
+            <div className="flex items-end gap-6">
               <FormField
                 label="성별"
                 className="flex-1"

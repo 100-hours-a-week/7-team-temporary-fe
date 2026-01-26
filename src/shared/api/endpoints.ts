@@ -8,6 +8,7 @@ const path = (endpoint: string): string => `${API_BASE_URL}${endpoint}`;
 export const Endpoint = {
   TOKEN: {
     BASE: path("/token"),
+    REFRESH: path("/token"),
   },
   USER: {
     BASE: path("/users"),

@@ -1,9 +1,17 @@
+export type UserEmail = string;
+export type UserNickname = string;
+export type UserGender = "MALE" | "FEMALE";
+export type UserBirth = string; // YYYY.MM.DD
+export type UserFocusTimeZone = "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT";
+export type UserDayEndTime = string; // HH:MM
+export type UserProfileImageKey = string | null;
+
 export interface UserEntity {
-  email: string;
-  nickname: string;
-  gender: "MALE" | "FEMALE";
-  birth: string; // YYYY.MM.DD
-  focusTimeZone: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT";
-  dayEndTime: string; // HH:MM
-  profileImageKey?: string | null;
+  email: UserEmail;
+  nickname: UserNickname;
+  gender: UserGender;
+  birth: UserBirth;
+  focusTimeZone: UserFocusTimeZone;
+  dayEndTime: UserDayEndTime;
+  profileImageKey?: UserProfileImageKey;
 }

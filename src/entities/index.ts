@@ -1,3 +1,4 @@
+export { useAuthStore } from "../shared/auth";
 export type {
   UserEntity,
   UserEmail,
@@ -7,4 +8,4 @@ export type {
   UserFocusTimeZone,
   UserDayEndTime,
   UserProfileImageKey,
-} from "./types";
+} from "./user";

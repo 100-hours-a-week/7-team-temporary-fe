@@ -1,10 +1,12 @@
+import type { UserEmail } from "@/entities/user";
+
 export interface LoginFormModel {
-  email: string;
+  email: UserEmail;
   password: string;
 }
 
 export interface LoginRequestDto {
-  email: string;
+  email: UserEmail;
   password: string;
 }
 

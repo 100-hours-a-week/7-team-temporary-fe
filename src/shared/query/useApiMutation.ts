@@ -1,4 +1,6 @@
+import type { ApiError } from "@/shared/api";
 import { apiFetch } from "@/shared/api";
+import { mapCommonError } from "@/shared/api/error/common";
 
 interface UseApiMutationProps<TForm, TDto, TResult = void> {
   url: string | ((form: TForm) => string);
@@ -40,6 +42,10 @@ export function useApiMutation<TForm, TDto, TResult = void>({
           body: dto,
         });
       } catch (error) {
+        const commonError = mapCommonError(error as ApiError);
+        if (commonError) {
+          throw commonError;
+        }
         if (errorMapper) {
           throw errorMapper(error);
         }
