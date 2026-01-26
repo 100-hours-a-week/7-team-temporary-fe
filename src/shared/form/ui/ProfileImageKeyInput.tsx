@@ -23,12 +23,10 @@ export function ProfileImageKeyInput({
   onUploadError,
 }: ProfileImageKeyInputProps) {
   const inputId = register.name;
-  const { onChange: handleRegisterChange, ...registerProps } = register;
+  const { onChange: _ignoredOnChange, ...registerProps } = register;
 
   //파일 선택 시 실행되는 핸들러
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    // react-hook-form에 변경을 알리고 미리보기 URL을 갱신합니다.
-    handleRegisterChange(event);
     const file = event.target.files?.[0] ?? null; //사용자가 선택한 file
     //외부에서 파일 선택 감지
     try {
@@ -50,7 +48,10 @@ export function ProfileImageKeyInput({
       data-invalid={invalid || undefined}
     >
       <input
+        type="hidden"
         {...registerProps}
+      />
+      <input
         id={inputId}
         type="file"
         accept="image/*"
