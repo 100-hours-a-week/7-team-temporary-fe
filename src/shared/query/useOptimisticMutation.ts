@@ -4,7 +4,7 @@ interface UseOptimisticMutationProps<TVariables, TCache> {
   mutationFn: (variables: TVariables) => Promise<unknown>;
   queryKey: readonly unknown[];
   getOptimisticData: (previous: TCache | undefined, variables: TVariables) => TCache;
-  invalidateKeys: readonly unknown[][];
+  invalidateKeys: readonly (readonly unknown[])[];
 }
 
 export function useOptimisticMutation<TVariables, TCache>({
