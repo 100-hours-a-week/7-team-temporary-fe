@@ -10,6 +10,7 @@ interface UseApiMutationProps<TForm, TDto, TResult = void> {
   onError?: (error: unknown) => void;
   invalidateKeys?: Array<readonly unknown[]>;
   errorMapper?: (error: unknown) => Error;
+  credentials?: RequestCredentials;
 }
 import { useMutation } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
@@ -29,6 +30,7 @@ export function useApiMutation<TForm, TDto, TResult = void>({
   onError: handleError,
   invalidateKeys = [],
   errorMapper,
+  credentials,
 }: UseApiMutationProps<TForm, TDto, TResult>) {
   const queryClient = useQueryClient();
 
@@ -40,6 +42,7 @@ export function useApiMutation<TForm, TDto, TResult = void>({
         return await apiFetch<TResult, TDto>(apiUrl, {
           method,
           body: dto,
+          credentials,
         });
       } catch (error) {
         const commonError = mapCommonError(error as ApiError);
