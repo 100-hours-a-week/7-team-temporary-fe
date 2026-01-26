@@ -1,4 +1,5 @@
 import { ApiError } from "./error/error";
+import { AuthService } from "@/shared/auth";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -42,6 +43,11 @@ export async function apiFetch<TResponse, TBody = unknown>(
 
   // HTTP 실패
   if (!res.ok) {
+    //401 Unauthorized 면 토큰 갱신 시도
+    if (res.status === 401) {
+      await AuthService.refresh();
+    }
+
     throw new ApiError(
       res.status,
       json?.status ?? "HTTP_ERROR",
