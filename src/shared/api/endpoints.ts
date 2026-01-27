@@ -12,6 +12,7 @@ export const Endpoint = {
   },
   USER: {
     BASE: path("/users"),
+    IMAGE: path("/users/image"),
     CHECK: {
       NICKNAME: (nickname: string) => path(`/users?nickname=${encodeURIComponent(nickname)}`),
 

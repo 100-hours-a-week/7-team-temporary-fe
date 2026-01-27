@@ -9,11 +9,13 @@ export type {
   UserProfileImageKey,
   MyProfileModel,
   UpdateMyProfileModel,
+  UpdateMyProfileImageModel,
 } from "./model/types";
 
 export {
   useMyProfileQuery,
   useUpdateMyProfileMutation,
+  useUpdateMyProfileImageMutation,
   userQueryKeys,
   toMyProfileModel,
   toUpdateMyProfileRequestDto,

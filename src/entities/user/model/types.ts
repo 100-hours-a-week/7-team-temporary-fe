@@ -28,3 +28,8 @@ export interface UpdateMyProfileModel {
   dayEndTime: UserDayEndTime;
   nickname: UserNickname;
 }
+
+export interface UpdateMyProfileImageModel {
+  imageKey: string;
+  profileImageUrl?: string | null;
+}

@@ -19,3 +19,7 @@ export interface UpdateMyProfileRequestDto {
   dayEndTime: string;
   nickname: string;
 }
+
+export interface UpdateMyProfileImageRequestDto {
+  imageKey: string;
+}
