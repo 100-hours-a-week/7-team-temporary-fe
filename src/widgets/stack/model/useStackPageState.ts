@@ -59,26 +59,23 @@ export function useStackPageState(): StackPageContextValue {
     };
   }, [poppingKey]);
 
-  const setHeaderContent = useCallback(
-    (content: ReactNode | null, entryKey: string | null) => {
-      if (!entryKey) {
-        setBaseHeaderContent((prev) => (prev === content ? prev : content));
-        return;
-      }
+  const setHeaderContent = useCallback((content: ReactNode | null, entryKey: string | null) => {
+    if (!entryKey) {
+      setBaseHeaderContent((prev) => (prev === content ? prev : content));
+      return;
+    }
 
-      setStack((prev) =>
-        prev.map((entry) => {
-          if (entry.key !== entryKey) return entry;
-          if (entry.headerContent === content) return entry;
-          return { ...entry, headerContent: content };
-        }),
-      );
-    },
-    [],
-  );
+    setStack((prev) =>
+      prev.map((entry) => {
+        if (entry.key !== entryKey) return entry;
+        if (entry.headerContent === content) return entry;
+        return { ...entry, headerContent: content };
+      }),
+    );
+  }, []);
 
   const headerContent =
-    stack.length > 0 ? stack[stack.length - 1]?.headerContent ?? null : baseHeaderContent;
+    stack.length > 0 ? (stack[stack.length - 1]?.headerContent ?? null) : baseHeaderContent;
 
   return useMemo(
     () => ({
