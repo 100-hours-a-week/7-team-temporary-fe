@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { BottomSheet } from "@/shared/ui";
 import { BASE_INPUT_CLASS_NAME, FormField } from "@/shared/form/ui";
 import { PrimaryButton } from "@/shared/ui/button";
+import { useToast } from "@/shared/ui/toast";
 import { useUpdatePasswordMutation } from "@/entities/user";
 
 import { usePasswordChangeForm } from "../model/usePasswordChangeForm";
@@ -23,7 +24,12 @@ export function PasswordChangeSheet({
   onSubmit,
   closeOnSubmit = true,
 }: PasswordChangeSheetProps) {
-  const mutation = useUpdatePasswordMutation();
+  const { showToast } = useToast();
+  const mutation = useUpdatePasswordMutation({
+    onSuccess: () => {
+      showToast("비밀번호가 변경되었습니다.", "success");
+    },
+  });
   const form = usePasswordChangeForm({
     onValid: (values) => {
       mutation.mutate(values, {
