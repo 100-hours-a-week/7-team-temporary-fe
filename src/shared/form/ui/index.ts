@@ -1,4 +1,4 @@
-export { BaseInput } from "./BaseInput";
+export { BaseInput, BASE_INPUT_CLASS_NAME } from "./BaseInput";
 export { BirthDateInput } from "./BirthDateInput";
 export { DayEndTimeInput } from "./DayEndTimeInput";
 export { EmailInput } from "./EmailInput";
