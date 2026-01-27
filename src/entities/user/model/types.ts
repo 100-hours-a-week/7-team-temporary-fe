@@ -33,3 +33,8 @@ export interface UpdateMyProfileImageModel {
   imageKey: string;
   profileImageUrl?: string | null;
 }
+
+export interface UpdatePasswordModel {
+  password: string;
+  passwordConfirm: string;
+}

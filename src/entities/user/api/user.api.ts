@@ -5,9 +5,14 @@ import type {
   MyProfileResponseDto,
   UpdateMyProfileRequestDto,
   UpdateMyProfileImageRequestDto,
+  UpdatePasswordRequestDto,
 } from "./types";
-import type { MyProfileModel, UpdateMyProfileModel } from "../model/types";
-import { toMyProfileModel, toUpdateMyProfileRequestDto } from "../model/mappers";
+import type { MyProfileModel, UpdateMyProfileModel, UpdatePasswordModel } from "../model/types";
+import {
+  toMyProfileModel,
+  toUpdateMyProfileRequestDto,
+  toUpdatePasswordRequestDto,
+} from "../model/mappers";
 
 export async function fetchMyProfile(signal?: AbortSignal): Promise<MyProfileModel> {
   return AuthService.refreshAndRetry(async () => {
@@ -34,6 +39,16 @@ export async function updateMyProfileImage(imageKey: string): Promise<void> {
     await apiFetch<void, UpdateMyProfileImageRequestDto>(Endpoint.USER.IMAGE, {
       method: "PATCH",
       body: { imageKey },
+      authRequired: true,
+    });
+  });
+}
+
+export async function updatePassword(model: UpdatePasswordModel): Promise<void> {
+  return AuthService.refreshAndRetry(async () => {
+    await apiFetch<void, UpdatePasswordRequestDto>(Endpoint.USER.PASSWORD, {
+      method: "PATCH",
+      body: toUpdatePasswordRequestDto(model),
       authRequired: true,
     });
   });
