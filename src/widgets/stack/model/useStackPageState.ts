@@ -11,11 +11,11 @@ const createStackKey = () => crypto.randomUUID();
 export function useStackPageState(): StackPageContextValue {
   const [stack, setStack] = useState<StackEntry[]>([]);
   const [poppingKey, setPoppingKey] = useState<string | null>(null);
-  const [headerContent, setHeaderContent] = useState<ReactNode | null>(null);
+  const [baseHeaderContent, setBaseHeaderContent] = useState<ReactNode | null>(null);
 
   const push = useCallback((element: StackEntry["element"]) => {
     setStack((prev) => {
-      const next = [...prev, { key: createStackKey(), element }];
+      const next = [...prev, { key: createStackKey(), element, headerContent: null }];
       window.history.pushState({ stackDepth: next.length }, "");
       return next;
     });
@@ -59,6 +59,24 @@ export function useStackPageState(): StackPageContextValue {
     };
   }, [poppingKey]);
 
+  const setHeaderContent = useCallback((content: ReactNode | null, entryKey: string | null) => {
+    if (!entryKey) {
+      setBaseHeaderContent((prev) => (prev === content ? prev : content));
+      return;
+    }
+
+    setStack((prev) =>
+      prev.map((entry) => {
+        if (entry.key !== entryKey) return entry;
+        if (entry.headerContent === content) return entry;
+        return { ...entry, headerContent: content };
+      }),
+    );
+  }, []);
+
+  const headerContent =
+    stack.length > 0 ? (stack[stack.length - 1]?.headerContent ?? null) : baseHeaderContent;
+
   return useMemo(
     () => ({
       push,
@@ -69,6 +87,6 @@ export function useStackPageState(): StackPageContextValue {
       headerContent,
       setHeaderContent,
     }),
-    [push, pop, stack, poppingKey, headerContent],
+    [push, pop, stack, poppingKey, headerContent, setHeaderContent],
   );
 }

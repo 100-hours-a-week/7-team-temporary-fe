@@ -14,7 +14,7 @@ export function BottomNav() {
   const { activeTab, setActiveTab } = useTab();
 
   return (
-    <nav className="border-secondary-200 fixed bottom-0 left-1/2 z-50 mb-8 w-full max-w-[420px] -translate-x-1/2 border-t bg-white px-6 py-3">
+    <nav className="border-secondary-200 fixed bottom-0 left-1/2 z-50 mb-0 w-full max-w-[420px] -translate-x-1/2 border-t bg-white px-6 pt-3 pb-[43px]">
       <ul className="flex items-center justify-center gap-[19px]">
         {TAB_ITEMS.map((item) => {
           const isActive = activeTab === item.id;
