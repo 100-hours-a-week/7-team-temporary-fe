@@ -10,7 +10,7 @@ import {
   STACK_PAGE_OVERLAY_CLASS,
   STACK_PAGE_OVERLAY_EXIT_CLASS,
 } from "../model/constants";
-import { useStackPage } from "../model/stackPageContext";
+import { StackPageEntryContext, useStackPage } from "../model/stackPageContext";
 import { StackHeader } from "./StackHeader";
 
 interface StackPageScopeProps {
@@ -78,7 +78,9 @@ export function StackPageScope({
           pageClassName,
         )}
       >
-        {renderBasePage(children)}
+        <StackPageEntryContext.Provider value={{ entryKey: null }}>
+          {renderBasePage(children)}
+        </StackPageEntryContext.Provider>
       </div>
       {stack.map((entry, index) => (
         <div
@@ -92,7 +94,9 @@ export function StackPageScope({
           )}
           style={{ zIndex: index + 1 }}
         >
-          {renderOverlayPage(entry.element, header)}
+          <StackPageEntryContext.Provider value={{ entryKey: entry.key }}>
+            {renderOverlayPage(entry.element, header)}
+          </StackPageEntryContext.Provider>
         </div>
       ))}
     </Component>

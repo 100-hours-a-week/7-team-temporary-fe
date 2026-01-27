@@ -29,6 +29,7 @@ export function StackHeader({
             label={actionLabel}
             onClick={onActionClick}
             className="w-fit p-0 align-middle text-sm text-black"
+            iconClassName="h-6 w-6 text-black"
           />
         ) : null
       }
