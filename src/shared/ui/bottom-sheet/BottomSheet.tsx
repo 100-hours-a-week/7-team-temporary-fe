@@ -99,8 +99,7 @@ export function BottomSheet({
   const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (!dragStartRef.current) return;
     const deltaPx = dragStartRef.current.startY - event.clientY;
-    const deltaHeight =
-      heightUnit === "vh" ? (deltaPx / window.innerHeight) * 100 : deltaPx;
+    const deltaHeight = heightUnit === "vh" ? (deltaPx / window.innerHeight) * 100 : deltaPx;
     const nextHeight = Math.min(
       expandHeight,
       Math.max(peekHeight, dragStartRef.current.startHeight + deltaHeight),
