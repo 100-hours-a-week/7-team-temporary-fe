@@ -9,6 +9,7 @@ export function useSignUpMutation(options: { onSuccess?: (data: SignUpResult) =>
     url: Endpoint.USER.BASE,
     method: "POST",
     dtoFn: toSignUpRequestDto,
+    credentials: "include",
     onSuccess: (data) => options.onSuccess?.(data),
     errorMapper: (error) => {
       if (error instanceof ApiError) {

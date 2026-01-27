@@ -15,6 +15,7 @@ export function useLoginMutation(options: UseLoginMutationOptions = {}) {
     method: "POST",
     dtoFn: toLoginRequestDto,
     invalidateKeys: [],
+    credentials: "include",
     onSuccess: options.onSuccess,
     errorMapper: (error) => {
       if (error instanceof ApiError) {
