@@ -13,7 +13,7 @@
       "jsx": true
     }
   },
-  "plugins": ["@typescript-eslint", "boundaries", "import", "storybook"],
+  "plugins": ["@typescript-eslint", "boundaries", "import", "unused-imports", "storybook"],
   "env": {
     "browser": true,
     "node": true
@@ -39,7 +39,43 @@
     "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/consistent-type-imports": "warn",
+    "unused-imports/no-unused-imports": "error",
     "react-hooks/exhaustive-deps": "warn",
+    "import/order": [
+      "error",
+      {
+        "alphabetize": { "order": "asc", "caseInsensitive": true },
+        "newlines-between": "always",
+        "groups": [
+          "builtin",
+          "external",
+          "internal",
+          "parent",
+          "sibling",
+          "index",
+          "object",
+          "type"
+        ],
+        "pathGroups": [
+          {
+            "pattern": "@/**",
+            "group": "internal",
+            "position": "after"
+          },
+          {
+            "pattern": "**/*.css",
+            "group": "index",
+            "position": "after"
+          },
+          {
+            "pattern": "**/*.scss",
+            "group": "index",
+            "position": "after"
+          }
+        ],
+        "pathGroupsExcludedImportTypes": ["builtin"]
+      }
+    ],
     "boundaries/element-types": [
       "error",
       {
