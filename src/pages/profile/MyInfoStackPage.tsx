@@ -57,6 +57,7 @@ export function MyInfoStackPage() {
   }, [form, myProfile]);
 
   const isSaving = updateMutation.isPending || form.formState.isSubmitting;
+  const isDirty = form.formState.isDirty;
 
   const handleSave = form.handleSubmit((values) => updateMutation.mutate(values));
 
@@ -170,7 +171,7 @@ export function MyInfoStackPage() {
         <PrimaryButton
           type="submit"
           className="w-full"
-          disabled={isSaving}
+          disabled={isSaving || !isDirty}
         >
           {isSaving ? "저장 중..." : "저장"}
         </PrimaryButton>

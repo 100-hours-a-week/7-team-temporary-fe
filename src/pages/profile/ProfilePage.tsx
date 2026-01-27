@@ -1,19 +1,21 @@
 "use client";
 
 import type { UseFormRegisterReturn } from "react-hook-form";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { FormField, ProfileImageKeyInput } from "@/shared/form/ui";
 import { useStackPage } from "@/widgets/stack";
-import { useMyProfileQuery } from "@/entities/user";
+import { useMyProfileQuery, useUpdateMyProfileImageMutation } from "@/entities/user";
+import { useProfileImagePresign } from "@/features/image/model";
 
 import { MyInfoStackPage } from "./MyInfoStackPage";
 
 export function ProfilePage() {
   const { push } = useStackPage();
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const previousPreviewUrlRef = useRef<string | null>(null);
   const { data: myProfile } = useMyProfileQuery();
+  const { handleFileSelect, previewUrl, imageKey, isUploading } = useProfileImagePresign();
+  const updateImageMutation = useUpdateMyProfileImageMutation();
+  const lastImageKeyRef = useRef<string | null>(null);
 
   const profileImageKeyRegister: UseFormRegisterReturn = {
     name: "profileImageKey",
@@ -26,30 +28,19 @@ export function ProfilePage() {
   const username = myProfile?.nickname ?? "";
 
   useEffect(() => {
-    if (!previewUrl && myProfile?.profileImageUrl) {
-      setPreviewUrl(myProfile.profileImageUrl);
-    }
-  }, [myProfile?.profileImageUrl, previewUrl]);
-
-  const handleFileSelect = (file: File | null) => {
-    if (previousPreviewUrlRef.current) {
-      URL.revokeObjectURL(previousPreviewUrlRef.current);
-      previousPreviewUrlRef.current = null;
-    }
-
-    if (!file) {
-      setPreviewUrl(null);
-      return;
-    }
-
-    const nextPreviewUrl = URL.createObjectURL(file);
-    previousPreviewUrlRef.current = nextPreviewUrl;
-    setPreviewUrl(nextPreviewUrl);
-  };
+    if (!imageKey || imageKey === lastImageKeyRef.current) return;
+    lastImageKeyRef.current = imageKey;
+    updateImageMutation.mutate({
+      imageKey,
+      profileImageUrl: previewUrl ?? null,
+    });
+  }, [imageKey, previewUrl, updateImageMutation]);
 
   const handleOpenMyInfo = () => {
     push(<MyInfoStackPage />);
   };
+
+  const resolvedPreviewUrl = previewUrl ?? myProfile?.profileImageUrl ?? null;
 
   return (
     <div className="px-6 py-10">
@@ -62,8 +53,9 @@ export function ProfilePage() {
         <ProfileImageKeyInput
           register={profileImageKeyRegister}
           invalid={Boolean(errors.profileImageKey)}
-          previewUrl={previewUrl}
+          previewUrl={resolvedPreviewUrl}
           onFileSelect={handleFileSelect}
+          isDisabled={isUploading || updateImageMutation.isPending}
         />
         <div className="mt-4 text-center text-lg font-semibold text-neutral-900">{username}</div>
       </FormField>
