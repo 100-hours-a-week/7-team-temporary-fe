@@ -10,7 +10,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "depcruise": "depcruise src --config dependency-cruiser.js",
-    "prepare": "husky install",
+    "prepare": "command -v husky >/dev/null 2>&1 && husky install || true",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
