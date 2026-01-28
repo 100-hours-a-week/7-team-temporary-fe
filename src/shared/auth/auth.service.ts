@@ -42,7 +42,13 @@ export const AuthService = {
     }
   },
 
-  logout() {
-    useAuthStore.getState().clearAuth();
+  async logout() {
+    try {
+      await apiFetch<void>(Endpoint.TOKEN.BASE, { method: "DELETE", authRequired: true });
+    } catch (error) {
+      console.warn("[AuthService] logout failed", error);
+    } finally {
+      useAuthStore.getState().clearAuth();
+    }
   },
 };
