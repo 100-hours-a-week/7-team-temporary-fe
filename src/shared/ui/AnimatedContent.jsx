@@ -1,3 +1,5 @@
+"use client";
+
 import { useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -6,7 +8,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const AnimatedContent = ({
   children,
-  container,
+  container = undefined,
   distance = 100,
   direction = "vertical",
   reverse = false,
@@ -20,9 +22,11 @@ const AnimatedContent = ({
   disappearAfter = 0,
   disappearDuration = 0.5,
   disappearEase = "power3.in",
-  onComplete,
-  onDisappearanceComplete,
+  disappearDirection = "auto",
+  onComplete = undefined,
+  onDisappearanceComplete = undefined,
   className = "",
+  useScrollTrigger = true,
   ...props
 }) => {
   const ref = useRef(null);
@@ -54,8 +58,18 @@ const AnimatedContent = ({
       onComplete: () => {
         if (onComplete) onComplete();
         if (disappearAfter > 0) {
+          const resolveDisappearOffset = () => {
+            if (disappearDirection === "auto") {
+              return reverse ? distance : -distance;
+            }
+            if (disappearDirection === "down" || disappearDirection === "right") {
+              return distance;
+            }
+            return -distance;
+          };
+
           gsap.to(el, {
-            [axis]: reverse ? distance : -distance,
+            [axis]: resolveDisappearOffset(),
             scale: 0.8,
             opacity: animateOpacity ? initialOpacity : 0,
             delay: disappearAfter,
@@ -75,16 +89,24 @@ const AnimatedContent = ({
       ease,
     });
 
-    const st = ScrollTrigger.create({
-      trigger: el,
-      scroller: scrollerTarget,
-      start: `top ${startPct}%`,
-      once: true,
-      onEnter: () => tl.play(),
-    });
+    if (useScrollTrigger) {
+      const st = ScrollTrigger.create({
+        trigger: el,
+        scroller: scrollerTarget,
+        start: `top ${startPct}%`,
+        once: true,
+        onEnter: () => tl.play(),
+      });
 
+      return () => {
+        st.kill();
+        tl.kill();
+      };
+    }
+
+    const frame = requestAnimationFrame(() => tl.play());
     return () => {
-      st.kill();
+      cancelAnimationFrame(frame);
       tl.kill();
     };
   }, [
@@ -102,8 +124,10 @@ const AnimatedContent = ({
     disappearAfter,
     disappearDuration,
     disappearEase,
+    disappearDirection,
     onComplete,
     onDisappearanceComplete,
+    useScrollTrigger,
   ]);
 
   return (
