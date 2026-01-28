@@ -11,6 +11,15 @@ export { NICKNAME_ERRORS } from "./nickname";
 export { GENDER_ERRORS } from "./gender";
 export { BIRTH_ERRORS } from "./birth";
 export { DAY_END_TIME_ERRORS } from "./dayEndTime";
+export {
+  TASK_CONTENT_ERRORS,
+  TASK_DURATION_ERRORS,
+  TASK_TIME_ERRORS,
+  TASK_DURATION_OPTIONS,
+  getTaskContentError,
+  getTaskTimeRangeError,
+} from "./task";
+export type { TaskDurationOption } from "./task";
 
 export {
   EMAIL_ALLOWED_CHAR_REGEX,
