@@ -29,12 +29,12 @@ export function PlannerEditStackPage() {
 
   return (
     <>
-      <div className="px-6 py-8 pb-32">
+      <div className="px-6 pt-[13px] pb-32">
         <div className="mb-4 text-[18px] font-semibold text-neutral-900">
           {today.getMonth() + 1}월 {today.getDate()}일{" "}
           {["일", "월", "화", "수", "목", "금", "토"][today.getDay()]}
         </div>
-        <div className="flex justify-end">
+        <div className="flex items-start justify-end">
           <TaskBasketButton onClick={handleOpenTaskBasket} />
         </div>
         <div className="text-base text-neutral-500">
@@ -47,8 +47,8 @@ export function PlannerEditStackPage() {
         onOpenChange={setIsSheetOpen}
         expanded={isSheetExpanded}
         onExpandedChange={setIsSheetExpanded}
-        peekHeight={30}
-        expandHeight={85}
+        peekHeight={12}
+        expandHeight={35}
         enableDragHandle
         className="pb-[env(safe-area-inset-bottom)]"
       >
