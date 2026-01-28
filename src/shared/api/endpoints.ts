@@ -25,4 +25,7 @@ export const Endpoint = {
     PRESIGNED_URL: path("/images"),
     VIEW: (imageKey: string) => path(`/images/${imageKey}`), // GET
   },
+  DAY_PLAN: {
+    SCHEDULE: path("/day-plan/schedule"),
+  },
 } as const;
