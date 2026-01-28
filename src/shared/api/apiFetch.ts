@@ -77,6 +77,15 @@ export async function apiFetch<TResponse, TBody = unknown>(
 
   // HTTP 실패
   if (!res.ok) {
+    if (res.status === 401) {
+      useAuthStore.getState().clearAuth();
+      if (typeof window !== "undefined") {
+        const { pathname } = window.location;
+        if (pathname !== "/login") {
+          window.location.assign("/login");
+        }
+      }
+    }
     const fallbackCode = res.status === 401 ? "UNAUTHORIZED" : "HTTP_ERROR";
     throw new ApiError(
       res.status,
