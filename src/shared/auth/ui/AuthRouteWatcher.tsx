@@ -16,15 +16,9 @@ export function AuthRouteWatcher() {
   const router = useRouter();
   const pathname = usePathname();
   const accessToken = useAuthStore((state) => state.accessToken);
-  const hasMountedRef = useRef(false);
 
   useEffect(() => {
     if (!pathname) return;
-
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return;
-    }
 
     const isPublic = isPublicPath(pathname);
 
