@@ -1,9 +1,9 @@
-interface HomeActionButtonProps {
+interface ActionButtonProps {
   buttonText: string;
   onClick: () => void;
 }
 
-export function HomeActionButton({ buttonText, onClick }: HomeActionButtonProps) {
+export function ActionButton({ buttonText, onClick }: ActionButtonProps) {
   return (
     <button
       type="button"

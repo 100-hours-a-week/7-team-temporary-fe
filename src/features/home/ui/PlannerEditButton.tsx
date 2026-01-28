@@ -1,4 +1,4 @@
-import { HomeActionButton } from "./HomeActionButton";
+import { ActionButton } from "@/shared/ui/button";
 
 interface PlannerEditButtonProps {
   onClick: () => void;
@@ -6,7 +6,7 @@ interface PlannerEditButtonProps {
 
 export function PlannerEditButton({ onClick }: PlannerEditButtonProps) {
   return (
-    <HomeActionButton
+    <ActionButton
       buttonText="플래너 수정"
       onClick={onClick}
     />
