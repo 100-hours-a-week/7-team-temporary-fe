@@ -77,10 +77,11 @@ export function ProfilePage() {
           내 정보
         </button>
       </div>
-      <div className="mt-12 flex justify-center">
+      <div className="mt-12 flex items-center justify-center">
         <ActionButton
           buttonText="로그아웃"
           onClick={handleLogout}
+          className="border-[color:var(--color-ink-300)] text-[color:var(--color-ink-300)]"
         />
       </div>
     </div>
