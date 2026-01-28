@@ -9,7 +9,7 @@ function isPublicPath(pathname: string) {
 }
 
 export function middleware(request: NextRequest) {
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NEXT_PUBLIC_ENABLE_MIDDLEWARE !== "true") {
     return NextResponse.next();
   }
 
@@ -26,7 +26,3 @@ export function middleware(request: NextRequest) {
 
   return NextResponse.next();
 }
-
-export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
-};
