@@ -17,6 +17,7 @@ import type {
   DayPlanScheduleItemDto,
 } from "@/features/home/api";
 import { createDayPlanSchedule } from "@/features/home/api";
+import { useMutationErrorEffect } from "@/shared/query";
 import { BottomSheet } from "@/shared/ui";
 import { FormField, BASE_INPUT_CLASS_NAME } from "@/shared/form/ui";
 import { PrimaryButton } from "@/shared/ui/button";
@@ -65,6 +66,7 @@ export function TaskBasketAddSheet({
       return createDayPlanSchedule(dayPlanId, payload);
     },
   });
+  useMutationErrorEffect(createScheduleMutation);
 
   const mapDurationToApi = (duration: TaskDurationOption | null) => {
     if (!duration) return undefined;
@@ -177,7 +179,6 @@ export function TaskBasketAddSheet({
       handleClose();
     } catch (error) {
       console.error(error);
-      showToast("할 일 추가에 실패했습니다.", "error");
     }
   };
 
