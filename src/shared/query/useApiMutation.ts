@@ -19,7 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
  * API 뮤테이션 공통 훅 모듈
  * - dto 변환 후 apiFetch 호출
  * - 성공 시 캐시 무효화 및 onSuccess 실행
- * - 에러는 호출부에서 처리
+ * - throw 되면 mutation.error 로 전달
  * - 항상 틀만 제공, 구체적인 API 정보 및 에러는 호출부에서 전달
  */
 export function useApiMutation<TForm, TDto, TResult = void>({

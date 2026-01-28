@@ -23,3 +23,8 @@ export interface UpdateMyProfileRequestDto {
 export interface UpdateMyProfileImageRequestDto {
   imageKey: string;
 }
+
+export interface UpdatePasswordRequestDto {
+  newPassword: string;
+  checkNewPassword: string;
+}

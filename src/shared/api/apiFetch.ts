@@ -58,6 +58,8 @@ export async function apiFetch<TResponse, TBody = unknown>(
     credentials: resolvedCredentials,
   });
 
+  console.log("[apiFetch] response received", res, { url, status: res.status });
+
   if (res.status === 204) {
     return undefined as TResponse;
   }

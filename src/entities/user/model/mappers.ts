@@ -1,5 +1,9 @@
-import type { MyProfileResponseDto, UpdateMyProfileRequestDto } from "../api/types";
-import type { MyProfileModel, UpdateMyProfileModel } from "./types";
+import type {
+  MyProfileResponseDto,
+  UpdateMyProfileRequestDto,
+  UpdatePasswordRequestDto,
+} from "../api/types";
+import type { MyProfileModel, UpdateMyProfileModel, UpdatePasswordModel } from "./types";
 
 const normalizeBirth = (birth: string) =>
   birth.includes("-") ? birth.replaceAll("-", ".") : birth;
@@ -24,4 +28,11 @@ export const toUpdateMyProfileRequestDto = (
   focusTimeZone: model.focusTimeZone,
   dayEndTime: model.dayEndTime,
   nickname: model.nickname,
+});
+
+export const toUpdatePasswordRequestDto = (
+  model: UpdatePasswordModel,
+): UpdatePasswordRequestDto => ({
+  newPassword: model.password,
+  checkNewPassword: model.passwordConfirm,
 });
