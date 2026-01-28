@@ -12,6 +12,7 @@ import {
 
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { BASE_INPUT_CLASS_NAME, FormField } from "@/shared/form/ui";
+import { useToast } from "@/shared/ui/toast";
 import { PasswordChangeSheet } from "@/features/profile/password-change";
 
 const focusTimeOptions = [
@@ -24,6 +25,7 @@ const focusTimeOptions = [
 export function MyInfoStackPage() {
   const { setHeaderContent } = useStackPage();
   const { data: myProfile } = useMyProfileQuery();
+  const { showToast } = useToast();
   const updateMutation = useUpdateMyProfileMutation();
   const [isPasswordSheetOpen, setIsPasswordSheetOpen] = useState(false);
 
@@ -59,7 +61,13 @@ export function MyInfoStackPage() {
   const isSaving = updateMutation.isPending || form.formState.isSubmitting;
   const isDirty = form.formState.isDirty;
 
-  const handleSave = form.handleSubmit((values) => updateMutation.mutate(values));
+  const handleSave = form.handleSubmit((values) =>
+    updateMutation.mutate(values, {
+      onSuccess: () => {
+        showToast("저장되었습니다.", "success");
+      },
+    }),
+  );
 
   return (
     <>
