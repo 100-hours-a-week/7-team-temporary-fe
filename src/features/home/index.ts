@@ -7,6 +7,7 @@ export { EditableTaskItem } from "./ui/EditableTaskItem";
 export { ExcludedTaskItem } from "./ui/ExcludedTaskItem";
 export { TodoList } from "./ui/TodoList";
 export { TaskBasketAddSheet } from "./task-basket";
+export { useDayPlanScheduleQuery } from "./model/useDayPlanScheduleQuery";
 
 export type {
   PlannerScheduleResponse,
