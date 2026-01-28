@@ -3,14 +3,24 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { TodoCartTaskItemModel } from "@/features/home";
-import { TaskBasketAddSheet, TodoList } from "@/features/home";
+import { TaskBasketAddSheet, TodoList, useDayPlanScheduleQuery } from "@/features/home";
 import { useStackPage } from "@/widgets/stack";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 
+const formatDateParam = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export function TaskBasketStackPage() {
   const { setHeaderContent } = useStackPage();
   const today = useMemo(() => new Date(), []);
+  const queryDate = useMemo(() => formatDateParam(today), [today]);
+  const { data } = useDayPlanScheduleQuery({ date: queryDate, page: 1, size: 1 });
+  const dayPlanId = data?.dayPlanId ?? null;
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [tasks, setTasks] = useState<TodoTask[]>([]);
@@ -55,6 +65,7 @@ export function TaskBasketStackPage() {
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         tasks={tasks}
+        dayPlanId={dayPlanId}
         onAddTask={(task) => setTasks((prev) => [task, ...prev])}
       />
     </>

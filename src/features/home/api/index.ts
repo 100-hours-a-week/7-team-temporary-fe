@@ -1,2 +1,7 @@
-export { fetchDayPlanSchedule } from "./dayPlan.api";
-export type { DayPlanScheduleItemDto, DayPlanScheduleResponseDto } from "./types";
+export { createDayPlanSchedule, fetchDayPlanSchedule } from "./dayPlan.api";
+export type {
+  CreateDayPlanScheduleRequestDto,
+  DayPlanScheduleDuration,
+  DayPlanScheduleItemDto,
+  DayPlanScheduleResponseDto,
+} from "./types";
