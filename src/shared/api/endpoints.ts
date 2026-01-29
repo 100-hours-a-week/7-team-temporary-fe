@@ -25,4 +25,20 @@ export const Endpoint = {
     PRESIGNED_URL: path("/images"),
     VIEW: (imageKey: string) => path(`/images/${imageKey}`), // GET
   },
+  TERMS: {
+    LIST: path("/terms"),
+  },
+  TERMS_SIGN: {
+    LIST: path("/terms-sign"),
+    UPDATE: (termsId: number) => path(`/terms-sign/${termsId}`),
+  },
+  DAY_PLAN: {
+    SCHEDULE: path("/day-plan/schedule"),
+    SCHEDULE_BY_ID: (dayPlanId: number) => path(`/day-plan/${dayPlanId}/schedule`),
+    AI_ARRANGEMENT: (dayPlanId: number) => path(`/day-plan/${dayPlanId}/schedules/ai-arrangement`),
+    SCHEDULES_BY_ID: (dayPlanId: number) => path(`/day-plan/${dayPlanId}/schedules`),
+  },
+  SCHEDULE: {
+    BY_ID: (scheduleId: number) => path(`/schedule/${scheduleId}`),
+  },
 } as const;

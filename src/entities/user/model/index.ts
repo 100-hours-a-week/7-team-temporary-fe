@@ -23,3 +23,4 @@ export { useMyProfileQuery } from "./useMyProfileQuery";
 export { useUpdateMyProfileMutation } from "./useUpdateMyProfileMutation";
 export { useUpdateMyProfileImageMutation } from "./useUpdateMyProfileImageMutation";
 export { useUpdatePasswordMutation } from "./useUpdatePasswordMutation";
+export { useDeleteMyProfileMutation } from "./useDeleteMyProfileMutation";

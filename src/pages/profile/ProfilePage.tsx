@@ -2,16 +2,20 @@
 
 import type { UseFormRegisterReturn } from "react-hook-form";
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 import { FormField, ProfileImageKeyInput } from "@/shared/form/ui";
 import { useStackPage } from "@/widgets/stack";
 import { useMyProfileQuery, useUpdateMyProfileImageMutation } from "@/entities/user";
 import { useProfileImagePresign } from "@/features/image/model";
+import { ActionButton } from "@/shared/ui/button";
+import { AuthService } from "@/shared/auth";
 
 import { MyInfoStackPage } from "./MyInfoStackPage";
 
 export function ProfilePage() {
   const { push } = useStackPage();
+  const router = useRouter();
   const { data: myProfile } = useMyProfileQuery();
   const { handleFileSelect, previewUrl, imageKey, isUploading } = useProfileImagePresign();
   const updateImageMutation = useUpdateMyProfileImageMutation();
@@ -38,6 +42,11 @@ export function ProfilePage() {
 
   const handleOpenMyInfo = () => {
     push(<MyInfoStackPage />);
+  };
+
+  const handleLogout = async () => {
+    await AuthService.logout();
+    // router.replace("/login");
   };
 
   const resolvedPreviewUrl = previewUrl ?? myProfile?.profileImageUrl ?? null;
@@ -67,6 +76,13 @@ export function ProfilePage() {
         >
           내 정보
         </button>
+      </div>
+      <div className="mt-12 flex items-center justify-center">
+        <ActionButton
+          buttonText="로그아웃"
+          onClick={handleLogout}
+          className="border-[color:var(--color-ink-300)] text-[color:var(--color-ink-300)]"
+        />
       </div>
     </div>
   );

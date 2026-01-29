@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect } from "react";
 
 import { FormProvider } from "react-hook-form";
 
+import type { SignUpResult } from "@/features/auth/sign-up/model";
 import { useSignUpForm, useSignUpMutation } from "@/features/auth/sign-up/model";
 import { useMutationErrorEffect } from "@/shared/query";
 import { useSignUpErrorEffect } from "@/pages/auth/sign-up/ui/useSignUpErrorEffect";
@@ -18,10 +19,11 @@ const SignUpFormContext = createContext<SignUpFormContextValue | null>(null);
 
 interface SignUpFormContainerProps {
   children: ReactNode;
+  onSuccess?: (data: SignUpResult) => void;
 }
 
-export function SignUpFormContainer({ children }: SignUpFormContainerProps) {
-  const mutation = useSignUpMutation();
+export function SignUpFormContainer({ children, onSuccess }: SignUpFormContainerProps) {
+  const mutation = useSignUpMutation({ onSuccess });
 
   const form = useSignUpForm({
     //useSignUpMutation이 만들어 둔 mutation을 호출하면서 현재 폼 formData를 넘겨서 api 요청

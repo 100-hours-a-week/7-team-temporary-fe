@@ -18,6 +18,7 @@ export {
   useUpdateMyProfileMutation,
   useUpdateMyProfileImageMutation,
   useUpdatePasswordMutation,
+  useDeleteMyProfileMutation,
   userQueryKeys,
   toMyProfileModel,
   toUpdateMyProfileRequestDto,

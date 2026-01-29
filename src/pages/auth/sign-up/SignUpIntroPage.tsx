@@ -11,14 +11,29 @@ import {
 import { FocusTimeStep, ProfileStep, SleepTimeStep, StartStep, TermsStep } from "./ui/steps/index";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { OnboardingStepBar } from "@/widgets/auth/onboarding/ui";
+import type { AuthState } from "@/shared/auth";
+import { useAuthStore } from "@/entities";
 import { useStackPage } from "@/widgets/stack";
+import { SignUpSuccessPage } from "./SignUpSuccessPage";
 
 /**
  * 회원가입 인트로 화면
  */
 export function SignUpIntroPage() {
+  const { push } = useStackPage();
+  const setAuthenticated = useAuthStore((state: AuthState) => state.setAuthenticated);
+  const setSuppressPublicRedirect = useAuthStore(
+    (state: AuthState) => state.setSuppressPublicRedirect,
+  );
+
   return (
-    <SignUpFormContainer>
+    <SignUpFormContainer
+      onSuccess={(data) => {
+        setSuppressPublicRedirect(true);
+        setAuthenticated(data.accessToken);
+        push(<SignUpSuccessPage />);
+      }}
+    >
       <SignUpIntroContent />
     </SignUpFormContainer>
   );

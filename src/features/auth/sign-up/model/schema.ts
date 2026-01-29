@@ -30,6 +30,26 @@ export const signUpFormSchema = z.object({
   focusTimeZone: z.enum(["MORNING", "AFTERNOON", "EVENING", "NIGHT"]),
   dayEndTime: z.string().refine(isDayEndTimeValid, DAY_END_TIME_ERRORS.INVALID_FORMAT),
   profileImageKey: z.string().nullable().optional().refine(isProfileImageKeyValid),
+  terms: z
+    .array(
+      z.object({
+        termsId: z.number(),
+        isAgreed: z.boolean(),
+      }),
+    )
+    .superRefine((terms, ctx) => {
+      const requiredIds = [1, 2];
+      const hasAllRequired = requiredIds.every(
+        (id) => terms.find((term) => term.termsId === id)?.isAgreed,
+      );
+      if (!hasAllRequired) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "필수 약관에 동의해주세요.",
+          path: ["terms"],
+        });
+      }
+    }),
 }) satisfies z.ZodType<SignUpFormModel>;
 
 export type SignUpFormErrors = Partial<Record<keyof SignUpFormModel, string>>;

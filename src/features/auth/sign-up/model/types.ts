@@ -9,10 +9,14 @@ export interface SignUpFormModel {
   focusTimeZone: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT" | "";
   dayEndTime: string; // HH:MM
   profileImageKey?: string | null;
+  terms: Array<{ termsId: number; isAgreed: boolean }>;
 }
 
-export type SignUpRequestDto = UserEntity & { password: string };
+export type SignUpRequestDto = UserEntity & {
+  password: string;
+  terms: Array<{ termsId: number; isAgreed: boolean }>;
+};
 
 export interface SignUpResult {
-  userId: number;
+  accessToken: string;
 }

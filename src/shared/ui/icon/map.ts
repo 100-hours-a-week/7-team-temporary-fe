@@ -1,5 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 
+import DeleteIcon from "./assets/Delete-icon.svg";
 import Edit from "./assets/Edit.svg";
 import LogoDefault from "./assets/logo-default.svg";
 import More from "./assets/More-icon.svg";
@@ -22,6 +23,7 @@ type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
 export const IconMap = {
   logoDefault: LogoDefault,
+  delete: DeleteIcon,
   edit: Edit,
   more: More,
   share: Share,

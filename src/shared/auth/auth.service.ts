@@ -3,6 +3,10 @@ import { useAuthStore } from "./auth.store";
 
 export const AuthService = {
   async refresh() {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[AuthService] refresh disabled in development");
+      return undefined;
+    }
     try {
       console.log("[AuthService] refresh start");
       const res = await apiFetch<{ accessToken: string }>(Endpoint.TOKEN.REFRESH, {
@@ -42,7 +46,13 @@ export const AuthService = {
     }
   },
 
-  logout() {
-    useAuthStore.getState().clearAuth();
+  async logout() {
+    try {
+      await apiFetch<void>(Endpoint.TOKEN.BASE, { method: "DELETE", authRequired: true });
+    } catch (error) {
+      console.warn("[AuthService] logout failed", error);
+    } finally {
+      useAuthStore.getState().clearAuth();
+    }
   },
 };
