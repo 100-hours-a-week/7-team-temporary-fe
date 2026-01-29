@@ -48,6 +48,8 @@ export function BottomSheet({
   const [isVisible, setIsVisible] = useState(open);
   const dragStartRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const closeTimeoutRef = useRef<number | null>(null);
+  const presentFrameRef = useRef<number | null>(null);
+  const presentFrame2Ref = useRef<number | null>(null);
 
   const isControlled = expanded !== undefined;
   const isExpanded = isControlled ? expanded : internalExpanded;
@@ -64,12 +66,26 @@ export function BottomSheet({
       window.clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
+    if (presentFrameRef.current) {
+      cancelAnimationFrame(presentFrameRef.current);
+      presentFrameRef.current = null;
+    }
+    if (presentFrame2Ref.current) {
+      cancelAnimationFrame(presentFrame2Ref.current);
+      presentFrame2Ref.current = null;
+    }
 
     if (open) {
       setIsVisible(true);
       setIsPresented(false);
-      const frame = requestAnimationFrame(() => setIsPresented(true));
-      return () => cancelAnimationFrame(frame);
+      const frame = requestAnimationFrame(() => {
+        presentFrame2Ref.current = requestAnimationFrame(() => setIsPresented(true));
+      });
+      presentFrameRef.current = frame;
+      return () => {
+        if (presentFrameRef.current) cancelAnimationFrame(presentFrameRef.current);
+        if (presentFrame2Ref.current) cancelAnimationFrame(presentFrame2Ref.current);
+      };
     }
 
     if (isVisible) {
@@ -86,6 +102,12 @@ export function BottomSheet({
     () => () => {
       if (closeTimeoutRef.current) {
         window.clearTimeout(closeTimeoutRef.current);
+      }
+      if (presentFrameRef.current) {
+        cancelAnimationFrame(presentFrameRef.current);
+      }
+      if (presentFrame2Ref.current) {
+        cancelAnimationFrame(presentFrame2Ref.current);
       }
     },
     [],
@@ -115,8 +137,9 @@ export function BottomSheet({
   const visibleHeight = dragHeight ?? baseHeight;
   const midpoint = (peekHeight + expandHeight) / 2;
   const sheetTransform = isPresented
-    ? `translateY(${sheetOffsetPx}px)`
+    ? "translateY(0px)"
     : `translateY(calc(100% + ${sheetOffsetPx}px))`;
+  const sheetOpacity = isPresented ? 1 : 0;
   const overlayOpacity = isPresented
     ? Math.max(0, Math.min(1, visibleHeight / expandHeight)) * maxOverlayOpacity
     : 0;
@@ -173,11 +196,11 @@ export function BottomSheet({
         className={cn(
           "mx-auto w-full max-w-[420px] rounded-t-2xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)]",
           "relative z-40",
-          "pointer-events-auto transition-[height,transform] duration-300 ease-out will-change-transform",
+          "pointer-events-auto transition-[height,transform,opacity] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
           isDragging && "transition-none",
           sheetClassName,
         )}
-        style={{ height: `${visibleHeight}${heightUnit}`, transform: sheetTransform }}
+        style={{ height: `${visibleHeight}${heightUnit}`, transform: sheetTransform, opacity: sheetOpacity }}
       >
         {enableDragHandle && (
           <button
