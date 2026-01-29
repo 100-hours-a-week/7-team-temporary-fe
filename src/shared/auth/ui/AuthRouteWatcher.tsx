@@ -16,6 +16,7 @@ export function AuthRouteWatcher() {
   const router = useRouter();
   const pathname = usePathname();
   const accessToken = useAuthStore((state) => state.accessToken);
+  const suppressPublicRedirect = useAuthStore((state) => state.suppressPublicRedirect);
 
   useEffect(() => {
     if (!pathname) return;
@@ -27,10 +28,10 @@ export function AuthRouteWatcher() {
       return;
     }
 
-    if (accessToken && isPublic) {
+    if (accessToken && isPublic && !suppressPublicRedirect) {
       router.replace(DEFAULT_PUBLIC_REDIRECT);
     }
-  }, [accessToken, pathname, router]);
+  }, [accessToken, pathname, router, suppressPublicRedirect]);
 
   return null;
 }

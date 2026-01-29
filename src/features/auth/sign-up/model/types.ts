@@ -18,5 +18,5 @@ export type SignUpRequestDto = UserEntity & {
 };
 
 export interface SignUpResult {
-  userId: number;
+  accessToken: string;
 }
