@@ -10,6 +10,7 @@ export { TaskBasketAddSheet } from "./task-basket";
 export { useDayPlanId } from "./model/useDayPlanId";
 export { useDayPlanScheduleQuery } from "./model/useDayPlanScheduleQuery";
 export { useDayPlanScheduleByIdQuery } from "./model/useDayPlanScheduleByIdQuery";
+export { homeQueryKeys } from "./model/queryKeys";
 
 export type {
   PlannerScheduleResponse,
