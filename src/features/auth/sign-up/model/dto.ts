@@ -11,4 +11,8 @@ export const toSignUpRequestDto = (form: SignUpFormModel): SignUpRequestDto => (
   focusTimeZone: form.focusTimeZone as "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT",
   dayEndTime: form.dayEndTime,
   profileImageKey: normalizeProfileImageKey(form.profileImageKey),
+  terms: form.terms.map((term) => ({
+    termsId: term.termsId,
+    isAgreed: term.isAgreed,
+  })),
 });

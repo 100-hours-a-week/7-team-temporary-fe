@@ -19,6 +19,7 @@ const DEFAULT_FORM: SignUpFormModel = {
   focusTimeZone: "",
   dayEndTime: "",
   profileImageKey: undefined,
+  terms: [],
 };
 
 //타입 : idle 초기 상태, valid 유효, invalid 실패
