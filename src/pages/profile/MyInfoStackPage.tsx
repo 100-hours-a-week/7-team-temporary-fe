@@ -328,14 +328,6 @@ export function MyInfoStackPage() {
         onOpenChange={setIsPasswordSheetOpen}
       />
 
-      {isTermsSheetOpen && (
-        <button
-          type="button"
-          aria-label="약관 변경 바텀 시트 닫기"
-          className="fixed inset-0 z-30 bg-black/50"
-          onClick={() => setIsTermsSheetOpen(false)}
-        />
-      )}
       <BottomSheet
         open={isTermsSheetOpen}
         onOpenChange={setIsTermsSheetOpen}

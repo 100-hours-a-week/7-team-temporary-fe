@@ -222,15 +222,6 @@ export function TaskBasketAddSheet({
 
   return (
     <>
-      {open && (
-        <button
-          type="button"
-          aria-label="할 일 추가 바텀 시트 닫기"
-          className="fixed inset-0 z-30 bg-black/50"
-          onClick={handleClose}
-        />
-      )}
-
       <BottomSheet
         open={open}
         onOpenChange={handleSheetOpenChange}
