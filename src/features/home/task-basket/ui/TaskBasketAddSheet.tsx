@@ -253,7 +253,7 @@ export function TaskBasketAddSheet({
             </FormField>
 
             <div className="flex flex-col gap-3">
-              <label className="flex items-center gap-2 text-base font-semibold text-neutral-900">
+              <label className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
                 <input
                   type="checkbox"
                   className="h-5 w-5 rounded border-neutral-300 text-neutral-900"
@@ -263,7 +263,7 @@ export function TaskBasketAddSheet({
               </label>
 
               {!isFixed && (
-                <div className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-neutral-500">
+                <div className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-[var(--color-ink-300)]">
                   고정 시간이 지정되어있지 않을 경우, AI가 잘 맞는 시간대로 배치합니다!
                 </div>
               )}
@@ -319,8 +319,8 @@ export function TaskBasketAddSheet({
             {!isFixed && (
               <>
                 <div className="flex flex-col gap-3">
-                  <div className="text-base font-semibold text-neutral-900">예상 소요 시간</div>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="text-sm font-semibold text-neutral-900">예상 소요 시간</div>
+                  <div className="flex flex-wrap gap-3 text-center text-[var(--color-gray-300)]">
                     {TASK_DURATION_OPTIONS.map((option) => {
                       const isSelected = duration === option;
                       return (
@@ -361,7 +361,7 @@ export function TaskBasketAddSheet({
                       max={10}
                       value={immersion}
                       {...register("immersion", { valueAsNumber: true })}
-                      className="h-2 w-full accent-neutral-900"
+                      className="h-2 w-full accent-[rgba(229,148,148,1)]"
                     />
                     <span className="text-sm text-neutral-400">10</span>
                   </div>
