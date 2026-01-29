@@ -6,8 +6,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "MOLIB",
-  description: "molib",
+  title: "MOLIP",
+  description: "molip",
 };
 
 export default function RootLayout({
