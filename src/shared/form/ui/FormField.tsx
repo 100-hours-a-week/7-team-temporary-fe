@@ -32,7 +32,7 @@ export function FormField({
 
   return (
     <div className={cn("flex w-full flex-col gap-1", className)}>
-      <label className={cn("text-sm font-medium text-neutral-900", labelClassName)}>
+      <label className={cn("text-sm font-semibold text-neutral-900", labelClassName)}>
         {label}
         {labelAdornment}
       </label>

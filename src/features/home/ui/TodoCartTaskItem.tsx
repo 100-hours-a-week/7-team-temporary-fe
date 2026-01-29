@@ -132,7 +132,7 @@ function getTimeMeta(task: TaskItemModel): MetaItem {
   if (task.timeType === "ESTIMATED") {
     return {
       label: "예상 소요시간",
-      value: task.estimatedTimeRange ?? EMPTY_TIME_TEXT,
+      value: formatEstimatedTimeRange(task.estimatedTimeRange),
       helper: FLEX_TIME_HELPER_TEXT,
     };
   }
@@ -146,6 +146,18 @@ function getTimeMeta(task: TaskItemModel): MetaItem {
 function formatTimeRange(startTime: string, endTime: string) {
   if (!startTime || !endTime) return EMPTY_TIME_TEXT;
   return `${startTime} ~ ${endTime}`;
+}
+
+function formatEstimatedTimeRange(value?: string | null) {
+  if (!value) return EMPTY_TIME_TEXT;
+  const labels: Record<string, string> = {
+    MINUTE_UNDER_30: "30분 미만",
+    MINUTE_30_TO_60: "30~60분",
+    HOUR_1_TO_2: "1~2시간",
+    HOUR_2_TO_4: "2~4시간",
+    HOUR_OVER_4: "4시간 이상",
+  };
+  return labels[value] ?? value;
 }
 
 function getBadges({
@@ -169,10 +181,10 @@ function getBadges({
 const Card = styled.article`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   border-radius: 18px;
   border: 1px solid #f1f5f9;
-  padding: 16px 18px 14px;
+  padding: 14px 21px 14px;
   background: #ffffff;
 `;
 
@@ -192,16 +204,20 @@ const Title = styled.div`
 const ActionRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: 0;
 `;
 
 const IconButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
+  box-sizing: content-box;
   border: none;
   background: #ffffff;
-  padding: 4px 8px;
+  padding: 0;
   font-size: 20px;
   color: #6b7280;
   cursor: pointer;
@@ -214,6 +230,7 @@ const IconButton = styled.button`
 const ActionIcon = styled(Icon)`
   width: 1.2em;
   height: 1.2em;
+  overflow: visible;
 `;
 
 const MetaList = styled.div`

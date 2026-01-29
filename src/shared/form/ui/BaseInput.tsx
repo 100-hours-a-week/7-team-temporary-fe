@@ -17,7 +17,7 @@ import { cn } from "@/shared/lib";
 export const BASE_INPUT_CLASS_NAME = [
   // base
   "h-12 w-full rounded-xl border px-3 py-2 text-sm",
-  "bg-neutral-50",
+  "bg-neutral-50 text-[var(--color-gray-600)]",
   "placeholder:text-gray-400",
 
   // default
