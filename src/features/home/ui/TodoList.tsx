@@ -10,7 +10,7 @@ type TodoListTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 
 interface TodoListProps {
   tasks: TodoListTask[];
-  onEdit: (scheduleId: number) => void;
+  onEdit: (task: TodoListTask) => void;
   onDelete: (scheduleId: number) => void;
   dayPlanId?: number | null;
   page?: number;
@@ -78,7 +78,7 @@ export function TodoList({
           key={task.scheduleId}
           task={task}
           viewMode="UNASSIGNED"
-          onEdit={onEdit}
+          onEdit={(item) => onEdit(item as TodoListTask)}
           onDelete={onDelete}
         />
       ))}
@@ -107,8 +107,6 @@ const ListContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 60vh;
-  overflow-y: auto;
 `;
 
 const EmptyState = styled.div`

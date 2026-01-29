@@ -1,11 +1,14 @@
 import { ApiError } from "@/shared/api";
 import { apiFetch } from "@/shared/api";
+import { AuthService } from "@/shared/auth";
 import { mapCommonError } from "@/shared/api/error/common";
 
 interface UseApiMutationProps<TForm, TDto, TResult = void> {
   url: string | ((form: TForm) => string);
   method: "POST" | "PUT" | "PATCH" | "DELETE";
   dtoFn?: (form: TForm) => TDto;
+  authRequired?: boolean;
+  refreshOnUnauthorized?: boolean;
   onSuccess?: (data: TResult) => void;
   onError?: (error: unknown) => void;
   invalidateKeys?: Array<readonly unknown[]>;
@@ -26,6 +29,8 @@ export function useApiMutation<TForm, TDto, TResult = void>({
   url,
   method,
   dtoFn,
+  authRequired = false,
+  refreshOnUnauthorized = false,
   onSuccess,
   onError: handleError,
   invalidateKeys = [],
@@ -39,11 +44,17 @@ export function useApiMutation<TForm, TDto, TResult = void>({
       const apiUrl = typeof url === "function" ? url(form) : url;
       const dto = dtoFn ? dtoFn(form) : undefined;
       try {
-        return await apiFetch<TResult, TDto>(apiUrl, {
-          method,
-          body: dto,
-          credentials,
-        });
+        const execute = () =>
+          apiFetch<TResult, TDto>(apiUrl, {
+            method,
+            body: dto,
+            credentials,
+            authRequired,
+          });
+        if (refreshOnUnauthorized) {
+          return await AuthService.refreshAndRetry(execute);
+        }
+        return await execute();
       } catch (error) {
         const commonError = mapCommonError(error as ApiError);
         if (commonError) {

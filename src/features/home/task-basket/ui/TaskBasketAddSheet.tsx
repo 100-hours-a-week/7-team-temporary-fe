@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 
 import type { TodoCartTaskItemModel } from "@/features/home/model/taskModels";
 import type { TaskDurationOption } from "@/shared/validation";
@@ -16,8 +15,9 @@ import type {
   DayPlanScheduleDuration,
   DayPlanScheduleItemDto,
 } from "@/features/home/api";
-import { createDayPlanSchedule } from "@/features/home/api";
-import { useMutationErrorEffect } from "@/shared/query";
+import { Endpoint } from "@/shared/api";
+import { useApiMutation, useMutationErrorEffect } from "@/shared/query";
+import { homeQueryKeys } from "@/features/home/model/queryKeys";
 import { BottomSheet } from "@/shared/ui";
 import { FormField, BASE_INPUT_CLASS_NAME } from "@/shared/form/ui";
 import { PrimaryButton } from "@/shared/ui/button";
@@ -31,6 +31,8 @@ interface TaskBasketAddSheetProps {
   tasks: TodoTask[];
   dayPlanId: number | null;
   onAddTask: (task: TodoTask) => void;
+  editingTask?: TodoTask | null;
+  onUpdateTask?: (task: TodoTask) => void;
 }
 
 export function TaskBasketAddSheet({
@@ -39,9 +41,12 @@ export function TaskBasketAddSheet({
   tasks,
   dayPlanId,
   onAddTask,
+  editingTask = null,
+  onUpdateTask,
 }: TaskBasketAddSheetProps) {
   const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
+  const isEditMode = Boolean(editingTask);
 
   const hasTimeConflict = (newStart: number, newEnd: number) =>
     tasks.some((task) => {
@@ -58,15 +63,41 @@ export function TaskBasketAddSheet({
     onOpenChange(false);
   };
 
-  const createScheduleMutation = useMutation({
-    mutationFn: (payload: CreateDayPlanScheduleRequestDto) => {
+  const createScheduleMutation = useApiMutation<
+    CreateDayPlanScheduleRequestDto,
+    CreateDayPlanScheduleRequestDto,
+    DayPlanScheduleItemDto | undefined
+  >({
+    url: () => {
       if (!dayPlanId) {
         throw new Error("dayPlanId가 없습니다.");
       }
-      return createDayPlanSchedule(dayPlanId, payload);
+      return Endpoint.DAY_PLAN.SCHEDULE_BY_ID(dayPlanId);
     },
+    method: "POST",
+    dtoFn: (payload) => payload,
+    authRequired: true,
+    refreshOnUnauthorized: true,
+    invalidateKeys: dayPlanId ? [homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10)] : [],
+  });
+  const updateScheduleMutation = useApiMutation<
+    CreateDayPlanScheduleRequestDto,
+    CreateDayPlanScheduleRequestDto,
+    void
+  >({
+    url: () => {
+      if (!editingTask) {
+        throw new Error("editingTask가 없습니다.");
+      }
+      return Endpoint.SCHEDULE.BY_ID(editingTask.scheduleId);
+    },
+    method: "PUT",
+    dtoFn: (payload) => payload,
+    authRequired: true,
+    refreshOnUnauthorized: true,
   });
   useMutationErrorEffect(createScheduleMutation);
+  useMutationErrorEffect(updateScheduleMutation);
 
   const mapDurationToApi = (duration: TaskDurationOption | null) => {
     if (!duration) return undefined;
@@ -78,6 +109,21 @@ export function TaskBasketAddSheet({
       "4시간~": "HOUR_OVER_4",
     };
     return durationMap[duration];
+  };
+
+  const mapDurationFromApi = (duration: DayPlanScheduleDuration | TaskDurationOption | null) => {
+    if (!duration) return null;
+    if (TASK_DURATION_OPTIONS.includes(duration as TaskDurationOption)) {
+      return duration as TaskDurationOption;
+    }
+    const durationMap: Record<DayPlanScheduleDuration, TaskDurationOption> = {
+      MINUTE_UNDER_30: "~30분",
+      MINUTE_30_TO_60: "30분~1시간",
+      HOUR_1_TO_2: "1~2시간",
+      HOUR_2_TO_4: "2~4시간",
+      HOUR_OVER_4: "4시간~",
+    };
+    return durationMap[duration as DayPlanScheduleDuration] ?? null;
   };
 
   const buildPayload = (values: TaskBasketFormModel, startAt: string, endAt: string) => {
@@ -137,8 +183,26 @@ export function TaskBasketAddSheet({
     };
   };
 
+  const buildEditedTask = (
+    values: TaskBasketFormModel,
+    startAt: string,
+    endAt: string,
+    origin: TodoTask,
+  ): TodoTask => ({
+    scheduleId: origin.scheduleId,
+    status: origin.status ?? "TODO",
+    assignedBy: origin.assignedBy ?? "USER",
+    title: values.content.trim(),
+    type: values.isFixed ? "FIXED" : "FLEX",
+    startAt,
+    endAt,
+    estimatedTimeRange: values.isFixed ? null : values.duration,
+    focusLevel: values.isFixed ? null : values.immersion,
+    isUrgent: values.isFixed ? null : values.isUrgent,
+  });
+
   const handleFormSubmit = async (values: TaskBasketFormModel) => {
-    if (!dayPlanId) {
+    if (!dayPlanId && !editingTask) {
       showToast("일정을 생성할 날짜 정보가 없습니다.", "error");
       return;
     }
@@ -172,9 +236,15 @@ export function TaskBasketAddSheet({
     const payload = buildPayload(values, startAt, endAt);
 
     try {
-      const response = await createScheduleMutation.mutateAsync(payload);
-      const nextTask = buildTodoTask(values, startAt, endAt, response);
-      onAddTask(nextTask);
+      if (editingTask) {
+        await updateScheduleMutation.mutateAsync(payload);
+        const nextTask = buildEditedTask(values, startAt, endAt, editingTask);
+        onUpdateTask?.(nextTask);
+        showToast("할 일이 수정되었습니다.", "success");
+        handleClose();
+        return;
+      }
+      await createScheduleMutation.mutateAsync(payload);
       showToast("할 일이 추가되었습니다.", "success");
       handleClose();
     } catch (error) {
@@ -205,12 +275,33 @@ export function TaskBasketAddSheet({
 
   useEffect(() => {
     if (open) {
-      reset(TASK_BASKET_FORM_DEFAULTS);
+      if (editingTask) {
+        const [startHour = "", startMinute = ""] = editingTask.startAt?.split(":") ?? [];
+        const [endHour = "", endMinute = ""] = editingTask.endAt?.split(":") ?? [];
+        reset(
+          {
+            content: editingTask.title ?? "",
+            isFixed: editingTask.type === "FIXED",
+            startHour,
+            startMinute,
+            endHour,
+            endMinute,
+            duration: mapDurationFromApi(
+              editingTask.estimatedTimeRange as DayPlanScheduleDuration | TaskDurationOption | null,
+            ),
+            immersion: editingTask.focusLevel ?? 5,
+            isUrgent: Boolean(editingTask.isUrgent),
+          },
+          { keepDirty: false },
+        );
+      } else {
+        reset(TASK_BASKET_FORM_DEFAULTS);
+      }
       setIsExpanded(true);
       return;
     }
     reset(TASK_BASKET_FORM_DEFAULTS);
-  }, [open, reset]);
+  }, [editingTask, open, reset]);
 
   const handleSheetOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
@@ -233,7 +324,9 @@ export function TaskBasketAddSheet({
         className="pb-[env(safe-area-inset-bottom)]"
       >
         <div className="flex h-full flex-col px-6">
-          <h2 className="text-2xl font-semibold text-neutral-900">할 일</h2>
+          <h2 className="text-2xl font-semibold text-neutral-900">
+            {isEditMode ? "할 일 수정" : "할 일"}
+          </h2>
 
           <form
             className="scrollbar-hide mt-6 flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pb-8"
@@ -383,7 +476,7 @@ export function TaskBasketAddSheet({
               className="mt-2 w-full rounded-[28px]"
               disabled={!canSubmit}
             >
-              할 일 추가
+              {isEditMode ? "수정하기" : "할 일 추가"}
             </PrimaryButton>
           </form>
         </div>

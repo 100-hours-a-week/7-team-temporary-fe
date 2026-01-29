@@ -81,3 +81,16 @@ export async function createDayPlanSchedule(
     ),
   );
 }
+
+export async function updateDayPlanSchedule(
+  scheduleId: number,
+  payload: CreateDayPlanScheduleRequestDto,
+): Promise<void> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<void, CreateDayPlanScheduleRequestDto>(Endpoint.SCHEDULE.BY_ID(scheduleId), {
+      method: "PUT",
+      body: payload,
+      authRequired: true,
+    }),
+  );
+}
