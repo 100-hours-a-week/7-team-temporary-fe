@@ -37,6 +37,35 @@ export async function fetchDayPlanSchedule({
   );
 }
 
+interface FetchDayPlanScheduleByIdParams {
+  dayPlanId: number;
+  page?: number;
+  size?: number;
+  signal?: AbortSignal;
+}
+
+export async function fetchDayPlanScheduleById({
+  dayPlanId,
+  page = 1,
+  size = 10,
+  signal,
+}: FetchDayPlanScheduleByIdParams): Promise<DayPlanScheduleResponseDto> {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  });
+
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<DayPlanScheduleResponseDto>(
+      `${Endpoint.DAY_PLAN.SCHEDULE_BY_ID(dayPlanId)}?${searchParams.toString()}`,
+      {
+        signal,
+        authRequired: true,
+      },
+    ),
+  );
+}
+
 export async function createDayPlanSchedule(
   dayPlanId: number,
   payload: CreateDayPlanScheduleRequestDto,

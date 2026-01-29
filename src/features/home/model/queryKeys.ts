@@ -6,4 +6,6 @@ export const homeQueryKeys = {
   ...baseKeys,
   dayPlanSchedule: (date: string, page: number, size: number) =>
     baseKeys.by("day-plan-schedule", date, page, size),
+  dayPlanScheduleById: (dayPlanId: number, page: number, size: number) =>
+    baseKeys.by("day-plan-schedule-by-id", dayPlanId, page, size),
 };

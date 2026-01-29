@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { TodoCartTaskItemModel } from "@/features/home";
-import { TaskBasketAddSheet, TodoList, useDayPlanScheduleQuery } from "@/features/home";
+import { TaskBasketAddSheet, TodoList, useDayPlanId } from "@/features/home";
+import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useStackPage } from "@/widgets/stack";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
@@ -19,8 +20,7 @@ export function TaskBasketStackPage() {
   const { setHeaderContent } = useStackPage();
   const today = useMemo(() => new Date(), []);
   const queryDate = useMemo(() => formatDateParam(today), [today]);
-  const { data } = useDayPlanScheduleQuery({ date: queryDate, page: 1, size: 1 });
-  const dayPlanId = data?.dayPlanId ?? null;
+  const { dayPlanId } = useDayPlanId({ date: queryDate, page: 1, size: 1 });
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [tasks, setTasks] = useState<TodoTask[]>([]);
@@ -55,11 +55,21 @@ export function TaskBasketStackPage() {
         <div className="mt-6">
           <TodoList
             tasks={tasks}
+            dayPlanId={dayPlanId}
             onEdit={() => undefined}
             onDelete={() => undefined}
           />
         </div>
       </div>
+
+      <FixedActionBar>
+        <PrimaryButton
+          className="w-full"
+          onClick={handleOpenSheet}
+        >
+          할 일 추가
+        </PrimaryButton>
+      </FixedActionBar>
 
       <TaskBasketAddSheet
         open={isSheetOpen}

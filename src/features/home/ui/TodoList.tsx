@@ -1,6 +1,9 @@
 import styled from "@emotion/styled";
 
+import { useMemo } from "react";
+
 import type { TodoCartTaskItemModel } from "../model/taskModels";
+import { useDayPlanScheduleByIdQuery } from "../model/useDayPlanScheduleByIdQuery";
 import { TodoCartTaskItem } from "./TodoCartTaskItem";
 
 type TodoListTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
@@ -9,15 +12,58 @@ interface TodoListProps {
   tasks: TodoListTask[];
   onEdit: (scheduleId: number) => void;
   onDelete: (scheduleId: number) => void;
+  dayPlanId?: number | null;
+  page?: number;
+  size?: number;
 }
 
 const EMPTY_TEXT = "작성된 할 일이 없습니다.";
 
 /**
- * 미배치 작업 목록을 렌더링하는 리스트 컨테이너.
+ * 모든 작업 목록을 렌더링하는 리스트 컨테이너.
  */
-export function TodoList({ tasks, onEdit, onDelete }: TodoListProps) {
-  const visibleTasks = tasks
+export function TodoList({
+  tasks,
+  onEdit,
+  onDelete,
+  dayPlanId,
+  page = 1,
+  size = 10,
+}: TodoListProps) {
+  const shouldFetch = Boolean(dayPlanId);
+  const { data } = useDayPlanScheduleByIdQuery({
+    dayPlanId: dayPlanId ?? 0,
+    page,
+    size,
+    enabled: shouldFetch,
+  });
+
+  const fetchedTasks = useMemo(
+    () =>
+      data?.content.map((item) => ({
+        scheduleId: item.scheduleId,
+        title: item.title,
+        type: item.type,
+        startAt: item.startAt,
+        endAt: item.endAt,
+        estimatedTimeRange: item.estimatedTimeRange,
+        focusLevel: item.focusLevel,
+        isUrgent: item.isUrgent,
+        assignedBy: item.assignedBy,
+        status: item.status,
+      })) ?? [],
+    [data],
+  );
+
+  const mergedTasks = useMemo(() => {
+    if (!shouldFetch) return tasks;
+    const map = new Map<number, TodoListTask>();
+    fetchedTasks.forEach((task) => map.set(task.scheduleId, task));
+    tasks.forEach((task) => map.set(task.scheduleId, task));
+    return Array.from(map.values());
+  }, [fetchedTasks, shouldFetch, tasks]);
+
+  const visibleTasks = mergedTasks
     .filter((task) => task.status !== "DONE")
     .sort((left, right) => sortByStartTimeDesc(left.startAt, right.startAt));
 
