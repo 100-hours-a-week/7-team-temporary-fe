@@ -200,7 +200,11 @@ export function BottomSheet({
           isDragging && "transition-none",
           sheetClassName,
         )}
-        style={{ height: `${visibleHeight}${heightUnit}`, transform: sheetTransform, opacity: sheetOpacity }}
+        style={{
+          height: `${visibleHeight}${heightUnit}`,
+          transform: sheetTransform,
+          opacity: sheetOpacity,
+        }}
       >
         {enableDragHandle && (
           <button
