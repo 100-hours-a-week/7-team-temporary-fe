@@ -24,6 +24,11 @@ interface HomePlannerProps {
 }
 
 const PAGE_SIZE = 10;
+const TEN_MINUTE_BLOCK_PX = 16;
+const GRID_LINE_THICKNESS_PX = 1;
+const TEN_MINUTE_LINE_OFFSET_PX = TEN_MINUTE_BLOCK_PX - GRID_LINE_THICKNESS_PX;
+const HOUR_BLOCK_MIN_HEIGHT_PX = TEN_MINUTE_BLOCK_PX * 6 - GRID_LINE_THICKNESS_PX;
+const GRID_LINE_COLOR = "rgba(229,231,235,1)";
 
 const formatDateParam = (date: Date) => {
   const year = date.getFullYear();
@@ -32,11 +37,16 @@ const formatDateParam = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const parseHour = (time?: string) => {
+const parseTimeParts = (time?: string) => {
   if (!time) return null;
-  const [hours] = time.split(":").map(Number);
-  return Number.isNaN(hours) ? null : hours;
+  const [hourText, minuteText] = time.split(":");
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+  return { hour, minute };
 };
+
+const getTenMinuteStep = (minute: number) => Math.floor(minute / 10);
 
 export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
   const today = useMemo(() => new Date(), []);
@@ -82,10 +92,10 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
   const tasksByHour = useMemo(
     () =>
       tasks.reduce<Map<number, TaskItemModel[]>>((map, task) => {
-        const hour = parseHour(task.startTime);
-        if (hour === null) return map;
-        if (!map.has(hour)) map.set(hour, []);
-        map.get(hour)?.push(task);
+        const timeParts = parseTimeParts(task.startTime);
+        if (!timeParts) return map;
+        if (!map.has(timeParts.hour)) map.set(timeParts.hour, []);
+        map.get(timeParts.hour)?.push(task);
         return map;
       }, new Map()),
     [tasks],
@@ -136,19 +146,39 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
               <div className="text-base font-semibold text-neutral-900">
                 {String(hour).padStart(2, "0")}:00
               </div>
-              <div className="relative min-h-[44px]">
-                <div className="pointer-events-none absolute inset-0 border-t border-neutral-200 bg-[repeating-linear-gradient(to_bottom,transparent_0_23px,rgba(229,231,235,1)_23px_24px)]" />
-                <div className="relative flex flex-col gap-3 py-2">
+              <div
+                className="relative"
+                style={{ minHeight: `${HOUR_BLOCK_MIN_HEIGHT_PX}px` }}
+              >
+                <div
+                  className="pointer-events-none absolute inset-0 border-t border-neutral-200"
+                  style={{
+                    backgroundImage: `repeating-linear-gradient(to_bottom,transparent 0 ${TEN_MINUTE_LINE_OFFSET_PX}px,${GRID_LINE_COLOR} ${TEN_MINUTE_LINE_OFFSET_PX}px ${TEN_MINUTE_BLOCK_PX}px)`,
+                    backgroundPosition: `0 ${TEN_MINUTE_BLOCK_PX}px`,
+                  }}
+                />
+                <div className="relative h-full">
                   {statusMessage && index === 0 ? (
                     <div className={`text-sm ${statusMessage.className}`}>{statusMessage.text}</div>
                   ) : null}
-                  {items.map((task) => (
-                    <HomeTaskItem
-                      key={task.taskId}
-                      task={task}
-                      onToggleComplete={() => undefined}
-                    />
-                  ))}
+                  {items.map((task) => {
+                    const timeParts = parseTimeParts(task.startTime);
+                    const minuteStep = timeParts ? getTenMinuteStep(timeParts.minute) : 0;
+                    const top = minuteStep * TEN_MINUTE_BLOCK_PX;
+
+                    return (
+                      <div
+                        key={task.taskId}
+                        className="absolute right-0 left-0"
+                        style={{ top }}
+                      >
+                        <HomeTaskItem
+                          task={task}
+                          onToggleComplete={() => undefined}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

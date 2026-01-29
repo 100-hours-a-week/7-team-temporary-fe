@@ -20,6 +20,7 @@ export function LoginFormContainer({ onGoToSignUp }: LoginFormContainerProps) {
   const { form, register, errors, isSubmitting, handleSubmit } = useLoginForm();
   const mutation = useLoginMutation({
     onSuccess: (data) => {
+      console.log(process.env.NEXT_PUBLIC_API_BASE_URL);
       setAuthenticated(data.accessToken);
     },
   });

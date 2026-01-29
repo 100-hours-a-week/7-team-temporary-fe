@@ -21,14 +21,7 @@ export function ExcludedTaskItem({ task, onRestore, variant = "DEFAULT" }: Exclu
 
   return (
     <Card $variant={variant}>
-      <HeaderRow>
-        <Title>{task.title}</Title>
-        <StatusBadge $variant={variant}>{badge}</StatusBadge>
-      </HeaderRow>
-      <MetaRow>
-        <MetaLabel>시간</MetaLabel>
-        <MetaValue>{timeValue}</MetaValue>
-      </MetaRow>
+      <Title>{task.title}</Title>
       <ActionRow>
         <ActionButton
           type="button"
@@ -57,9 +50,12 @@ function formatTimeRange(startAt: string, endAt: string) {
 
 const Card = styled.article<{ $variant: ExcludedTaskItemVariant }>`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 10px;
-  padding: 14px 16px;
+  padding: 10px 16px;
+  vertical-align: middle;
   border-radius: 16px;
   border: 1px solid ${({ $variant }) => ($variant === "TIME_CONFLICT" ? "#fecaca" : "#e5e7eb")};
   background: ${({ $variant }) => ($variant === "PENDING_SWAP" ? "#f9fafb" : "#ffffff")};
@@ -73,6 +69,7 @@ const HeaderRow = styled.div`
 `;
 
 const Title = styled.div`
+  vertical-align: middle;
   font-size: 16px;
   font-weight: 600;
   color: #111827;

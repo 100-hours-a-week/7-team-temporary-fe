@@ -66,6 +66,41 @@ export async function fetchDayPlanScheduleById({
   );
 }
 
+interface FetchDayPlanSchedulesParams {
+  dayPlanId: number;
+  status?: "EXCLUDED" | "ASSIGNED" | "FIXED";
+  page?: number;
+  size?: number;
+  signal?: AbortSignal;
+}
+
+export async function fetchDayPlanSchedules({
+  dayPlanId,
+  status,
+  page = 1,
+  size = 10,
+  signal,
+}: FetchDayPlanSchedulesParams): Promise<DayPlanScheduleResponseDto> {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  });
+
+  if (status) {
+    searchParams.set("status", status);
+  }
+
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<DayPlanScheduleResponseDto>(
+      `${Endpoint.DAY_PLAN.SCHEDULES_BY_ID(dayPlanId)}?${searchParams.toString()}`,
+      {
+        signal,
+        authRequired: true,
+      },
+    ),
+  );
+}
+
 export async function createDayPlanSchedule(
   dayPlanId: number,
   payload: CreateDayPlanScheduleRequestDto,

@@ -1,17 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 
-import { END_HOUR, START_HOUR, TaskBasketButton, TimeSlotList } from "@/features/home";
-import { BottomSheet } from "@/shared/ui";
-import { useStackPage } from "@/widgets/stack";
+import {
+  END_HOUR,
+  ExcludedTaskItem,
+  START_HOUR,
+  TaskBasketButton,
+  TimeSlotList,
+  useDayPlanId,
+  useDayPlanSchedulesQuery,
+} from "@/features/home";
+import { ExcludedListBottomSheet } from "./ExcludedListBottomSheet";
+import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
 import { TaskBasketStackPage } from "./TaskBasketStackPage";
 
 export function PlannerEditStackPage() {
-  const { push, setHeaderContent } = useStackPage();
+  const { push, setHeaderContent, stack } = useStackPage();
+  const entry = useContext(StackPageEntryContext);
   const today = useMemo(() => new Date(), []);
+  const queryDate = useMemo(() => formatDateParam(today), [today]);
+  const { dayPlanId } = useDayPlanId({ date: queryDate, page: 1, size: 1 });
   const [isSheetOpen, setIsSheetOpen] = useState(true);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const schedulesQuery = useDayPlanSchedulesQuery({
+    dayPlanId: dayPlanId ?? 0,
+    status: "EXCLUDED",
+    page: 1,
+    size: 10,
+    enabled: Boolean(dayPlanId) && isSheetOpen,
+  });
 
   const timeSlots = useMemo(
     () => Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index),
@@ -31,6 +49,19 @@ export function PlannerEditStackPage() {
     setIsSheetOpen(true);
     setIsSheetExpanded(false);
   };
+
+  const excludedTasks = schedulesQuery.data?.content ?? [];
+  const isTop = useMemo(() => {
+    const topKey = stack[stack.length - 1]?.key ?? null;
+    if (!entry?.entryKey) return stack.length === 0;
+    return topKey === entry.entryKey;
+  }, [entry?.entryKey, stack]);
+
+  useEffect(() => {
+    if (isTop && isSheetOpen) {
+      schedulesQuery.refetch();
+    }
+  }, [isTop, isSheetOpen, schedulesQuery]);
 
   return (
     <>
@@ -54,21 +85,40 @@ export function PlannerEditStackPage() {
         </div>
       </div>
 
-      <BottomSheet
+      <ExcludedListBottomSheet
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         expanded={isSheetExpanded}
         onExpandedChange={setIsSheetExpanded}
-        peekHeight={12}
-        expandHeight={35}
-        enableDragHandle
-        showOverlay={false}
-        className="pb-[env(safe-area-inset-bottom)]"
       >
-        <div className="px-6 pb-6">
-          <div className="text-xl font-semibold text-neutral-900">제외된 리스트</div>
-        </div>
-      </BottomSheet>
+        {schedulesQuery.isLoading ? (
+          <div className="py-6 text-center text-sm text-neutral-400">
+            제외된 작업을 불러오는 중...
+          </div>
+        ) : null}
+        {schedulesQuery.isError ? (
+          <div className="py-6 text-center text-sm text-neutral-400">
+            제외된 작업을 불러오지 못했습니다.
+          </div>
+        ) : null}
+        {!schedulesQuery.isLoading && !schedulesQuery.isError && excludedTasks.length === 0 ? (
+          <div className="py-6 text-center text-sm text-neutral-400">제외된 작업이 없습니다.</div>
+        ) : null}
+        {excludedTasks.map((task) => (
+          <ExcludedTaskItem
+            key={task.scheduleId}
+            task={task}
+            onRestore={() => undefined}
+          />
+        ))}
+      </ExcludedListBottomSheet>
     </>
   );
 }
+
+const formatDateParam = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
