@@ -17,6 +17,7 @@ import type {
 } from "@/features/home/api";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation, useMutationErrorEffect } from "@/shared/query";
+import { homeQueryKeys } from "@/features/home/model/queryKeys";
 import { BottomSheet } from "@/shared/ui";
 import { FormField, BASE_INPUT_CLASS_NAME } from "@/shared/form/ui";
 import { PrimaryButton } from "@/shared/ui/button";
@@ -77,6 +78,7 @@ export function TaskBasketAddSheet({
     dtoFn: (payload) => payload,
     authRequired: true,
     refreshOnUnauthorized: true,
+    invalidateKeys: dayPlanId ? [homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10)] : [],
   });
   const updateScheduleMutation = useApiMutation<
     CreateDayPlanScheduleRequestDto,
@@ -242,9 +244,7 @@ export function TaskBasketAddSheet({
         handleClose();
         return;
       }
-      const response = await createScheduleMutation.mutateAsync(payload);
-      const nextTask = buildTodoTask(values, startAt, endAt, response);
-      onAddTask(nextTask);
+      await createScheduleMutation.mutateAsync(payload);
       showToast("할 일이 추가되었습니다.", "success");
       handleClose();
     } catch (error) {
