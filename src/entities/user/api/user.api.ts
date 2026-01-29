@@ -53,3 +53,12 @@ export async function updatePassword(model: UpdatePasswordModel): Promise<void> 
     });
   });
 }
+
+export async function deleteMyProfile(): Promise<void> {
+  return AuthService.refreshAndRetry(async () => {
+    await apiFetch<void>(Endpoint.USER.BASE, {
+      method: "DELETE",
+      authRequired: true,
+    });
+  });
+}
