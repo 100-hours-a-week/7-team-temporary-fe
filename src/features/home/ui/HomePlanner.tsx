@@ -136,17 +136,20 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
               <div className="text-base font-semibold text-neutral-900">
                 {String(hour).padStart(2, "0")}:00
               </div>
-              <div className="flex min-h-[44px] flex-col gap-3">
-                {statusMessage && index === 0 ? (
-                  <div className={`text-sm ${statusMessage.className}`}>{statusMessage.text}</div>
-                ) : null}
-                {items.map((task) => (
-                  <HomeTaskItem
-                    key={task.taskId}
-                    task={task}
-                    onToggleComplete={() => undefined}
-                  />
-                ))}
+              <div className="relative min-h-[44px]">
+                <div className="pointer-events-none absolute inset-0 border-t border-neutral-200 bg-[repeating-linear-gradient(to_bottom,transparent_0_23px,rgba(229,231,235,1)_23px_24px)]" />
+                <div className="relative flex flex-col gap-3 py-2">
+                  {statusMessage && index === 0 ? (
+                    <div className={`text-sm ${statusMessage.className}`}>{statusMessage.text}</div>
+                  ) : null}
+                  {items.map((task) => (
+                    <HomeTaskItem
+                      key={task.taskId}
+                      task={task}
+                      onToggleComplete={() => undefined}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           );
