@@ -4,7 +4,7 @@ export interface PlannerScheduleResponse {
   status: "TODO" | "DONE";
   type: "FIXED" | "FLEX";
   assignedBy: "USER" | "AI";
-  assignmentStatus: "ASSIGNED" | "EXCLUDED";
+  assignmentStatus: "ASSIGNED" | "EXCLUDED" | "FIXED";
   startAt: string;
   endAt: string;
   estimatedTimeRange: string | null;
@@ -53,4 +53,6 @@ export type TodoCartTaskItemModel = Pick<
   | "focusLevel"
   | "isUrgent"
   | "assignedBy"
->;
+> & {
+  assignmentStatus?: PlannerScheduleResponse["assignmentStatus"];
+};

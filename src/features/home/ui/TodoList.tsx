@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import type { TodoCartTaskItemModel } from "../model/taskModels";
 import { useDayPlanScheduleByIdQuery } from "../model/useDayPlanScheduleByIdQuery";
 import { TodoCartTaskItem } from "./TodoCartTaskItem";
+import type { TodoCartViewMode } from "./TodoCartTaskItem";
 
 type TodoListTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 
@@ -50,6 +51,7 @@ export function TodoList({
         focusLevel: item.focusLevel,
         isUrgent: item.isUrgent,
         assignedBy: item.assignedBy,
+        assignmentStatus: item.assignmentStatus,
         status: item.status,
       })) ?? [],
     [data],
@@ -77,13 +79,20 @@ export function TodoList({
         <TodoCartTaskItem
           key={task.scheduleId}
           task={task}
-          viewMode="UNASSIGNED"
+          viewMode={getViewMode(task)}
           onEdit={(item) => onEdit(item as TodoListTask)}
           onDelete={onDelete}
         />
       ))}
     </ListContainer>
   );
+}
+
+function getViewMode(task: TodoListTask): TodoCartViewMode {
+  if (task.assignmentStatus === "ASSIGNED" || task.assignmentStatus === "FIXED") {
+    return "ARRANGED";
+  }
+  return "UNASSIGNED";
 }
 
 function sortByStartTimeDesc(left?: string, right?: string) {
