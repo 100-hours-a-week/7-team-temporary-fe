@@ -79,7 +79,8 @@ export async function apiFetch<TResponse, TBody = unknown>(
   if (!res.ok) {
     if (res.status === 401) {
       useAuthStore.getState().clearAuth();
-      if (typeof window !== "undefined") {
+      const shouldRedirectOnUnauthorized = process.env.NODE_ENV !== "development";
+      if (shouldRedirectOnUnauthorized && typeof window !== "undefined") {
         const { pathname } = window.location;
         if (pathname !== "/login") {
           window.location.assign("/login");
