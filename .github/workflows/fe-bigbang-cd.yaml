@@ -42,6 +42,8 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Build (Next.js)
+        env:
+          NEXT_PUBLIC_API_BASE_URL: ${{ startsWith(github.ref, 'refs/heads/release/') && secrets.NEXT_PUBLIC_API_BASE_URL_STAGING || secrets.NEXT_PUBLIC_API_BASE_URL_PRODUCTION }}
         run: pnpm run build
 
       - name: Package artifact
