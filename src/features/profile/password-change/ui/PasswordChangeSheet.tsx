@@ -58,14 +58,6 @@ export function PasswordChangeSheet({
 
   return (
     <>
-      {open && (
-        <button
-          type="button"
-          aria-label="비밀번호 변경 모달 닫기"
-          className="fixed inset-0 z-30 bg-black/50"
-          onClick={() => onOpenChange(false)}
-        />
-      )}
       <BottomSheet
         open={open}
         onOpenChange={onOpenChange}

@@ -27,6 +27,11 @@ export function PlannerEditStackPage() {
     push(<TaskBasketStackPage />);
   };
 
+  const handleOpenExcludedList = () => {
+    setIsSheetOpen(true);
+    setIsSheetExpanded(false);
+  };
+
   return (
     <>
       <div className="px-6 pt-[13px] pb-32">
@@ -34,7 +39,14 @@ export function PlannerEditStackPage() {
           {today.getMonth() + 1}월 {today.getDate()}일{" "}
           {["일", "월", "화", "수", "목", "금", "토"][today.getDay()]}
         </div>
-        <div className="flex items-start justify-end">
+        <div className="flex items-start justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-800"
+            onClick={handleOpenExcludedList}
+          >
+            제외리스트
+          </button>
           <TaskBasketButton onClick={handleOpenTaskBasket} />
         </div>
         <div className="text-base text-neutral-500">
@@ -50,6 +62,7 @@ export function PlannerEditStackPage() {
         peekHeight={12}
         expandHeight={35}
         enableDragHandle
+        showOverlay={false}
         className="pb-[env(safe-area-inset-bottom)]"
       >
         <div className="px-6 pb-6">

@@ -28,6 +28,10 @@ export const Endpoint = {
   TERMS: {
     LIST: path("/terms"),
   },
+  TERMS_SIGN: {
+    LIST: path("/terms-sign"),
+    UPDATE: (termsId: number) => path(`/terms-sign/${termsId}`),
+  },
   DAY_PLAN: {
     SCHEDULE: path("/day-plan/schedule"),
     SCHEDULE_BY_ID: (dayPlanId: number) => path(`/day-plan/${dayPlanId}/schedule`),
