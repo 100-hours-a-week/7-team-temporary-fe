@@ -59,3 +59,21 @@ jobs:
             startsWith(github.ref, 'refs/heads/release/')
           )
         run: pnpm audit --audit-level=high
+
+      - name: Notify CI success
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{
+              "content": "✅ CI 성공\nRepo: '${{ github.repository }}'\nBranch: '${{ github.ref_name }}'\nRun: https://github.com/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"
+            }'
+
+      - name: Notify CI failure
+        if: failure()
+        run: |
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{
+              "content": "🚨 CI 실패\nRepo: '${{ github.repository }}'\nBranch: '${{ github.ref_name }}'\nRun: https://github.com/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"
+            }'
