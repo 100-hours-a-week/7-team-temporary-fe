@@ -21,7 +21,6 @@ export function LoginFormContainer({ onGoToSignUp }: LoginFormContainerProps) {
   const mutation = useLoginMutation({
     onSuccess: (data) => {
       setAuthenticated(data.accessToken);
-      router.replace("/home");
     },
   });
 
