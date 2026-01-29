@@ -9,6 +9,7 @@ export function TaskBasketButton({ onClick }: TaskBasketButtonProps) {
     <ActionButton
       buttonText="작업 바구니"
       onClick={onClick}
+      className="my-0 items-center px-4 py-2 text-sm"
     />
   );
 }
