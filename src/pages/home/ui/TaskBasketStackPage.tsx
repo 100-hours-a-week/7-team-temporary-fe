@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { TodoCartTaskItemModel } from "@/features/home";
-import { TaskBasketAddSheet, TodoList, useDayPlanId } from "@/features/home";
+import { TaskBasketAddSheet, TodoList, homeQueryKeys, useDayPlanId } from "@/features/home";
+import { Endpoint } from "@/shared/api";
+import { useApiMutation } from "@/shared/query";
+import { ConfirmDialog } from "@/shared/ui";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useStackPage } from "@/widgets/stack";
 
@@ -25,6 +28,16 @@ export function TaskBasketStackPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TodoTask | null>(null);
   const [tasks, setTasks] = useState<TodoTask[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+
+  const deleteScheduleMutation = useApiMutation<number, void, void>({
+    url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),
+    method: "DELETE",
+    authRequired: true,
+    refreshOnUnauthorized: true,
+    invalidateKeys: dayPlanId ? [homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10)] : [],
+  });
 
   useEffect(() => {
     setHeaderContent(<span className="text-xl font-semibold text-black">작업 바구니</span>);
@@ -38,6 +51,22 @@ export function TaskBasketStackPage() {
   const handleEditTask = (task: TodoTask) => {
     setEditingTask(task);
     setIsSheetOpen(true);
+  };
+
+  const handleDeleteRequest = (scheduleId: number) => {
+    setDeleteTargetId(scheduleId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTargetId) return;
+    deleteScheduleMutation.mutate(deleteTargetId, {
+      onSuccess: () => {
+        setTasks((prev) => prev.filter((task) => task.scheduleId !== deleteTargetId));
+        setIsDeleteDialogOpen(false);
+        setDeleteTargetId(null);
+      },
+    });
   };
 
   const handleSheetOpenChange = (nextOpen: boolean) => {
@@ -78,10 +107,34 @@ export function TaskBasketStackPage() {
             tasks={tasks}
             dayPlanId={dayPlanId}
             onEdit={handleEditTask}
-            onDelete={() => undefined}
+            onDelete={handleDeleteRequest}
           />
         </div>
       </div>
+
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) {
+            setDeleteTargetId(null);
+          }
+        }}
+        title="정말 삭제할까요?"
+        description="삭제한 작업은 복구할 수 없습니다."
+        confirmText={deleteScheduleMutation.isPending ? "삭제 중..." : "삭제"}
+        cancelText="취소"
+        confirmDisabled={deleteScheduleMutation.isPending}
+        cancelDisabled={deleteScheduleMutation.isPending}
+        onConfirm={handleDeleteConfirm}
+        contentClassName="bg-white rounded-3xl"
+        trigger={
+          <button
+            type="button"
+            className="hidden"
+          />
+        }
+      />
 
       <FixedActionBar>
         <PrimaryButton
