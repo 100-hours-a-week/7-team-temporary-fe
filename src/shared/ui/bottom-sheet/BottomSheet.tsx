@@ -14,6 +14,7 @@ type BottomSheetProps = {
   defaultExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   enableDragHandle?: boolean;
+  showOverlay?: boolean;
   handleClassName?: string;
   className?: string;
   sheetClassName?: string;
@@ -30,17 +31,23 @@ export function BottomSheet({
   defaultExpanded = false,
   onExpandedChange,
   enableDragHandle = false,
+  showOverlay = true,
   handleClassName,
   className,
   sheetClassName,
   children,
 }: BottomSheetProps) {
   const sheetOffsetPx = 8;
+  const closeThresholdRatio = 0.5;
+  const maxOverlayOpacity = 0.4;
+  const transitionMs = 300;
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
   const [dragHeight, setDragHeight] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isPresented, setIsPresented] = useState(false);
+  const [isVisible, setIsVisible] = useState(open);
   const dragStartRef = useRef<{ startY: number; startHeight: number } | null>(null);
+  const closeTimeoutRef = useRef<number | null>(null);
 
   const isControlled = expanded !== undefined;
   const isExpanded = isControlled ? expanded : internalExpanded;
@@ -51,6 +58,38 @@ export function BottomSheet({
     }
     onExpandedChange?.(next);
   };
+
+  useEffect(() => {
+    if (closeTimeoutRef.current) {
+      window.clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+
+    if (open) {
+      setIsVisible(true);
+      setIsPresented(false);
+      const frame = requestAnimationFrame(() => setIsPresented(true));
+      return () => cancelAnimationFrame(frame);
+    }
+
+    if (isVisible) {
+      setIsPresented(false);
+      closeTimeoutRef.current = window.setTimeout(() => {
+        setIsVisible(false);
+        closeTimeoutRef.current = null;
+      }, transitionMs);
+    }
+    return undefined;
+  }, [open, isVisible, transitionMs]);
+
+  useEffect(
+    () => () => {
+      if (closeTimeoutRef.current) {
+        window.clearTimeout(closeTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!open) {
@@ -70,18 +109,7 @@ export function BottomSheet({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onOpenChange]);
 
-  useEffect(() => {
-    if (!open) {
-      setIsPresented(false);
-      return;
-    }
-
-    setIsPresented(false);
-    const frame = requestAnimationFrame(() => setIsPresented(true));
-    return () => cancelAnimationFrame(frame);
-  }, [open]);
-
-  if (!open) return null;
+  if (!isVisible) return null;
 
   const baseHeight = isExpanded ? expandHeight : peekHeight;
   const visibleHeight = dragHeight ?? baseHeight;
@@ -89,6 +117,9 @@ export function BottomSheet({
   const sheetTransform = isPresented
     ? `translateY(${sheetOffsetPx}px)`
     : `translateY(calc(100% + ${sheetOffsetPx}px))`;
+  const overlayOpacity = isPresented
+    ? Math.max(0, Math.min(1, visibleHeight / expandHeight)) * maxOverlayOpacity
+    : 0;
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
     dragStartRef.current = { startY: event.clientY, startHeight: visibleHeight };
@@ -102,7 +133,7 @@ export function BottomSheet({
     const deltaHeight = heightUnit === "vh" ? (deltaPx / window.innerHeight) * 100 : deltaPx;
     const nextHeight = Math.min(
       expandHeight,
-      Math.max(peekHeight, dragStartRef.current.startHeight + deltaHeight),
+      Math.max(0, dragStartRef.current.startHeight + deltaHeight),
     );
     setDragHeight(nextHeight);
   };
@@ -111,7 +142,13 @@ export function BottomSheet({
     if (!dragStartRef.current) return;
     event.currentTarget.releasePointerCapture(event.pointerId);
     const finalHeight = dragHeight ?? dragStartRef.current.startHeight;
-    setExpanded(finalHeight >= midpoint);
+    const shouldClose = finalHeight <= peekHeight * closeThresholdRatio;
+    if (shouldClose) {
+      setExpanded(false);
+      onOpenChange?.(false);
+    } else {
+      setExpanded(finalHeight >= midpoint);
+    }
     setDragHeight(null);
     setIsDragging(false);
     dragStartRef.current = null;
@@ -119,6 +156,19 @@ export function BottomSheet({
 
   return (
     <div className={cn("pointer-events-none fixed inset-x-0 bottom-0 z-40", className)}>
+      {showOverlay && (
+        <div
+          className={cn(
+            "pointer-events-auto fixed inset-0 bg-black transition-opacity duration-300",
+            isDragging && "transition-none",
+          )}
+          style={{ opacity: overlayOpacity }}
+          onClick={() => {
+            setExpanded(false);
+            onOpenChange?.(false);
+          }}
+        />
+      )}
       <div
         className={cn(
           "mx-auto w-full max-w-[420px] rounded-t-2xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)]",
