@@ -23,6 +23,7 @@ export function TaskBasketStackPage() {
   const { dayPlanId } = useDayPlanId({ date: queryDate, page: 1, size: 1 });
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<TodoTask | null>(null);
   const [tasks, setTasks] = useState<TodoTask[]>([]);
 
   useEffect(() => {
@@ -32,6 +33,26 @@ export function TaskBasketStackPage() {
 
   const handleOpenSheet = () => {
     setIsSheetOpen(true);
+  };
+
+  const handleEditTask = (task: TodoTask) => {
+    setEditingTask(task);
+    setIsSheetOpen(true);
+  };
+
+  const handleSheetOpenChange = (nextOpen: boolean) => {
+    setIsSheetOpen(nextOpen);
+    if (!nextOpen) {
+      setEditingTask(null);
+    }
+  };
+
+  const handleUpdateTask = (nextTask: TodoTask) => {
+    setTasks((prev) => {
+      const map = new Map(prev.map((task) => [task.scheduleId, task]));
+      map.set(nextTask.scheduleId, nextTask);
+      return Array.from(map.values());
+    });
   };
 
   return (
@@ -56,7 +77,7 @@ export function TaskBasketStackPage() {
           <TodoList
             tasks={tasks}
             dayPlanId={dayPlanId}
-            onEdit={() => undefined}
+            onEdit={handleEditTask}
             onDelete={() => undefined}
           />
         </div>
@@ -73,10 +94,12 @@ export function TaskBasketStackPage() {
 
       <TaskBasketAddSheet
         open={isSheetOpen}
-        onOpenChange={setIsSheetOpen}
+        onOpenChange={handleSheetOpenChange}
         tasks={tasks}
         dayPlanId={dayPlanId}
         onAddTask={(task) => setTasks((prev) => [task, ...prev])}
+        editingTask={editingTask}
+        onUpdateTask={handleUpdateTask}
       />
     </>
   );

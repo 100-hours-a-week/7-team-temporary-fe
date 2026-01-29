@@ -10,7 +10,7 @@ export type TodoCartViewMode = "UNASSIGNED" | "ARRANGED";
 interface TodoCartTaskItemProps {
   task: TodoCartTaskItemModel;
   viewMode: TodoCartViewMode;
-  onEdit: (scheduleId: number) => void;
+  onEdit: (task: TodoCartTaskItemModel) => void;
   onDelete: (scheduleId: number) => void;
 }
 
@@ -66,7 +66,7 @@ export function TodoCartTaskItem({ task, viewMode, onEdit, onDelete }: TodoCartT
           </IconButton>
           <IconButton
             type="button"
-            onClick={() => onEdit(taskItem.taskId)}
+            onClick={() => onEdit(task)}
             aria-label="작업 편집"
           >
             <ActionIcon
