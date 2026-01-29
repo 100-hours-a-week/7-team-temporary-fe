@@ -12,6 +12,7 @@ export { useDayPlanScheduleQuery } from "./model/useDayPlanScheduleQuery";
 export { useDayPlanScheduleByIdQuery } from "./model/useDayPlanScheduleByIdQuery";
 export { useDayPlanSchedulesQuery } from "./model/useDayPlanSchedulesQuery";
 export { homeQueryKeys } from "./model/queryKeys";
+export { useHomePlanStore } from "./model/homePlan.store";
 
 export type {
   PlannerScheduleResponse,

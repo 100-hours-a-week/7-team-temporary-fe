@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   addDays,
@@ -12,9 +12,9 @@ import {
 } from "../model/calendar";
 import type { TaskItemModel } from "../model/taskModels";
 import { toTaskItemModelFromHomeTask } from "../model/taskMappers";
+import { useHomePlanStore } from "../model/homePlan.store";
 import { useDayPlanScheduleQuery } from "../model/useDayPlanScheduleQuery";
 import { HomeTaskItem } from "./HomeTaskItem";
-import { PlannerEditButton } from "./PlannerEditButton";
 import { WeekDateSelector } from "./WeekDateSelector";
 import { WeekHeader } from "./WeekHeader";
 import { WeekdayLabels } from "./WeekdayLabels";
@@ -85,6 +85,7 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
     page: 1,
     size: PAGE_SIZE,
   });
+  const setHomePlan = useHomePlanStore((state) => state.setHomePlan);
 
   const baseTasks = useMemo(
     () =>
@@ -148,6 +149,12 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
     },
     [baseCompletionById],
   );
+
+  useEffect(() => {
+    if (data?.dayPlanId) {
+      setHomePlan(data.dayPlanId, queryDate);
+    }
+  }, [data?.dayPlanId, queryDate, setHomePlan]);
 
   return (
     <div className="scrollbar-hide h-full overflow-y-auto px-6 py-8">

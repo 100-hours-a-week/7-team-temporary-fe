@@ -8,8 +8,8 @@ import {
   START_HOUR,
   TaskBasketButton,
   TimeSlotList,
-  useDayPlanId,
   useDayPlanSchedulesQuery,
+  useHomePlanStore,
 } from "@/features/home";
 import { ExcludedListBottomSheet } from "./ExcludedListBottomSheet";
 import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
@@ -19,8 +19,7 @@ export function PlannerEditStackPage() {
   const { push, setHeaderContent, stack } = useStackPage();
   const entry = useContext(StackPageEntryContext);
   const today = useMemo(() => new Date(), []);
-  const queryDate = useMemo(() => formatDateParam(today), [today]);
-  const { dayPlanId } = useDayPlanId({ date: queryDate, page: 1, size: 1 });
+  const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
   const [isSheetOpen, setIsSheetOpen] = useState(true);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   const schedulesQuery = useDayPlanSchedulesQuery({
@@ -115,10 +114,3 @@ export function PlannerEditStackPage() {
     </>
   );
 }
-
-const formatDateParam = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { TodoCartTaskItemModel } from "@/features/home";
-import { TaskBasketAddSheet, TodoList, homeQueryKeys, useDayPlanId } from "@/features/home";
+import { TaskBasketAddSheet, TodoList, homeQueryKeys, useHomePlanStore } from "@/features/home";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
 import { BottomSheet, ConfirmDialog } from "@/shared/ui";
@@ -12,18 +12,10 @@ import { useStackPage } from "@/widgets/stack";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 
-const formatDateParam = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
 export function TaskBasketStackPage() {
   const { setHeaderContent } = useStackPage();
   const today = useMemo(() => new Date(), []);
-  const queryDate = useMemo(() => formatDateParam(today), [today]);
-  const { dayPlanId } = useDayPlanId({ date: queryDate, page: 1, size: 1 });
+  const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TodoTask | null>(null);
