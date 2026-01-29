@@ -232,11 +232,11 @@ export function TaskBasketAddSheet({
         enableDragHandle
         className="pb-[env(safe-area-inset-bottom)]"
       >
-        <div className="px-6 pb-8">
+        <div className="flex h-full flex-col px-6">
           <h2 className="text-2xl font-semibold text-neutral-900">할 일</h2>
 
           <form
-            className="mt-6 flex flex-col gap-6"
+            className="scrollbar-hide mt-6 flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pb-8"
             onSubmit={submitForm}
           >
             <FormField
