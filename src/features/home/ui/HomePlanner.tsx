@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import {
   addDays,
@@ -24,11 +24,12 @@ interface HomePlannerProps {
 }
 
 const PAGE_SIZE = 10;
-const TEN_MINUTE_BLOCK_PX = 16;
+const TEN_MINUTE_BLOCK_PX = 22;
 const GRID_LINE_THICKNESS_PX = 1;
 const TEN_MINUTE_LINE_OFFSET_PX = TEN_MINUTE_BLOCK_PX - GRID_LINE_THICKNESS_PX;
-const HOUR_BLOCK_MIN_HEIGHT_PX = TEN_MINUTE_BLOCK_PX * 6 - GRID_LINE_THICKNESS_PX;
+const HOUR_BLOCK_MIN_HEIGHT_PX = TEN_MINUTE_BLOCK_PX * 6;
 const GRID_LINE_COLOR = "rgba(229,231,235,1)";
+const GRID_LINE_DARK_COLOR = "rgba(84,30,15,0.5)";
 
 const formatDateParam = (date: Date) => {
   const year = date.getFullYear();
@@ -47,11 +48,23 @@ const parseTimeParts = (time?: string) => {
 };
 
 const getTenMinuteStep = (minute: number) => Math.floor(minute / 10);
+const getDurationMinutes = (start?: string, end?: string) => {
+  const startParts = parseTimeParts(start);
+  const endParts = parseTimeParts(end);
+  if (!startParts || !endParts) return null;
+  const startMinutes = startParts.hour * 60 + startParts.minute;
+  const endMinutes = endParts.hour * 60 + endParts.minute;
+  if (endMinutes <= startMinutes) return null;
+  return endMinutes - startMinutes;
+};
 
 export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
   const today = useMemo(() => new Date(), []);
   const [weekStart, setWeekStart] = useState(() => toStartOfWeek(today));
   const [selectedDate, setSelectedDate] = useState<Date | null>(today);
+  const [completionOverrides, setCompletionOverrides] = useState<Map<number, boolean>>(
+    () => new Map(),
+  );
 
   const weekDays = useMemo(
     () => Array.from({ length: DAYS_IN_WEEK }, (_, index) => addDays(weekStart, index)),
@@ -73,7 +86,7 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
     size: PAGE_SIZE,
   });
 
-  const tasks = useMemo(
+  const baseTasks = useMemo(
     () =>
       data?.content.map((task) =>
         toTaskItemModelFromHomeTask({
@@ -88,6 +101,14 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
         }),
       ) ?? [],
     [data],
+  );
+  const tasks = useMemo(
+    () =>
+      baseTasks.map((task) => ({
+        ...task,
+        isCompleted: completionOverrides.get(task.taskId) ?? task.isCompleted,
+      })),
+    [baseTasks, completionOverrides],
   );
   const tasksByHour = useMemo(
     () =>
@@ -112,6 +133,21 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
     setWeekStart((prev) => addDays(prev, offset));
     setSelectedDate((prev) => (prev ? addDays(prev, offset) : null));
   };
+  const baseCompletionById = useMemo(
+    () => new Map(baseTasks.map((task) => [task.taskId, task.isCompleted])),
+    [baseTasks],
+  );
+  const handleToggleComplete = useCallback(
+    (taskId: number) => {
+      setCompletionOverrides((prev) => {
+        const next = new Map(prev);
+        const current = next.get(taskId) ?? baseCompletionById.get(taskId) ?? false;
+        next.set(taskId, !current);
+        return next;
+      });
+    },
+    [baseCompletionById],
+  );
 
   return (
     <div className="scrollbar-hide h-full overflow-y-auto px-6 py-8">
@@ -141,22 +177,26 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
           return (
             <div
               key={hour}
-              className="grid grid-cols-[64px_1fr] items-start gap-4"
+              className="relative grid grid-cols-[64px_1fr] items-start gap-4"
             >
-              <div className="text-base font-semibold text-neutral-900">
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  backgroundImage: `linear-gradient(to bottom, ${GRID_LINE_DARK_COLOR} ${GRID_LINE_THICKNESS_PX}px, transparent ${GRID_LINE_THICKNESS_PX}px), linear-gradient(to bottom, ${GRID_LINE_COLOR} ${GRID_LINE_THICKNESS_PX}px, transparent ${GRID_LINE_THICKNESS_PX}px)`,
+                  backgroundSize: `100% 100%, 100% ${TEN_MINUTE_BLOCK_PX}px`,
+                }}
+              />
+              <div className="relative z-10 text-base font-semibold text-neutral-900">
                 {String(hour).padStart(2, "0")}:00
               </div>
               <div
-                className="relative"
-                style={{ minHeight: `${HOUR_BLOCK_MIN_HEIGHT_PX}px` }}
+                className="relative z-10 py-0"
+                style={{
+                  minHeight: `${HOUR_BLOCK_MIN_HEIGHT_PX}px`,
+                  paddingTop: 0,
+                  paddingBottom: 0,
+                }}
               >
-                <div
-                  className="pointer-events-none absolute inset-0 border-t border-neutral-200"
-                  style={{
-                    backgroundImage: `repeating-linear-gradient(to_bottom,transparent 0 ${TEN_MINUTE_LINE_OFFSET_PX}px,${GRID_LINE_COLOR} ${TEN_MINUTE_LINE_OFFSET_PX}px ${TEN_MINUTE_BLOCK_PX}px)`,
-                    backgroundPosition: `0 ${TEN_MINUTE_BLOCK_PX}px`,
-                  }}
-                />
                 <div className="relative h-full">
                   {statusMessage && index === 0 ? (
                     <div className={`text-sm ${statusMessage.className}`}>{statusMessage.text}</div>
@@ -165,6 +205,11 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
                     const timeParts = parseTimeParts(task.startTime);
                     const minuteStep = timeParts ? getTenMinuteStep(timeParts.minute) : 0;
                     const top = minuteStep * TEN_MINUTE_BLOCK_PX;
+                    const durationMinutes = getDurationMinutes(task.startTime, task.endTime);
+                    const blockCount = durationMinutes
+                      ? Math.max(1, Math.ceil(durationMinutes / 10))
+                      : 1;
+                    const height = blockCount * TEN_MINUTE_BLOCK_PX;
 
                     return (
                       <div
@@ -174,7 +219,8 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
                       >
                         <HomeTaskItem
                           task={task}
-                          onToggleComplete={() => undefined}
+                          style={{ height }}
+                          onToggleComplete={handleToggleComplete}
                         />
                       </div>
                     );
