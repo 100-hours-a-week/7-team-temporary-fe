@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import Link from "next/link";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useStackPage } from "@/widgets/stack";
 import {
@@ -16,7 +18,9 @@ import { BASE_INPUT_CLASS_NAME, FormField } from "@/shared/form/ui";
 import { useToast } from "@/shared/ui/toast";
 import { PasswordChangeSheet } from "@/features/profile/password-change";
 import { AuthService } from "@/shared/auth";
-import { ConfirmDialog } from "@/shared/ui";
+import { BottomSheet, ConfirmDialog, Icon } from "@/shared/ui";
+import { useMutationErrorEffect } from "@/shared/query";
+import { apiFetch, Endpoint } from "@/shared/api";
 
 const focusTimeOptions = [
   { value: "MORNING", label: "오전" },
@@ -24,6 +28,21 @@ const focusTimeOptions = [
   { value: "EVENING", label: "저녁" },
   { value: "NIGHT", label: "밤" },
 ] as const;
+
+const TERMS_LINKS = new Map<number, string>([
+  [2, "https://wide-legend-7e1.notion.site/2f4ee90a967f8141bb7dc3cc8968fa79?source=copy_link"],
+  [1, "https://wide-legend-7e1.notion.site/2f4ee90a967f8155a0ebc4c9616ba4e7?pvs=73"],
+  [3, "https://wide-legend-7e1.notion.site/2f4ee90a967f81f080eec2327efef776?source=copy_link"],
+]);
+
+type TermsSignItem = {
+  termsSignId: number;
+  termsId: number;
+  name: string;
+  termsType: "MANDATORY" | "OPTIONAL";
+  isAgreed: boolean;
+  agreedAt: string;
+};
 
 export function MyInfoStackPage() {
   const { setHeaderContent } = useStackPage();
@@ -33,6 +52,9 @@ export function MyInfoStackPage() {
   const deleteMutation = useDeleteMyProfileMutation();
   const [isPasswordSheetOpen, setIsPasswordSheetOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isTermsSheetOpen, setIsTermsSheetOpen] = useState(false);
+  const [pendingTermsId, setPendingTermsId] = useState<number | null>(null);
+  const queryClient = useQueryClient();
 
   const form = useForm<UpdateMyProfileModel>({
     defaultValues: {
@@ -65,6 +87,53 @@ export function MyInfoStackPage() {
 
   const isSaving = updateMutation.isPending || form.formState.isSubmitting;
   const isDirty = form.formState.isDirty;
+  const termsSignQuery = useQuery({
+    queryKey: ["terms-sign"],
+    queryFn: ({ signal }) =>
+      AuthService.refreshAndRetry(() =>
+        apiFetch<TermsSignItem[]>(Endpoint.TERMS_SIGN.LIST, {
+          signal,
+          authRequired: true,
+        }),
+      ),
+    enabled: isTermsSheetOpen,
+  });
+
+  const updateTermsSignMutation = useMutation({
+    mutationFn: ({ termsId, isAgreed }: { termsId: number; isAgreed: boolean }) =>
+      AuthService.refreshAndRetry(() =>
+        apiFetch<void, { isAgreed: boolean }>(Endpoint.TERMS_SIGN.UPDATE(termsId), {
+          method: "PATCH",
+          body: { isAgreed },
+          authRequired: true,
+        }),
+      ),
+    onMutate: async ({ termsId, isAgreed }) => {
+      setPendingTermsId(termsId);
+      await queryClient.cancelQueries({ queryKey: ["terms-sign"] });
+      const previous = queryClient.getQueryData<TermsSignItem[]>(["terms-sign"]);
+      queryClient.setQueryData<TermsSignItem[]>(["terms-sign"], (prev) => {
+        if (!prev) return prev;
+        return prev.map((item) => (item.termsId === termsId ? { ...item, isAgreed } : item));
+      });
+      return { previous };
+    },
+    onSuccess: () => {
+      showToast("약관 동의가 변경되었습니다.", "success");
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["terms-sign"], context.previous);
+      }
+    },
+    onSettled: () => {
+      setPendingTermsId(null);
+    },
+  });
+
+  useMutationErrorEffect(updateTermsSignMutation);
+
+  const termsItems = useMemo(() => termsSignQuery.data ?? [], [termsSignQuery.data]);
 
   const handleSave = form.handleSubmit((values) =>
     updateMutation.mutate(values, {
@@ -84,6 +153,22 @@ export function MyInfoStackPage() {
       onError: () => {
         showToast("탈퇴에 실패했습니다.", "error");
       },
+    });
+  };
+
+  const handleToggleTerms = (termsId: number, nextAgreed: boolean) => {
+    updateTermsSignMutation.mutate({ termsId, isAgreed: nextAgreed });
+  };
+
+  const formatAgreedAt = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -218,6 +303,13 @@ export function MyInfoStackPage() {
               </button>
             }
           />
+          <button
+            type="button"
+            className="mt-3 w-full rounded-full border border-neutral-900 px-4 py-3 text-sm font-semibold text-neutral-900"
+            onClick={() => setIsTermsSheetOpen(true)}
+          >
+            약관 변경하기
+          </button>
         </div>
         <div className="h-[70px]" />
         <FixedActionBar>
@@ -235,6 +327,98 @@ export function MyInfoStackPage() {
         open={isPasswordSheetOpen}
         onOpenChange={setIsPasswordSheetOpen}
       />
+
+      {isTermsSheetOpen && (
+        <button
+          type="button"
+          aria-label="약관 변경 바텀 시트 닫기"
+          className="fixed inset-0 z-30 bg-black/50"
+          onClick={() => setIsTermsSheetOpen(false)}
+        />
+      )}
+      <BottomSheet
+        open={isTermsSheetOpen}
+        onOpenChange={setIsTermsSheetOpen}
+        peekHeight={70}
+        expandHeight={70}
+        enableDragHandle
+        className="pb-[env(safe-area-inset-bottom)]"
+      >
+        <div className="px-6 pb-6">
+          <div className="pt-2 text-lg font-semibold text-neutral-900">약관 변경하기</div>
+          <div className="mt-4 flex flex-col gap-3">
+            {termsSignQuery.isLoading ? (
+              <div className="text-sm text-neutral-400">약관 정보를 불러오는 중...</div>
+            ) : null}
+            {termsSignQuery.isError ? (
+              <div className="text-sm text-neutral-400">약관 정보를 불러오지 못했습니다.</div>
+            ) : null}
+            {termsItems.map((term) => {
+              const href = TERMS_LINKS.get(term.termsId);
+              const isPending =
+                pendingTermsId === term.termsId || updateTermsSignMutation.isPending;
+              const isMandatory = term.termsType === "MANDATORY";
+              const canToggle = !isMandatory && !isPending;
+              return (
+                <div
+                  key={term.termsSignId}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg px-0 py-[9px]"
+                >
+                  <div className="flex flex-1 flex-col">
+                    <span className="flex items-center gap-2 text-sm text-neutral-900">
+                      <input
+                        type="checkbox"
+                        checked={term.isAgreed}
+                        disabled={!canToggle}
+                        onChange={() => {
+                          if (!canToggle) return;
+                          handleToggleTerms(term.termsId, !term.isAgreed);
+                        }}
+                        className="h-4 w-4 accent-neutral-900"
+                      />
+                      {term.name}
+                    </span>
+                    <span className="pt-1 pl-6 text-xs text-neutral-400">
+                      동의일: {formatAgreedAt(term.agreedAt)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {href ? (
+                      <Link
+                        href={href}
+                        aria-label={`${term.name} 상세 보기`}
+                        title={`${term.name} 상세 보기`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="focus:ring-error/30 inline-flex items-center justify-center rounded-md text-neutral-400 focus:outline-none"
+                      >
+                        <Icon
+                          name="next"
+                          className="h-[18px] w-4"
+                          aria-hidden="true"
+                          focusable="false"
+                        />
+                      </Link>
+                    ) : null}
+                    <button
+                      type="button"
+                      className={
+                        term.isAgreed
+                          ? "rounded-full bg-neutral-900 px-3 py-1 text-xs font-semibold text-white"
+                          : "rounded-full bg-neutral-200 px-3 py-1 text-xs font-semibold text-neutral-500"
+                      }
+                      disabled={!canToggle}
+                      onClick={() => handleToggleTerms(term.termsId, !term.isAgreed)}
+                    >
+                      {isPending ? "변경 중..." : term.isAgreed ? "동의함" : "미동의"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </BottomSheet>
     </>
   );
 }
