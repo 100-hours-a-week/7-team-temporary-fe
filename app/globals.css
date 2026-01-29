@@ -18,6 +18,8 @@
   --color-secondary-400: rgb(175, 165, 165);
   --color-secondary-500: rgb(150, 140, 140);
   --color-secondary-600: rgb(138, 87, 87);
+  --color-secondary-700: rgb(120, 75, 75);
+  --color-secondary-800: rgb(57, 22, 22);
   /* Ink (Gray) */
   --color-ink-100: rgb(238, 238, 238);
   --color-ink-200: rgb(210, 206, 206);
