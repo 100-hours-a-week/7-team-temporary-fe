@@ -166,11 +166,7 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
         onSelect={setSelectedDate}
       />
 
-      <div className="mt-0 flex flex-col items-end justify-center">
-        <PlannerEditButton onClick={onOpenPlannerEdit} />
-      </div>
-
-      <div className="mt-0 flex flex-col gap-6 pb-[152px]">
+      <div className="mt-10 flex flex-col gap-6 pb-[152px]">
         {timeSlots.map((hour, index) => {
           const items = tasksByHour.get(hour) ?? [];
 

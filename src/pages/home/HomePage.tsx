@@ -1,5 +1,6 @@
 import { useStackPage } from "@/widgets/stack";
 import { HomePlanner } from "@/features/home";
+import { Icon } from "@/shared/ui/icon";
 import { PlannerEditStackPage } from "./ui/PlannerEditStackPage";
 
 export function HomePage() {
@@ -9,5 +10,21 @@ export function HomePage() {
     push(<PlannerEditStackPage />);
   };
 
-  return <HomePlanner onOpenPlannerEdit={handleOpenPlannerEdit} />;
+  return (
+    <div className="relative h-full pb-20">
+      <HomePlanner onOpenPlannerEdit={handleOpenPlannerEdit} />
+      <button
+        type="button"
+        aria-label="플래너 수정"
+        onClick={handleOpenPlannerEdit}
+        className="bg-ink-900 hover:bg-primary-500 absolute right-5 bottom-35 z-40 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg"
+      >
+        <Icon
+          name="edit"
+          className="h-8 w-8"
+          aria-hidden
+        />
+      </button>
+    </div>
+  );
 }
