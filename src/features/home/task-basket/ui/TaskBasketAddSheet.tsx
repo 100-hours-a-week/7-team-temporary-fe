@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 
 import type { TodoCartTaskItemModel } from "@/features/home/model/taskModels";
 import type { TaskDurationOption } from "@/shared/validation";
@@ -16,8 +15,8 @@ import type {
   DayPlanScheduleDuration,
   DayPlanScheduleItemDto,
 } from "@/features/home/api";
-import { createDayPlanSchedule } from "@/features/home/api";
-import { useMutationErrorEffect } from "@/shared/query";
+import { Endpoint } from "@/shared/api";
+import { useApiMutation, useMutationErrorEffect } from "@/shared/query";
 import { BottomSheet } from "@/shared/ui";
 import { FormField, BASE_INPUT_CLASS_NAME } from "@/shared/form/ui";
 import { PrimaryButton } from "@/shared/ui/button";
@@ -63,15 +62,40 @@ export function TaskBasketAddSheet({
     onOpenChange(false);
   };
 
-  const createScheduleMutation = useMutation({
-    mutationFn: (payload: CreateDayPlanScheduleRequestDto) => {
+  const createScheduleMutation = useApiMutation<
+    CreateDayPlanScheduleRequestDto,
+    CreateDayPlanScheduleRequestDto,
+    DayPlanScheduleItemDto | undefined
+  >({
+    url: () => {
       if (!dayPlanId) {
         throw new Error("dayPlanId가 없습니다.");
       }
-      return createDayPlanSchedule(dayPlanId, payload);
+      return Endpoint.DAY_PLAN.SCHEDULE_BY_ID(dayPlanId);
     },
+    method: "POST",
+    dtoFn: (payload) => payload,
+    authRequired: true,
+    refreshOnUnauthorized: true,
+  });
+  const updateScheduleMutation = useApiMutation<
+    CreateDayPlanScheduleRequestDto,
+    CreateDayPlanScheduleRequestDto,
+    void
+  >({
+    url: () => {
+      if (!editingTask) {
+        throw new Error("editingTask가 없습니다.");
+      }
+      return Endpoint.SCHEDULE.BY_ID(editingTask.scheduleId);
+    },
+    method: "PUT",
+    dtoFn: (payload) => payload,
+    authRequired: true,
+    refreshOnUnauthorized: true,
   });
   useMutationErrorEffect(createScheduleMutation);
+  useMutationErrorEffect(updateScheduleMutation);
 
   const mapDurationToApi = (duration: TaskDurationOption | null) => {
     if (!duration) return undefined;
@@ -211,6 +235,7 @@ export function TaskBasketAddSheet({
 
     try {
       if (editingTask) {
+        await updateScheduleMutation.mutateAsync(payload);
         const nextTask = buildEditedTask(values, startAt, endAt, editingTask);
         onUpdateTask?.(nextTask);
         showToast("할 일이 수정되었습니다.", "success");
