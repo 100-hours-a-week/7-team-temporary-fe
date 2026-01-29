@@ -12,8 +12,7 @@ import {
   useDayPlanSchedulesQuery,
 } from "@/features/home";
 import { ExcludedListBottomSheet } from "./ExcludedListBottomSheet";
-import { useStackPage } from "@/widgets/stack";
-import { StackPageEntryContext } from "@/widgets/stack/model/stackPageContext";
+import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
 import { TaskBasketStackPage } from "./TaskBasketStackPage";
 
 export function PlannerEditStackPage() {
@@ -103,9 +102,7 @@ export function PlannerEditStackPage() {
           </div>
         ) : null}
         {!schedulesQuery.isLoading && !schedulesQuery.isError && excludedTasks.length === 0 ? (
-          <div className="py-6 text-center text-sm text-neutral-400">
-            제외된 작업이 없습니다.
-          </div>
+          <div className="py-6 text-center text-sm text-neutral-400">제외된 작업이 없습니다.</div>
         ) : null}
         {excludedTasks.map((task) => (
           <ExcludedTaskItem
