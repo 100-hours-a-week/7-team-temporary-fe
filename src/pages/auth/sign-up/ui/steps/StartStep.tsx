@@ -6,7 +6,7 @@ export function StartStep() {
 
   return (
     <section className="text-ink-800 mx-auto flex h-full max-w-[290px] flex-col items-center justify-center gap-6 text-center">
-      <AnimatedStar />
+      <AnimatedStar name="starYellow" />
       <SplitText
         text={lines.join(" ")}
         className="mb-12 text-center text-2xl font-semibold"
