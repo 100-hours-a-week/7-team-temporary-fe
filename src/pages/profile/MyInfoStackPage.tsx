@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { useStackPage } from "@/widgets/stack";
 import {
   useMyProfileQuery,
+  useDeleteMyProfileMutation,
   useUpdateMyProfileMutation,
   type UpdateMyProfileModel,
 } from "@/entities/user";
@@ -14,6 +15,8 @@ import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { BASE_INPUT_CLASS_NAME, FormField } from "@/shared/form/ui";
 import { useToast } from "@/shared/ui/toast";
 import { PasswordChangeSheet } from "@/features/profile/password-change";
+import { AuthService } from "@/shared/auth";
+import { ConfirmDialog } from "@/shared/ui";
 
 const focusTimeOptions = [
   { value: "MORNING", label: "오전" },
@@ -27,7 +30,9 @@ export function MyInfoStackPage() {
   const { data: myProfile } = useMyProfileQuery();
   const { showToast } = useToast();
   const updateMutation = useUpdateMyProfileMutation();
+  const deleteMutation = useDeleteMyProfileMutation();
   const [isPasswordSheetOpen, setIsPasswordSheetOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const form = useForm<UpdateMyProfileModel>({
     defaultValues: {
@@ -68,6 +73,19 @@ export function MyInfoStackPage() {
       },
     }),
   );
+
+  const handleDeleteAccount = () => {
+    deleteMutation.mutate(undefined, {
+      onSuccess: async () => {
+        showToast("탈퇴가 완료되었습니다.", "success");
+        await AuthService.logout();
+        setIsDeleteDialogOpen(false);
+      },
+      onError: () => {
+        showToast("탈퇴에 실패했습니다.", "error");
+      },
+    });
+  };
 
   return (
     <>
@@ -178,7 +196,30 @@ export function MyInfoStackPage() {
             </div>
           </div>
         </div>
-        <div className="h-[70px]"></div>
+        <div className="mt-6 w-full">
+          <ConfirmDialog
+            open={isDeleteDialogOpen}
+            onOpenChange={setIsDeleteDialogOpen}
+            title="정말 탈퇴하시겠습니까?"
+            description="탈퇴 시 모든 정보가 삭제되며 복구할 수 없습니다."
+            confirmText={deleteMutation.isPending ? "탈퇴 중..." : "확인"}
+            cancelText="취소"
+            confirmDisabled={deleteMutation.isPending}
+            cancelDisabled={deleteMutation.isPending}
+            onConfirm={handleDeleteAccount}
+            contentClassName="bg-white rounded-3xl"
+            trigger={
+              <button
+                type="button"
+                className="w-full rounded-full border border-red-500 px-4 py-3 text-sm font-semibold text-red-500"
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "탈퇴 중..." : "탈퇴하기"}
+              </button>
+            }
+          />
+        </div>
+        <div className="h-[70px]" />
         <FixedActionBar>
           <PrimaryButton
             type="submit"
