@@ -1,6 +1,7 @@
 export {
   createDayPlanSchedule,
   fetchDayPlanSchedule,
+  fetchDayPlanSchedules,
   fetchDayPlanScheduleById,
   updateDayPlanSchedule,
 } from "./dayPlan.api";
