@@ -6,7 +6,7 @@ import type { TodoCartTaskItemModel } from "@/features/home";
 import { TaskBasketAddSheet, TodoList, homeQueryKeys, useDayPlanId } from "@/features/home";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
-import { ConfirmDialog } from "@/shared/ui";
+import { BottomSheet, ConfirmDialog } from "@/shared/ui";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useStackPage } from "@/widgets/stack";
 
@@ -30,10 +30,24 @@ export function TaskBasketStackPage() {
   const [tasks, setTasks] = useState<TodoTask[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [isAiSheetOpen, setIsAiSheetOpen] = useState(false);
 
   const deleteScheduleMutation = useApiMutation<number, void, void>({
     url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),
     method: "DELETE",
+    authRequired: true,
+    refreshOnUnauthorized: true,
+    invalidateKeys: dayPlanId ? [homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10)] : [],
+  });
+
+  const aiArrangeMutation = useApiMutation<void, void, void>({
+    url: () => {
+      if (!dayPlanId) {
+        throw new Error("dayPlanId가 없습니다.");
+      }
+      return Endpoint.DAY_PLAN.AI_ARRANGEMENT(dayPlanId);
+    },
+    method: "POST",
     authRequired: true,
     refreshOnUnauthorized: true,
     invalidateKeys: dayPlanId ? [homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10)] : [],
@@ -46,6 +60,17 @@ export function TaskBasketStackPage() {
 
   const handleOpenSheet = () => {
     setIsSheetOpen(true);
+  };
+
+  const handleOpenAiSheet = () => {
+    setIsAiSheetOpen(true);
+  };
+
+  const handleAiArrange = () => {
+    if (!dayPlanId || aiArrangeMutation.isPending) return;
+    aiArrangeMutation.mutate(undefined, {
+      onSuccess: () => setIsAiSheetOpen(false),
+    });
   };
 
   const handleEditTask = (task: TodoTask) => {
@@ -139,11 +164,49 @@ export function TaskBasketStackPage() {
       <FixedActionBar>
         <PrimaryButton
           className="w-full"
-          onClick={handleOpenSheet}
+          onClick={handleOpenAiSheet}
         >
-          할 일 추가
+          플래너 배치하기
         </PrimaryButton>
       </FixedActionBar>
+
+      <BottomSheet
+        open={isAiSheetOpen}
+        onOpenChange={setIsAiSheetOpen}
+        peekHeight={35}
+        expandHeight={35}
+        className="pb-[env(safe-area-inset-bottom)]"
+      >
+        <div className="px-6 pt-6 pb-6 text-center">
+          <p className="text-lg font-semibold text-neutral-900">
+            시간이 입력되어 있지 않은
+            <br />
+            작업이 존재합니다.
+          </p>
+          <p className="mt-3 text-sm text-neutral-700">집중 시간에 따라 AI 자동으로 배치할까요?</p>
+          <p className="mt-2 text-xs text-neutral-400">
+            AI를 사용할 수 있는 남은 횟수는 1번 입니다.
+          </p>
+          <div className="mt-6 flex gap-3">
+            <PrimaryButton
+              className="w-full bg-neutral-200 text-neutral-900 hover:bg-neutral-200"
+              isLoading={aiArrangeMutation.isPending}
+              loadingText="배치 중..."
+              disabled={!dayPlanId}
+              onClick={handleAiArrange}
+            >
+              AI 자동배치
+            </PrimaryButton>
+            <PrimaryButton
+              className="w-full bg-neutral-100 text-neutral-500 hover:bg-neutral-100"
+              disabled={aiArrangeMutation.isPending}
+              onClick={() => setIsAiSheetOpen(false)}
+            >
+              취소
+            </PrimaryButton>
+          </div>
+        </div>
+      </BottomSheet>
 
       <TaskBasketAddSheet
         open={isSheetOpen}
