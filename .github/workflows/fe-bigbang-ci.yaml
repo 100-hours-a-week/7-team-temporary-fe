@@ -60,20 +60,44 @@ jobs:
           )
         run: pnpm audit --audit-level=high
 
-      - name: Notify CI success
-        if: success()
+      - name: Notify CI result (PR + push)
+        if: always()
         run: |
-          curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d '{
-              "content": "✅ CI 성공\nRepo: '${{ github.repository }}'\nBranch: '${{ github.ref_name }}'\nRun: https://github.com/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"
-            }'
+          
+          # PR CI
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            
+            BASE="${{ github.base_ref }}"
 
-      - name: Notify CI failure
-        if: failure()
-        run: |
-          curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d '{
-              "content": "🚨 CI 실패\nRepo: '${{ github.repository }}'\nBranch: '${{ github.ref_name }}'\nRun: https://github.com/'${{ github.repository }}'/actions/runs/'${{ github.run_id }}'"
-            }'
+            if [[ "$BASE" == "develop" || "$BASE" == "main" || "$BASE" == release/* ]]; then
+              if [ "${{ job.status }}" = "success" ]; then
+                STATUS="✅ PR CI 성공"
+              else
+                STATUS="🚨 PR CI 실패"
+              fi
+
+              curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"content\": \"$STATUS\nRepo: ${{ github.repository }}\nPR: #${{ github.event.pull_request.number }}\nFrom: ${{ github.head_ref }} → ${{ github.base_ref }}\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+                }"
+            fi
+
+          # PUSH CI
+          else
+            BRANCH="${{ github.ref_name }}"
+
+            if [[ "$BRANCH" == "develop" || "$BRANCH" == "main" || "$BRANCH" == release/* ]]; then
+              if [ "${{ job.status }}" = "success" ]; then
+                STATUS="✅ CI 성공"
+              else
+                STATUS="🚨 CI 실패"
+              fi
+
+              curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"content\": \"$STATUS\nRepo: ${{ github.repository }}\nBranch: $BRANCH\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+                }"
+            fi
+          fi
