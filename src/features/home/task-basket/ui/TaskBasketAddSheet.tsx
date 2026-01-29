@@ -270,8 +270,8 @@ export function TaskBasketAddSheet({
   const duration = watch("duration");
   const immersion = watch("immersion");
 
-  const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => i), []);
-  const minuteOptions = useMemo(() => Array.from({ length: 60 }, (_, i) => i), []);
+  const hourOptions = useMemo(() => Array.from({ length: 16 }, (_, i) => i + 8), []);
+  const minuteOptions = useMemo(() => [0, 10, 20, 30, 40, 50], []);
 
   useEffect(() => {
     if (open) {
