@@ -1,10 +1,17 @@
 import styled from "@emotion/styled";
+import type { CSSProperties } from "react";
+
+import { cn } from "@/shared/lib";
+
+import { Icon } from "@/shared/ui/icon";
 
 import type { TaskItemModel } from "../model/taskModels";
 
 interface HomeTaskItemProps {
   task: TaskItemModel;
   onToggleComplete: (taskId: number) => void;
+  className?: string;
+  style?: CSSProperties;
 }
 
 const TIME_LABEL_BY_TYPE: Record<TaskItemModel["timeType"], string> = {
@@ -18,32 +25,39 @@ const EMPTY_TIME_TEXT = "시간 정보 없음";
 /**
  * 홈 플래너에서 작업을 표현하는 카드 컴포넌트.
  */
-export function HomeTaskItem({ task, onToggleComplete }: HomeTaskItemProps) {
+export function HomeTaskItem({ task, onToggleComplete, className, style }: HomeTaskItemProps) {
   const timeLabel = TIME_LABEL_BY_TYPE[task.timeType];
   const timeValue = getTimeValue(task);
 
   return (
     <Card
+      className={cn("text-ink-900", className)}
+      style={style}
       $isCompleted={task.isCompleted}
       $isFixedTime={task.isFixedTime}
     >
-      <TitleRow>
-        <Title $isCompleted={task.isCompleted}>{task.title}</Title>
-        {task.isUrgent ? <UrgentBadge>긴급</UrgentBadge> : null}
-      </TitleRow>
-      <MetaRow>
-        <MetaLabel>{timeLabel}</MetaLabel>
-        <MetaValue>{timeValue}</MetaValue>
-      </MetaRow>
-      <ActionRow>
-        <CompleteButton
-          type="button"
-          aria-pressed={task.isCompleted}
-          onClick={() => onToggleComplete(task.taskId)}
-        >
-          {task.isCompleted ? "완료됨" : "완료"}
-        </CompleteButton>
-      </ActionRow>
+      <CompleteButton
+        type="button"
+        aria-pressed={task.isCompleted}
+        aria-label={task.isCompleted ? "완료됨" : "완료"}
+        onClick={() => onToggleComplete(task.taskId)}
+      >
+        <Icon
+          name={task.isCompleted ? "todo_check" : "todo_unchecked"}
+          className="h-7 w-7"
+          aria-hidden
+        />
+      </CompleteButton>
+      <Content>
+        <TitleRow>
+          <Title $isCompleted={task.isCompleted}>{task.title}</Title>
+          {task.isUrgent ? <UrgentBadge>중요</UrgentBadge> : null}
+        </TitleRow>
+        <MetaRow>
+          <MetaLabel>{timeLabel}</MetaLabel>
+          <MetaValue>{timeValue}</MetaValue>
+        </MetaRow>
+      </Content>
     </Card>
   );
 }
@@ -59,12 +73,20 @@ function getTimeValue(task: TaskItemModel) {
 
 const Card = styled.article<{ $isCompleted: boolean; $isFixedTime: boolean }>`
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 12px;
   padding: 14px 16px;
   border-radius: 16px;
   border: 1px solid ${({ $isFixedTime }) => ($isFixedTime ? "#c7d2fe" : "#e5e7eb")};
   background: ${({ $isCompleted }) => ($isCompleted ? "#f3f4f6" : "#ffffff")};
+  ${({ $isCompleted }) => ($isCompleted ? "color: #9ca3af;" : "")};
+`;
+
+const Content = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 `;
 
 const TitleRow = styled.div`
@@ -76,7 +98,7 @@ const TitleRow = styled.div`
 const Title = styled.div<{ $isCompleted: boolean }>`
   font-size: 16px;
   font-weight: 600;
-  color: ${({ $isCompleted }) => ($isCompleted ? "#9ca3af" : "#111827")};
+  color: ${({ $isCompleted }) => ($isCompleted ? "#9ca3af" : "inherit")};
   text-decoration: ${({ $isCompleted }) => ($isCompleted ? "line-through" : "none")};
 `;
 
@@ -94,35 +116,28 @@ const MetaRow = styled.div`
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #6b7280;
+  color: inherit;
+  opacity: 0.7;
 `;
 
 const MetaLabel = styled.span`
   min-width: 70px;
   font-weight: 600;
-  color: #374151;
+  color: inherit;
 `;
 
 const MetaValue = styled.span`
   font-weight: 500;
 `;
 
-const ActionRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-`;
-
 const CompleteButton = styled.button`
   border: none;
-  padding: 6px 10px;
+  padding: 0;
   border-radius: 8px;
-  background: #111827;
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-
-  &[aria-pressed="true"] {
-    background: #9ca3af;
-  }
+  background: transparent;
+  flex-shrink: 0;
 `;
