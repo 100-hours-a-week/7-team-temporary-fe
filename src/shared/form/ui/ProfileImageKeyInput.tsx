@@ -55,7 +55,6 @@ export function ProfileImageKeyInput({
         id={inputId}
         type="file"
         accept="image/*"
-        capture="environment"
         className="sr-only text-[rgba(112,112,112,1)]"
         onChange={handleFileChange}
         disabled={isDisabled}
