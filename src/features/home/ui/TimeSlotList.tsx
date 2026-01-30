@@ -23,7 +23,7 @@ export function TimeSlotList({ slots, tasks = [], onToggleComplete }: TimeSlotLi
   }, new Map());
 
   return (
-    <div className="mt-0 flex flex-col gap-6 pb-[152px]">
+    <div className="mt-10 flex flex-col gap-6 pb-[152px]">
       {slots.map((hour) => {
         const items = tasksByHour.get(hour) ?? [];
 

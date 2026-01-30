@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   addDays,
@@ -10,11 +10,11 @@ import {
   START_HOUR,
   toStartOfWeek,
 } from "../model/calendar";
-import type { TaskItemModel } from "../model/taskModels";
 import { toTaskItemModelFromHomeTask } from "../model/taskMappers";
+import { useHomePlanStore } from "../model/homePlan.store";
 import { useDayPlanScheduleQuery } from "../model/useDayPlanScheduleQuery";
 import { HomeTaskItem } from "./HomeTaskItem";
-import { PlannerEditButton } from "./PlannerEditButton";
+import { TimeSlotGrid } from "./TimeSlotGrid";
 import { WeekDateSelector } from "./WeekDateSelector";
 import { WeekHeader } from "./WeekHeader";
 import { WeekdayLabels } from "./WeekdayLabels";
@@ -24,11 +24,6 @@ interface HomePlannerProps {
 }
 
 const PAGE_SIZE = 10;
-const TEN_MINUTE_BLOCK_PX = 16;
-const GRID_LINE_THICKNESS_PX = 1;
-const TEN_MINUTE_LINE_OFFSET_PX = TEN_MINUTE_BLOCK_PX - GRID_LINE_THICKNESS_PX;
-const HOUR_BLOCK_MIN_HEIGHT_PX = TEN_MINUTE_BLOCK_PX * 6 - GRID_LINE_THICKNESS_PX;
-const GRID_LINE_COLOR = "rgba(229,231,235,1)";
 
 const formatDateParam = (date: Date) => {
   const year = date.getFullYear();
@@ -37,21 +32,13 @@ const formatDateParam = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const parseTimeParts = (time?: string) => {
-  if (!time) return null;
-  const [hourText, minuteText] = time.split(":");
-  const hour = Number(hourText);
-  const minute = Number(minuteText);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
-  return { hour, minute };
-};
-
-const getTenMinuteStep = (minute: number) => Math.floor(minute / 10);
-
 export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
   const today = useMemo(() => new Date(), []);
   const [weekStart, setWeekStart] = useState(() => toStartOfWeek(today));
   const [selectedDate, setSelectedDate] = useState<Date | null>(today);
+  const [completionOverrides, setCompletionOverrides] = useState<Map<number, boolean>>(
+    () => new Map(),
+  );
 
   const weekDays = useMemo(
     () => Array.from({ length: DAYS_IN_WEEK }, (_, index) => addDays(weekStart, index)),
@@ -72,8 +59,9 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
     page: 1,
     size: PAGE_SIZE,
   });
+  const setHomePlan = useHomePlanStore((state) => state.setHomePlan);
 
-  const tasks = useMemo(
+  const baseTasks = useMemo(
     () =>
       data?.content.map((task) =>
         toTaskItemModelFromHomeTask({
@@ -89,16 +77,13 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
       ) ?? [],
     [data],
   );
-  const tasksByHour = useMemo(
+  const tasks = useMemo(
     () =>
-      tasks.reduce<Map<number, TaskItemModel[]>>((map, task) => {
-        const timeParts = parseTimeParts(task.startTime);
-        if (!timeParts) return map;
-        if (!map.has(timeParts.hour)) map.set(timeParts.hour, []);
-        map.get(timeParts.hour)?.push(task);
-        return map;
-      }, new Map()),
-    [tasks],
+      baseTasks.map((task) => ({
+        ...task,
+        isCompleted: completionOverrides.get(task.taskId) ?? task.isCompleted,
+      })),
+    [baseTasks, completionOverrides],
   );
   const statusMessage = isLoading
     ? { text: "일정을 불러오는 중...", className: "text-neutral-500" }
@@ -112,6 +97,27 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
     setWeekStart((prev) => addDays(prev, offset));
     setSelectedDate((prev) => (prev ? addDays(prev, offset) : null));
   };
+  const baseCompletionById = useMemo(
+    () => new Map(baseTasks.map((task) => [task.taskId, task.isCompleted])),
+    [baseTasks],
+  );
+  const handleToggleComplete = useCallback(
+    (taskId: number) => {
+      setCompletionOverrides((prev) => {
+        const next = new Map(prev);
+        const current = next.get(taskId) ?? baseCompletionById.get(taskId) ?? false;
+        next.set(taskId, !current);
+        return next;
+      });
+    },
+    [baseCompletionById],
+  );
+
+  useEffect(() => {
+    if (data?.dayPlanId) {
+      setHomePlan(data.dayPlanId, queryDate);
+    }
+  }, [data?.dayPlanId, queryDate, setHomePlan]);
 
   return (
     <div className="scrollbar-hide h-full overflow-y-auto px-6 py-8">
@@ -129,62 +135,21 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
         today={today}
         onSelect={setSelectedDate}
       />
-
-      <div className="mt-0 flex flex-col items-end justify-center">
-        <PlannerEditButton onClick={onOpenPlannerEdit} />
-      </div>
-
-      <div className="mt-0 flex flex-col gap-6 pb-[152px]">
-        {timeSlots.map((hour, index) => {
-          const items = tasksByHour.get(hour) ?? [];
-
-          return (
-            <div
-              key={hour}
-              className="grid grid-cols-[64px_1fr] items-start gap-4"
-            >
-              <div className="text-base font-semibold text-neutral-900">
-                {String(hour).padStart(2, "0")}:00
-              </div>
-              <div
-                className="relative"
-                style={{ minHeight: `${HOUR_BLOCK_MIN_HEIGHT_PX}px` }}
-              >
-                <div
-                  className="pointer-events-none absolute inset-0 border-t border-neutral-200"
-                  style={{
-                    backgroundImage: `repeating-linear-gradient(to_bottom,transparent 0 ${TEN_MINUTE_LINE_OFFSET_PX}px,${GRID_LINE_COLOR} ${TEN_MINUTE_LINE_OFFSET_PX}px ${TEN_MINUTE_BLOCK_PX}px)`,
-                    backgroundPosition: `0 ${TEN_MINUTE_BLOCK_PX}px`,
-                  }}
-                />
-                <div className="relative h-full">
-                  {statusMessage && index === 0 ? (
-                    <div className={`text-sm ${statusMessage.className}`}>{statusMessage.text}</div>
-                  ) : null}
-                  {items.map((task) => {
-                    const timeParts = parseTimeParts(task.startTime);
-                    const minuteStep = timeParts ? getTenMinuteStep(timeParts.minute) : 0;
-                    const top = minuteStep * TEN_MINUTE_BLOCK_PX;
-
-                    return (
-                      <div
-                        key={task.taskId}
-                        className="absolute right-0 left-0"
-                        style={{ top }}
-                      >
-                        <HomeTaskItem
-                          task={task}
-                          onToggleComplete={() => undefined}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <TimeSlotGrid
+        slots={timeSlots}
+        tasks={tasks}
+        statusMessage={statusMessage}
+        getTaskKey={(task) => task.taskId}
+        getStartTime={(task) => task.startTime}
+        getEndTime={(task) => task.endTime}
+        renderTask={(task, style) => (
+          <HomeTaskItem
+            task={task}
+            style={style}
+            onToggleComplete={handleToggleComplete}
+          />
+        )}
+      />
     </div>
   );
 }
