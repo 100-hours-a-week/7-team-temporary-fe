@@ -134,6 +134,16 @@ export function TermsStep() {
           {visibleTerms.map((term, index) => {
             const remoteTerm = termsById.get(term.id);
             const label = remoteTerm?.name ?? term.label;
+            const agreedFieldName = `terms.${index}.isAgreed` as const;
+            const agreedRegister = register(agreedFieldName, {
+              onChange: (event) => {
+                const nextChecked = event.target.checked;
+                setValue(agreedFieldName, nextChecked, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+              },
+            });
             return (
               <label
                 key={term.id}
@@ -142,7 +152,7 @@ export function TermsStep() {
                 <span className="flex items-center gap-2 text-sm text-neutral-900">
                   <input
                     type="checkbox"
-                    {...register(`terms.${index}.isAgreed` as const)}
+                    {...agreedRegister}
                     className="h-4 w-4 accent-neutral-900"
                   />
                   <input

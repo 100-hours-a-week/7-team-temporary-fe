@@ -7,6 +7,7 @@ import { AuthRouteWatcher } from "@/shared/auth/ui/AuthRouteWatcher";
 import { useAuthStore } from "@/shared/auth";
 import { registerFcmToken } from "@/shared/firebase/registerFcmToken";
 import { registerServiceWorker } from "@/shared/pwa/registerServiceWorker";
+import { FcmForegroundListener } from "@/shared/firebase/FcmForegroundListener";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -55,6 +56,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <AuthRouteWatcher />
+        <FcmForegroundListener />
         {children}
       </ToastProvider>
     </QueryClientProvider>
