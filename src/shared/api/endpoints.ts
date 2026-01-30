@@ -41,4 +41,7 @@ export const Endpoint = {
   SCHEDULE: {
     BY_ID: (scheduleId: number) => path(`/schedule/${scheduleId}`),
   },
+  FCM: {
+    TOKENS: path("/fcm-tokens"),
+  },
 } as const;

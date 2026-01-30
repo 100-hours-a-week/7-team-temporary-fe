@@ -5,17 +5,33 @@ import { BottomNav, TabRoot, TabScope, useTab } from "@/widgets/tab-stack";
 import { StackPageRoot, StackPageScope } from "@/widgets/stack";
 import { HomePage } from "@/pages/home";
 import { ProfilePage } from "@/pages/profile";
+import { registerFcmToken } from "@/shared/firebase/index";
+import { useToast } from "@/shared/ui/toast";
 
 function AppShellHeader() {
   const { activeTab } = useTab();
+  const { showToast } = useToast();
+
+  const handleNotificationClick = async () => {
+    try {
+      const token = await registerFcmToken({ promptPermission: true });
+      if (!token) {
+        showToast("FCM 토큰 발급 실패", "error");
+        return;
+      }
+
+      showToast("FCM 토큰 등록 완료", "success");
+    } catch (error) {
+      console.error("[FCM] token register failed", error);
+      showToast("FCM 토큰 등록 실패", "error");
+    }
+  };
 
   if (activeTab === "home") {
     return (
       <AppHeader
         title="홈"
-        onNotificationClick={() => {
-          console.log("notification");
-        }}
+        onNotificationClick={handleNotificationClick}
       />
     );
   }
@@ -24,9 +40,7 @@ function AppShellHeader() {
     return (
       <AppHeader
         title="프로필"
-        onNotificationClick={() => {
-          console.log("notification");
-        }}
+        onNotificationClick={handleNotificationClick}
       />
     );
   }
