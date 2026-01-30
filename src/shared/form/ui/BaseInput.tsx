@@ -16,7 +16,7 @@ import { cn } from "@/shared/lib";
 //register : RHF의 register 함수를 통해 생성된 객체
 export const BASE_INPUT_CLASS_NAME = [
   // base
-  "h-12 w-full rounded-xl border px-3 py-2 text-sm",
+  "h-12 w-full rounded-xl border px-3 py-2 text-[16px] sm:text-sm",
   "bg-neutral-50 text-[var(--color-gray-600)]",
   "placeholder:text-gray-400",
 
