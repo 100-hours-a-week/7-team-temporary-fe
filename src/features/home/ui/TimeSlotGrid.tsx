@@ -64,7 +64,7 @@ export function TimeSlotGrid<T>({
   );
 
   return (
-    <div className="mt-10 flex flex-col pb-[152px]">
+    <div className="mt-10 flex flex-col pb-0">
       {slots.map((hour, index) => {
         const items = tasksByHour.get(hour) ?? [];
 
@@ -84,7 +84,7 @@ export function TimeSlotGrid<T>({
               {String(hour).padStart(2, "0")}:00
             </div>
             <div
-              className="relative z-10 py-0"
+              className="relative py-0"
               style={{
                 minHeight: `${HOUR_BLOCK_MIN_HEIGHT_PX}px`,
                 paddingTop: 0,
@@ -110,7 +110,7 @@ export function TimeSlotGrid<T>({
                   return (
                     <div
                       key={getTaskKey(task)}
-                      className="absolute right-0 left-0"
+                      className="absolute right-0 left-0 z-10"
                       style={{ top }}
                     >
                       {renderTask(task, { height })}
