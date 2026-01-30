@@ -32,21 +32,33 @@ try {
 
 if (messaging) {
   messaging.onBackgroundMessage((payload) => {
-    const title = payload.notification?.title ?? payload.data?.title ?? "MOLIP";
-    const body = payload.notification?.body ?? payload.data?.body ?? "푸시 알림 테스트";
-    const icon = payload.notification?.icon ?? payload.data?.icon ?? "/icons/icon.svg";
+    console.log("[FCM SW] payload", payload);
 
-    console.log(payload);
-    self.registration.showNotification(title, { body, icon });
+    const title = payload.data?.title ?? "MOLIP";
+    const body = payload.data?.content ?? payload.data?.body ?? "푸시 알림 테스트";
+    const icon = payload.data?.icon ?? "/icons/icon.svg";
+
+    self.registration.showNotification(title, {
+      body,
+      icon,
+    });
   });
 }
 
-// Fallback for non-FCM test pushes
+// Fallback for non-FCM test pushes (DevTools "Push" may send plain text)
 self.addEventListener("push", (event) => {
-  event.waitUntil(
-    self.registration.showNotification("MOLIP", {
-      body: "푸시 알림 테스트",
-      icon: "/icons/icon.svg",
-    }),
-  );
+  let payload = {};
+  if (event.data) {
+    try {
+      payload = event.data.json();
+    } catch {
+      payload = { title: "MOLIP", content: event.data.text() };
+    }
+  }
+
+  const title = payload.title ?? "MOLIP";
+  const body = payload.content ?? payload.body ?? "푸시 알림 테스트";
+  const icon = payload.icon ?? "/icons/icon.svg";
+
+  event.waitUntil(self.registration.showNotification(title, { body, icon }));
 });
