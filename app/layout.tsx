@@ -3,11 +3,24 @@ import { pretendard } from "./fonts";
 
 import "./globals.css";
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
   title: "MOLIP",
   description: "molip",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icons/icon.svg",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "MOLIP",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ff8686",
 };
 
 export default function RootLayout({

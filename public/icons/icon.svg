@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MOLIP">
+  <rect width="512" height="512" rx="96" fill="#ff8686" />
+  <path
+    d="M132 356V156h48l76 116 76-116h48v200h-48V232l-76 116-76-116v124z"
+    fill="#ffffff"
+  />
+</svg>
