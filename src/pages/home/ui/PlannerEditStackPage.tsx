@@ -4,10 +4,12 @@ import { useContext, useEffect, useMemo, useState } from "react";
 
 import {
   END_HOUR,
+  EditableTaskItem,
   ExcludedTaskItem,
   START_HOUR,
   TaskBasketButton,
-  TimeSlotList,
+  useDayPlanScheduleByIdQuery,
+  TimeSlotGrid,
   useDayPlanSchedulesQuery,
   useHomePlanStore,
 } from "@/features/home";
@@ -22,6 +24,12 @@ export function PlannerEditStackPage() {
   const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
   const [isSheetOpen, setIsSheetOpen] = useState(true);
   const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const scheduleQuery = useDayPlanScheduleByIdQuery({
+    dayPlanId: dayPlanId ?? 0,
+    page: 1,
+    size: 10,
+    enabled: Boolean(dayPlanId),
+  });
   const schedulesQuery = useDayPlanSchedulesQuery({
     dayPlanId: dayPlanId ?? 0,
     status: "EXCLUDED",
@@ -34,6 +42,14 @@ export function PlannerEditStackPage() {
     () => Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index),
     [],
   );
+  const tasks = useMemo(() => scheduleQuery.data?.content ?? [], [scheduleQuery.data]);
+  const statusMessage = scheduleQuery.isLoading
+    ? { text: "일정을 불러오는 중...", className: "text-neutral-500" }
+    : scheduleQuery.isError
+      ? { text: "일정을 불러오지 못했습니다.", className: "text-red-500" }
+      : tasks.length === 0
+        ? { text: "등록된 일정이 없습니다.", className: "text-neutral-500" }
+        : null;
 
   useEffect(() => {
     setHeaderContent(<span className="text-xl font-semibold text-black">플래너 수정</span>);
@@ -79,9 +95,24 @@ export function PlannerEditStackPage() {
           </button>
           <TaskBasketButton onClick={handleOpenTaskBasket} />
         </div>
-        <div className="text-base text-neutral-500">
-          <TimeSlotList slots={timeSlots} />
-        </div>
+        <TimeSlotGrid
+          slots={timeSlots}
+          tasks={tasks}
+          statusMessage={statusMessage}
+          getTaskKey={(task) => task.scheduleId}
+          getStartTime={(task) => task.startAt}
+          getEndTime={(task) => task.endAt}
+          renderTask={(task, style) => (
+            <EditableTaskItem
+              task={task}
+              style={style}
+              isLocked={false}
+              onUpdate={() => undefined}
+              onDelete={() => undefined}
+              onExclude={() => undefined}
+            />
+          )}
+        />
       </div>
 
       <ExcludedListBottomSheet
