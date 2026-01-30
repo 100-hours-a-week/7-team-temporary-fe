@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Picker from "react-mobile-picker";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -23,6 +23,7 @@ export function SleepTimePicker({ value: valueProp, onChange }: SleepTimePickerP
   const [internalValue, setInternalValue] = useState(DEFAULT_VALUE);
   const isControlled = valueProp !== undefined;
   const value = isControlled ? valueProp : internalValue;
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (nextValue: SleepTimeValue) => {
     if (!isControlled) {
@@ -31,8 +32,26 @@ export function SleepTimePicker({ value: valueProp, onChange }: SleepTimePickerP
     onChange?.(nextValue);
   };
 
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    const handleTouchMove = (event: TouchEvent) => {
+      event.preventDefault();
+    };
+
+    element.addEventListener("touchmove", handleTouchMove, { passive: false });
+
+    return () => {
+      element.removeEventListener("touchmove", handleTouchMove);
+    };
+  }, []);
+
   return (
-    <div className="relative w-full">
+    <div
+      ref={containerRef}
+      className="relative w-full overscroll-none"
+    >
       <div className="pointer-events-none absolute inset-x-0 top-1/2 h-14 -translate-y-1/2 rounded-full border border-red-400" />
 
       <Picker
