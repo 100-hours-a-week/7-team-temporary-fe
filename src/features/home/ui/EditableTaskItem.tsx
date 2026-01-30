@@ -1,4 +1,5 @@
 import styled from "@emotion/styled";
+import type { CSSProperties } from "react";
 
 import type { EditableTaskItemModel } from "../model/taskModels";
 
@@ -8,6 +9,8 @@ interface EditableTaskItemProps {
   onUpdate: (payload: { scheduleId: number; startAt: string; endAt: string }) => void;
   onDelete: (scheduleId: number) => void;
   onExclude: (scheduleId: number) => void;
+  className?: string;
+  style?: CSSProperties;
 }
 
 const EMPTY_TIME_TEXT = "시간 정보 없음";
@@ -21,13 +24,19 @@ export function EditableTaskItem({
   onUpdate,
   onDelete,
   onExclude,
+  className,
+  style,
 }: EditableTaskItemProps) {
   const isAiAssigned = task.assignedBy === "AI";
   const timeLabel = getTimeLabel(task);
   const timeValue = formatTimeRange(task.startAt, task.endAt);
 
   return (
-    <Card $isLocked={isLocked}>
+    <Card
+      $isLocked={isLocked}
+      className={className}
+      style={style}
+    >
       <HeaderRow>
         <Handle />
         <TitleRow>

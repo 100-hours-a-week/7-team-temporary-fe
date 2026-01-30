@@ -2,35 +2,73 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { TodoCartTaskItemModel } from "@/features/home";
-import { TaskBasketAddSheet, TodoList, homeQueryKeys, useDayPlanId } from "@/features/home";
+import type { TaskSplitGroup, TaskSplitItem, TodoCartTaskItemModel } from "@/features/home";
+import {
+  TaskBasketAddSheet,
+  TaskSplitSheetContent,
+  TodoList,
+  homeQueryKeys,
+  useDayPlanScheduleByIdQuery,
+  useHomePlanStore,
+} from "@/features/home";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
 import { BottomSheet, ConfirmDialog } from "@/shared/ui";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useStackPage } from "@/widgets/stack";
+import { AiArrangeSheetContent } from "./AiArrangeSheet";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
+type FlowStep = "idle" | "loading" | "ai" | "taskSplit";
 
-const formatDateParam = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
+const LONG_DURATION_VALUES = new Set(["HOUR_2_TO_4", "HOUR_OVER_4", "2~4시간", "4시간~"]);
+const OVER_FOUR_HOURS_VALUES = new Set(["HOUR_OVER_4", "4시간~"]);
+
+const createTaskSplitItem = (id: TaskSplitItem["id"]): TaskSplitItem => ({
+  id,
+  value: "",
+  placeholder: "하위 작업을 입력하세요",
+});
+
+const getMinItemsByDuration = (duration?: string | null) =>
+  OVER_FOUR_HOURS_VALUES.has(duration ?? "") ? 3 : 2;
+
+const buildTaskSplitGroups = (items: TodoTask[]): TaskSplitGroup[] =>
+  items.map((task) => {
+    const minItems = getMinItemsByDuration(task.estimatedTimeRange);
+    return {
+      id: task.scheduleId,
+      title: task.title,
+      minItems,
+      items: Array.from({ length: minItems }, (_, index) =>
+        createTaskSplitItem(`${task.scheduleId}-${index + 1}`),
+      ),
+    };
+  });
 
 export function TaskBasketStackPage() {
   const { setHeaderContent } = useStackPage();
   const today = useMemo(() => new Date(), []);
-  const queryDate = useMemo(() => formatDateParam(today), [today]);
-  const { dayPlanId } = useDayPlanId({ date: queryDate, page: 1, size: 1 });
+  const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TodoTask | null>(null);
   const [tasks, setTasks] = useState<TodoTask[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
-  const [isAiSheetOpen, setIsAiSheetOpen] = useState(false);
+  const [flowStep, setFlowStep] = useState<FlowStep>("idle");
+  const [aiPromptHandled, setAiPromptHandled] = useState(false);
+  const [taskSplitHandled, setTaskSplitHandled] = useState(false);
+  const [aiArrangeError, setAiArrangeError] = useState(false);
+  const [splitGroups, setSplitGroups] = useState<TaskSplitGroup[]>([]);
+  const [splitGroupsKey, setSplitGroupsKey] = useState("");
+
+  const scheduleQuery = useDayPlanScheduleByIdQuery({
+    dayPlanId: dayPlanId ?? 0,
+    page: 1,
+    size: 10,
+    enabled: Boolean(dayPlanId),
+  });
 
   const deleteScheduleMutation = useApiMutation<number, void, void>({
     url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),
@@ -58,19 +96,192 @@ export function TaskBasketStackPage() {
     return () => setHeaderContent(null);
   }, [setHeaderContent]);
 
+  const fetchedTasks = useMemo(
+    () =>
+      scheduleQuery.data?.content.map((item) => ({
+        scheduleId: item.scheduleId,
+        title: item.title,
+        type: item.type,
+        startAt: item.startAt,
+        endAt: item.endAt,
+        estimatedTimeRange: item.estimatedTimeRange,
+        focusLevel: item.focusLevel,
+        isUrgent: item.isUrgent,
+        assignedBy: item.assignedBy,
+        assignmentStatus: item.assignmentStatus,
+        status: item.status,
+      })) ?? [],
+    [scheduleQuery.data],
+  );
+
+  const mergedTasks = useMemo(() => {
+    const map = new Map<number, TodoTask>();
+    fetchedTasks.forEach((task) => map.set(task.scheduleId, task));
+    tasks.forEach((task) => map.set(task.scheduleId, task));
+    return Array.from(map.values());
+  }, [fetchedTasks, tasks]);
+
+  const longDurationCandidates = useMemo(
+    () => mergedTasks.filter((task) => LONG_DURATION_VALUES.has(task.estimatedTimeRange ?? "")),
+    [mergedTasks],
+  );
+  const taskSplitCandidates = longDurationCandidates;
+  const hasFixedTimeTask = mergedTasks.some((task) => task.type === "FIXED");
+  const shouldShowAiPrompt = mergedTasks.length > 0 && !hasFixedTimeTask;
+  const shouldShowTaskSplitPrompt = taskSplitCandidates.length > 0;
+  const flowSignature = useMemo(
+    () =>
+      `${mergedTasks.length}:${hasFixedTimeTask}:${taskSplitCandidates
+        .map((task) => task.scheduleId)
+        .join(",")}`,
+    [hasFixedTimeTask, mergedTasks.length, taskSplitCandidates],
+  );
+
+  const shouldShowAiStep = shouldShowAiPrompt && !aiPromptHandled;
+  const shouldShowTaskSplitStep = shouldShowTaskSplitPrompt && !taskSplitHandled;
+
+  useEffect(() => {
+    if (aiArrangeError) {
+      setFlowStep(shouldShowTaskSplitStep ? "taskSplit" : "idle");
+      return;
+    }
+    setAiPromptHandled(false);
+    setTaskSplitHandled(false);
+    setSplitGroupsKey("");
+    setSplitGroups([]);
+    setFlowStep("idle");
+  }, [aiArrangeError, flowSignature, shouldShowTaskSplitStep]);
+
+  useEffect(() => {
+    if (flowStep !== "loading") return;
+    if (scheduleQuery.isLoading) return;
+    if (shouldShowAiStep) {
+      setFlowStep("ai");
+      return;
+    }
+    if (shouldShowTaskSplitStep) {
+      setFlowStep("taskSplit");
+      return;
+    }
+    setFlowStep("idle");
+  }, [flowStep, scheduleQuery.isLoading, shouldShowAiStep, shouldShowTaskSplitStep]);
+
+  useEffect(() => {
+    if (flowStep !== "taskSplit") return;
+    if (!shouldShowTaskSplitStep) return;
+    const nextKey = taskSplitCandidates.map((task) => task.scheduleId).join(",");
+    if (splitGroupsKey === nextKey) return;
+    setSplitGroups(buildTaskSplitGroups(taskSplitCandidates));
+    setSplitGroupsKey(nextKey);
+  }, [flowStep, shouldShowTaskSplitStep, splitGroupsKey, taskSplitCandidates]);
+
   const handleOpenSheet = () => {
     setIsSheetOpen(true);
-  };
-
-  const handleOpenAiSheet = () => {
-    setIsAiSheetOpen(true);
   };
 
   const handleAiArrange = () => {
     if (!dayPlanId || aiArrangeMutation.isPending) return;
     aiArrangeMutation.mutate(undefined, {
-      onSuccess: () => setIsAiSheetOpen(false),
+      onSuccess: () => {
+        setAiPromptHandled(true);
+        setAiArrangeError(false);
+        setFlowStep("loading");
+      },
+      onError: () => {
+        setAiPromptHandled(false);
+        setAiArrangeError(true);
+        setFlowStep(shouldShowTaskSplitStep ? "taskSplit" : "idle");
+      },
     });
+  };
+
+  const handleAiCancel = () => {
+    setAiPromptHandled(true);
+    setAiArrangeError(false);
+    setTaskSplitHandled(true);
+    setFlowStep("idle");
+  };
+
+  const handleFlowOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      if (flowStep === "ai") setAiPromptHandled(true);
+      if (flowStep === "taskSplit") setTaskSplitHandled(true);
+      setAiArrangeError(false);
+      setFlowStep("idle");
+    }
+  };
+
+  const handleTaskSplitSubmit = () => {
+    setTaskSplitHandled(true);
+    setFlowStep("idle");
+  };
+
+  const handleAddSplitItem = (groupId: TaskSplitGroup["id"]) => {
+    setSplitGroups((prev) =>
+      prev.map((group) =>
+        group.id === groupId
+          ? {
+              ...group,
+              items: [...group.items, createTaskSplitItem(`${group.id}-${Date.now()}`)],
+            }
+          : group,
+      ),
+    );
+  };
+
+  const handleChangeSplitItem = (
+    groupId: TaskSplitGroup["id"],
+    itemId: TaskSplitItem["id"],
+    value: string,
+  ) => {
+    setSplitGroups((prev) =>
+      prev.map((group) =>
+        group.id === groupId
+          ? {
+              ...group,
+              items: group.items.map((item) =>
+                item.id === itemId
+                  ? {
+                      ...item,
+                      value,
+                    }
+                  : item,
+              ),
+            }
+          : group,
+      ),
+    );
+  };
+
+  const handleRemoveSplitItem = (groupId: TaskSplitGroup["id"], itemId: TaskSplitItem["id"]) => {
+    setSplitGroups((prev) =>
+      prev.map((group) => {
+        if (group.id !== groupId) return group;
+        const minItems = group.minItems ?? 1;
+        if (group.items.length <= minItems) return group;
+        return {
+          ...group,
+          items: group.items.filter((item) => item.id !== itemId),
+        };
+      }),
+    );
+  };
+
+  const handleOpenFlowSheet = () => {
+    if (flowStep !== "idle") return;
+    if (scheduleQuery.isLoading) {
+      setFlowStep("loading");
+      return;
+    }
+    if (shouldShowAiStep) {
+      setFlowStep("ai");
+      return;
+    }
+    if (shouldShowTaskSplitStep) {
+      setFlowStep("taskSplit");
+      return;
+    }
+    setFlowStep("loading");
   };
 
   const handleEditTask = (task: TodoTask) => {
@@ -164,48 +375,43 @@ export function TaskBasketStackPage() {
       <FixedActionBar>
         <PrimaryButton
           className="w-full"
-          onClick={handleOpenAiSheet}
+          onClick={handleOpenFlowSheet}
         >
           플래너 배치하기
         </PrimaryButton>
       </FixedActionBar>
 
       <BottomSheet
-        open={isAiSheetOpen}
-        onOpenChange={setIsAiSheetOpen}
-        peekHeight={35}
-        expandHeight={35}
+        open={flowStep !== "idle"}
+        onOpenChange={handleFlowOpenChange}
+        peekHeight={flowStep === "taskSplit" ? 70 : 35}
+        expandHeight={flowStep === "taskSplit" ? 70 : 35}
+        enableDragHandle={flowStep === "taskSplit"}
+        sheetClassName={flowStep === "taskSplit" ? "max-h-[80vh] overflow-y-auto" : undefined}
         className="pb-[env(safe-area-inset-bottom)]"
       >
-        <div className="px-6 pt-6 pb-6 text-center">
-          <p className="text-lg font-semibold text-neutral-900">
-            시간이 입력되어 있지 않은
-            <br />
-            작업이 존재합니다.
-          </p>
-          <p className="mt-3 text-sm text-neutral-700">집중 시간에 따라 AI 자동으로 배치할까요?</p>
-          <p className="mt-2 text-xs text-neutral-400">
-            AI를 사용할 수 있는 남은 횟수는 1번 입니다.
-          </p>
-          <div className="mt-6 flex gap-3">
-            <PrimaryButton
-              className="w-full bg-neutral-200 text-neutral-900 hover:bg-neutral-200"
-              isLoading={aiArrangeMutation.isPending}
-              loadingText="배치 중..."
-              disabled={!dayPlanId}
-              onClick={handleAiArrange}
-            >
-              AI 자동배치
-            </PrimaryButton>
-            <PrimaryButton
-              className="w-full bg-neutral-100 text-neutral-500 hover:bg-neutral-100"
-              disabled={aiArrangeMutation.isPending}
-              onClick={() => setIsAiSheetOpen(false)}
-            >
-              취소
-            </PrimaryButton>
+        {flowStep === "ai" ? (
+          <AiArrangeSheetContent
+            isPending={aiArrangeMutation.isPending}
+            canArrange={Boolean(dayPlanId)}
+            onArrange={handleAiArrange}
+            onCancel={handleAiCancel}
+          />
+        ) : null}
+        {flowStep === "taskSplit" ? (
+          <TaskSplitSheetContent
+            groups={splitGroups}
+            onAddItem={handleAddSplitItem}
+            onChangeItem={handleChangeSplitItem}
+            onRemoveItem={handleRemoveSplitItem}
+            onSubmit={handleTaskSplitSubmit}
+          />
+        ) : null}
+        {flowStep === "loading" ? (
+          <div className="px-6 py-10 text-center text-sm text-neutral-400">
+            상태를 확인하는 중...
           </div>
-        </div>
+        ) : null}
       </BottomSheet>
 
       <TaskBasketAddSheet
