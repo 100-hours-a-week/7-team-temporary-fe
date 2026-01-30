@@ -2,6 +2,7 @@ import styled from "@emotion/styled";
 import type { CSSProperties } from "react";
 
 import type { EditableTaskItemModel } from "../model/taskModels";
+import { TaskItemActionRow } from "./TaskItemActionRow";
 
 interface EditableTaskItemProps {
   task: EditableTaskItemModel;
@@ -37,47 +38,33 @@ export function EditableTaskItem({
       className={className}
       style={style}
     >
-      <HeaderRow>
-        <Handle />
-        <TitleRow>
-          <Title>{task.title}</Title>
-          <AssignmentBadge $isAi={isAiAssigned}>
-            {isAiAssigned ? "AI 배치" : "사용자 배치"}
-          </AssignmentBadge>
-          {task.isUrgent ? <UrgentBadge>긴급</UrgentBadge> : null}
-        </TitleRow>
-      </HeaderRow>
-      <MetaRow>
-        <MetaLabel>{timeLabel}</MetaLabel>
-        <MetaValue>{timeValue}</MetaValue>
-      </MetaRow>
-      <ActionRow>
-        <ActionButton
-          type="button"
-          disabled={isLocked}
-          onClick={() =>
-            onUpdate({ scheduleId: task.scheduleId, startAt: task.startAt, endAt: task.endAt })
-          }
-        >
-          수정
-        </ActionButton>
-        <ActionButton
-          type="button"
-          disabled={isLocked}
-          onClick={() => onDelete(task.scheduleId)}
-        >
-          삭제
-        </ActionButton>
-        <ActionButton
-          type="button"
-          disabled={isLocked}
-          onClick={() => onExclude(task.scheduleId)}
-        >
-          제외
-        </ActionButton>
-      </ActionRow>
-      {isLocked ? <LockNotice>현재 시간 이전 일정은 수정할 수 없습니다.</LockNotice> : null}
-      {isAiAssigned ? <AiNotice>AI 배정 작업은 일부 항목 수정이 제한됩니다.</AiNotice> : null}
+      <ContentRow>
+        <LeftColumn>
+          <Handle />
+          <TextColumn>
+            <TitleRow>
+              <Title>{task.title}</Title>
+              {task.isUrgent ? <UrgentBadge>긴급</UrgentBadge> : null}
+            </TitleRow>
+            <MetaRow>
+              <MetaLabel>{timeLabel}</MetaLabel>
+              <MetaValue>{timeValue}</MetaValue>
+            </MetaRow>
+          </TextColumn>
+        </LeftColumn>
+        <RightColumn>
+          <TaskItemActionRow
+            onEdit={() =>
+              onUpdate({ scheduleId: task.scheduleId, startAt: task.startAt, endAt: task.endAt })
+            }
+            onDelete={() => onDelete(task.scheduleId)}
+            isDisabled={isLocked}
+            editAriaLabel="작업 수정"
+            deleteAriaLabel="작업 삭제"
+          />
+          <AssignmentBadge $isAi={isAiAssigned}>{isAiAssigned ? "AI" : "사용자"}</AssignmentBadge>
+        </RightColumn>
+      </ContentRow>
     </Card>
   );
 }
@@ -104,10 +91,45 @@ const Card = styled.article<{ $isLocked: boolean }>`
   opacity: ${({ $isLocked }) => ($isLocked ? 0.7 : 1)};
 `;
 
-const HeaderRow = styled.div`
+const ContentRow = styled.div`
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const LeftColumn = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  flex: 1;
+  min-width: 0;
+`;
+
+const TextColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  line-height: 16px;
+  min-width: 0;
+`;
+
+const RightColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  height: 100%;
+  align-self: stretch;
+`;
+
+const TitleRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 `;
 
 const Handle = styled.div`
@@ -123,17 +145,14 @@ const Handle = styled.div`
   );
 `;
 
-const TitleRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-`;
-
 const Title = styled.div`
   font-size: 16px;
   font-weight: 600;
   color: #111827;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const AssignmentBadge = styled.span<{ $isAi: boolean }>`
@@ -143,6 +162,7 @@ const AssignmentBadge = styled.span<{ $isAi: boolean }>`
   color: ${({ $isAi }) => ($isAi ? "#4338ca" : "#4b5563")};
   font-size: 12px;
   font-weight: 600;
+  margin-top: auto;
 `;
 
 const UrgentBadge = styled.span`
@@ -170,28 +190,6 @@ const MetaLabel = styled.span`
 
 const MetaValue = styled.span`
   font-weight: 500;
-`;
-
-const ActionRow = styled.div`
-  display: flex;
-  gap: 8px;
-`;
-
-const ActionButton = styled.button`
-  border: none;
-  padding: 6px 10px;
-  border-radius: 8px;
-  background: #111827;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:disabled {
-    background: #d1d5db;
-    color: #6b7280;
-    cursor: not-allowed;
-  }
 `;
 
 const LockNotice = styled.div`

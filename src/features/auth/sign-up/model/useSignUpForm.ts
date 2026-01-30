@@ -43,7 +43,7 @@ export const useSignUpForm = (
 
   const form = useForm<SignUpFormModel>({
     defaultValues: DEFAULT_FORM,
-    mode: "onBlur",
+    mode: "onChange",
     resolver: zodResolver(signUpFormSchema),
   });
   const {

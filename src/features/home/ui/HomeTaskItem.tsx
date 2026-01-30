@@ -36,28 +36,29 @@ export function HomeTaskItem({ task, onToggleComplete, className, style }: HomeT
       $isCompleted={task.isCompleted}
       $isFixedTime={task.isFixedTime}
     >
-      <CompleteButton
-        type="button"
-        aria-pressed={task.isCompleted}
-        aria-label={task.isCompleted ? "완료됨" : "완료"}
-        onClick={() => onToggleComplete(task.taskId)}
-      >
-        <Icon
-          name={task.isCompleted ? "todo_check" : "todo_unchecked"}
-          className="h-7 w-7"
-          aria-hidden
-        />
-      </CompleteButton>
-      <Content>
-        <TitleRow>
-          <Title $isCompleted={task.isCompleted}>{task.title}</Title>
-          {task.isUrgent ? <UrgentBadge>중요</UrgentBadge> : null}
-        </TitleRow>
-        <MetaRow>
-          <MetaLabel>{timeLabel}</MetaLabel>
-          <MetaValue>{timeValue}</MetaValue>
-        </MetaRow>
-      </Content>
+      <Row>
+        <CompleteButton
+          type="button"
+          aria-pressed={task.isCompleted}
+          aria-label={task.isCompleted ? "완료됨" : "완료"}
+          onClick={() => onToggleComplete(task.taskId)}
+        >
+          <Icon
+            name={task.isCompleted ? "todo_check" : "todo_unchecked"}
+            className="h-7 w-7"
+            aria-hidden
+          />
+        </CompleteButton>
+        <Content>
+          <TitleRow>
+            <Title $isCompleted={task.isCompleted}>{task.title}</Title>
+            {task.isUrgent ? <UrgentBadge>중요</UrgentBadge> : null}
+          </TitleRow>
+          <MetaRow>
+            <MetaValue>{timeValue}</MetaValue>
+          </MetaRow>
+        </Content>
+      </Row>
     </Card>
   );
 }
@@ -76,16 +77,26 @@ const Card = styled.article<{ $isCompleted: boolean; $isFixedTime: boolean }>`
   align-items: flex-start;
   gap: 12px;
   padding: 14px 16px;
+  position: relative;
+  z-index: 1;
   border-radius: 16px;
   border: 1px solid ${({ $isFixedTime }) => ($isFixedTime ? "#c7d2fe" : "#e5e7eb")};
   background: ${({ $isCompleted }) => ($isCompleted ? "#f3f4f6" : "#ffffff")};
   ${({ $isCompleted }) => ($isCompleted ? "color: #9ca3af;" : "")};
 `;
 
+const Row = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+`;
+
 const Content = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
+  line-height: 16px;
   min-width: 0;
 `;
 
@@ -140,4 +151,6 @@ const CompleteButton = styled.button`
   cursor: pointer;
   background: transparent;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 `;

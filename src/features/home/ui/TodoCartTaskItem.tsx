@@ -1,6 +1,6 @@
 import styled from "@emotion/styled";
 
-import { Icon } from "@/shared/ui/icon";
+import { TaskItemActionRow } from "./TaskItemActionRow";
 
 import type { TaskItemModel, TodoCartTaskItemModel } from "../model/taskModels";
 import { toTaskItemModelFromTodoCart } from "../model/taskMappers";
@@ -52,30 +52,10 @@ export function TodoCartTaskItem({ task, viewMode, onEdit, onDelete }: TodoCartT
     <Card>
       <HeaderRow>
         <Title>{taskItem.title}</Title>
-        <ActionRow>
-          <IconButton
-            type="button"
-            onClick={() => onDelete(taskItem.taskId)}
-            aria-label="작업 삭제"
-          >
-            <ActionIcon
-              name="delete"
-              aria-hidden="true"
-              focusable="false"
-            />
-          </IconButton>
-          <IconButton
-            type="button"
-            onClick={() => onEdit(task)}
-            aria-label="작업 편집"
-          >
-            <ActionIcon
-              name="edit"
-              aria-hidden="true"
-              focusable="false"
-            />
-          </IconButton>
-        </ActionRow>
+        <TaskItemActionRow
+          onDelete={() => onDelete(taskItem.taskId)}
+          onEdit={() => onEdit(task)}
+        />
       </HeaderRow>
       <MetaList>
         {metaItems.map((item) => (
@@ -199,38 +179,6 @@ const Title = styled.div`
   font-size: 17px;
   font-weight: 700;
   color: #111827;
-`;
-
-const ActionRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0;
-`;
-
-const IconButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  box-sizing: content-box;
-  border: none;
-  background: #ffffff;
-  padding: 0;
-  font-size: 20px;
-  color: #6b7280;
-  cursor: pointer;
-
-  &:hover {
-    color: #111827;
-  }
-`;
-
-const ActionIcon = styled(Icon)`
-  width: 1.2em;
-  height: 1.2em;
-  overflow: visible;
 `;
 
 const MetaList = styled.div`
