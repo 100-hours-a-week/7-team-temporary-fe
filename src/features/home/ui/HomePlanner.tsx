@@ -120,7 +120,7 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
   }, [data?.dayPlanId, queryDate, setHomePlan]);
 
   return (
-    <div className="scrollbar-hide h-full overflow-y-auto px-6 py-8">
+    <div className="scrollbar-hide mx-0 h-full overflow-y-auto px-[25px] py-[20px]">
       <WeekHeader
         monthIndex={headerMonthIndex}
         onPrev={() => handleMoveWeek(-7)}
