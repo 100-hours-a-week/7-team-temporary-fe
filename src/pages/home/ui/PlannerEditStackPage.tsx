@@ -1,12 +1,13 @@
 "use client";
 
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
   DragOverlay,
   useDraggable,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -39,6 +40,7 @@ import { updateDayPlanSchedule } from "@/features/home/api";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
 import { ConfirmDialog } from "@/shared/ui";
+import { useToast } from "@/shared/ui/toast";
 import { ExcludedListBottomSheet } from "./ExcludedListBottomSheet";
 import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
 import { TaskBasketStackPage } from "./TaskBasketStackPage";
@@ -63,6 +65,7 @@ export function PlannerEditStackPage() {
   const { push, setHeaderContent, stack } = useStackPage();
   const entry = useContext(StackPageEntryContext);
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const prevDepthRef = useRef(stack.length);
   const pageRef = useRef<HTMLDivElement | null>(null);
   const scrollParentRef = useRef<HTMLElement | null>(null);
@@ -84,6 +87,9 @@ export function PlannerEditStackPage() {
   const [resizePreviewMap, setResizePreviewMap] = useState<Record<number, string>>({});
   const sensors = useSensors(
     useSensor(PointerSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    }),
+    useSensor(TouchSensor, {
       activationConstraint: { delay: 200, tolerance: 5 },
     }),
   );
@@ -263,6 +269,23 @@ export function PlannerEditStackPage() {
       restoreScrollPosition();
     },
   });
+
+  const hasResizeConflict = useCallback(
+    (scheduleId: number, startAt: string, endAt: string) => {
+      const startMinutes = parseTimeToMinutes(startAt);
+      const endMinutes = parseTimeToMinutes(endAt);
+      if (startMinutes === null || endMinutes === null) return true;
+      if (endMinutes <= startMinutes) return true;
+      return mergedTasks.some((task) => {
+        if (task.scheduleId === scheduleId) return false;
+        const taskStart = parseTimeToMinutes(task.startAt);
+        const taskEnd = parseTimeToMinutes(task.endAt);
+        if (taskStart === null || taskEnd === null) return false;
+        return startMinutes < taskEnd && endMinutes > taskStart;
+      });
+    },
+    [mergedTasks],
+  );
   const deleteScheduleMutation = useApiMutation<number, void, void>({
     url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),
     method: "DELETE",
@@ -336,6 +359,10 @@ export function PlannerEditStackPage() {
   const handleResizeEnd = (task: EditableTaskItemModel, endAt: string) => {
     clearResizePreview(task.scheduleId);
     if (endAt === task.endAt) return;
+    if (hasResizeConflict(task.scheduleId, task.startAt, endAt)) {
+      showToast("이미 다른 작업이 있는 시간입니다.", "error");
+      return;
+    }
     const nextTask: EditableTaskItemModel = { ...task, endAt };
     setDroppedTasks((prev) => {
       const map = new Map(prev.map((item) => [item.scheduleId, item]));
@@ -428,9 +455,9 @@ export function PlannerEditStackPage() {
 
     const nextTask = toEditableTask(payload.task, startAt, endAt);
     setDroppedTasks((prev) => {
-      if (prev.some((task) => task.scheduleId === nextTask.scheduleId)) return prev;
-      if (tasks.some((task) => task.scheduleId === nextTask.scheduleId)) return prev;
-      return [...prev, nextTask];
+      const map = new Map(prev.map((task) => [task.scheduleId, task]));
+      map.set(nextTask.scheduleId, nextTask);
+      return Array.from(map.values());
     });
     updateScheduleMutation.mutate({
       scheduleId: payload.task.scheduleId,
@@ -684,6 +711,7 @@ function DraggableExcludedTaskItem({ task }: { task: EditableTaskItemModel }) {
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
+    touchAction: "none",
   };
 
   return (
