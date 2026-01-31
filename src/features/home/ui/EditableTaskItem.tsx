@@ -313,6 +313,8 @@ const ResizeHandle = styled.button<{ $isActive: boolean }>`
   padding: 0;
   cursor: ns-resize;
   z-index: 2;
+  touch-action: none;
+  user-select: none;
 
   &::before {
     content: "";
@@ -344,6 +346,8 @@ const HandleButton = styled.button`
   padding: 0;
   cursor: grab;
   flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
 
   &:disabled {
     cursor: default;
