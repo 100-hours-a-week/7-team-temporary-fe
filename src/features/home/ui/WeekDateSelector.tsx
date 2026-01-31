@@ -1,5 +1,6 @@
 import { cn } from "@/shared/lib";
 import { isSameDate } from "../model/calendar";
+import { useHomePlanStore } from "../model/homePlan.store";
 
 interface WeekDateSelectorProps {
   weekDays: Date[];
@@ -16,6 +17,13 @@ export function WeekDateSelector({
   onSelect,
   hasPlan,
 }: WeekDateSelectorProps) {
+  const setDate = useHomePlanStore((state) => state.setDate);
+
+  const handleSelectDate = (date: Date) => {
+    setDate(formatDateParam(date));
+    onSelect(date);
+  };
+
   return (
     <div className="mt-1 grid grid-cols-7 text-center">
       {weekDays.map((day) => {
@@ -28,7 +36,7 @@ export function WeekDateSelector({
             key={day.toISOString()}
             type="button"
             className="flex flex-col items-center gap-3 py-2 text-[#7B7B7B]"
-            onClick={() => onSelect(day)}
+            onClick={() => handleSelectDate(day)}
           >
             <span
               className={cn(
@@ -53,4 +61,11 @@ export function WeekDateSelector({
       })}
     </div>
   );
+}
+
+function formatDateParam(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
