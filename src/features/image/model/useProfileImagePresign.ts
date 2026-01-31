@@ -96,6 +96,15 @@ export const useProfileImageUpload = () => {
     [requestPresignedUploadUrl, uploadToS3],
   );
 
+  const restoreImageState = useCallback(
+    (next: { imageKey: string; previewUrl?: string | null }) => {
+      setUploadError(null);
+      setImageKey(next.imageKey);
+      setPreviewUrl(next.previewUrl ?? null);
+    },
+    [],
+  );
+
   /**
    *조회 이미지 뷰 URL 요청
    */
@@ -120,5 +129,6 @@ export const useProfileImageUpload = () => {
     isUploading,
     uploadError,
     handleFileSelect,
+    restoreImageState,
   };
 };

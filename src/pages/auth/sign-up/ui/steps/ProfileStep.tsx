@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { SignUpFormModel } from "@/features/auth/sign-up/model";
 import { useProfileImagePresign } from "@/features/image/model";
-import { useSignUpFormContext } from "@/pages/auth/sign-up/ui/SignUpFormContainer";
 import {
   BirthDateInput,
   EmailInput,
@@ -15,9 +15,14 @@ import {
   PasswordInput,
   ProfileImageKeyInput,
 } from "@/shared/form/ui";
+import { apiFetch, Endpoint } from "@/shared/api";
 import { useToast } from "@/shared/ui/toast";
 import { SplitText } from "@/shared/ui";
 import { OnboardingQuestionLayout } from "@/widgets/auth/onboarding/ui";
+
+type EmailCheckStatus = "idle" | "loading" | "success" | "error";
+type ProfileImageDraft = { imageKey: string; previewUrl?: string | null };
+const PROFILE_IMAGE_DRAFT_KEY = ["signUp", "profileImageDraft"] as const;
 
 export function ProfileStep() {
   const titleText = "당신을 알고 싶어요. 당신은 어떤 사람인가요?";
@@ -25,11 +30,19 @@ export function ProfileStep() {
   const {
     register,
     formState: { errors },
+    trigger,
+    watch,
+    getValues,
     setValue,
   } = useFormContext<SignUpFormModel>();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
+  const [emailCheckStatus, setEmailCheckStatus] = useState<EmailCheckStatus>("idle");
+  const [emailHelperText, setEmailHelperText] = useState<string | undefined>(undefined);
   const profileImageKeyRegister = register("profileImageKey");
-  const { handleFileSelect, previewUrl, imageKey, isUploading } = useProfileImagePresign();
+  const { handleFileSelect, previewUrl, imageKey, isUploading, restoreImageState } =
+    useProfileImagePresign();
+  const emailValue = watch("email");
   const emailError = errors.email?.message?.toString();
   const passwordError = errors.password?.message?.toString();
   const nicknameError = errors.nickname?.message?.toString();
@@ -40,6 +53,19 @@ export function ProfileStep() {
     const message = error instanceof Error ? error.message : "프로필 이미지 업로드에 실패했습니다.";
     showToast(message, "error");
   };
+  const { data: cachedDraft } = useQuery<ProfileImageDraft | null>({
+    queryKey: PROFILE_IMAGE_DRAFT_KEY,
+    queryFn: async () => null,
+    enabled: false,
+    initialData: () => queryClient.getQueryData(PROFILE_IMAGE_DRAFT_KEY) ?? null,
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 10,
+  });
+
+  useEffect(() => {
+    setEmailCheckStatus("idle");
+    setEmailHelperText(undefined);
+  }, [emailValue]);
 
   useEffect(() => {
     setValue("profileImageKey", imageKey ?? null, {
@@ -47,6 +73,59 @@ export function ProfileStep() {
       shouldDirty: false,
     });
   }, [imageKey, setValue]);
+
+  useEffect(() => {
+    if (!cachedDraft || imageKey) return;
+    restoreImageState({
+      imageKey: cachedDraft.imageKey,
+      previewUrl: cachedDraft.previewUrl ?? null,
+    });
+    setValue("profileImageKey", cachedDraft.imageKey, {
+      shouldValidate: true,
+      shouldDirty: false,
+    });
+  }, [cachedDraft, imageKey, restoreImageState, setValue]);
+
+  useEffect(() => {
+    if (!imageKey) {
+      queryClient.removeQueries({ queryKey: PROFILE_IMAGE_DRAFT_KEY });
+      return;
+    }
+    queryClient.setQueryData(PROFILE_IMAGE_DRAFT_KEY, {
+      imageKey,
+      previewUrl,
+    });
+  }, [imageKey, previewUrl, queryClient]);
+
+  const handleEmailCheck = async () => {
+    const isValid = await trigger("email");
+    if (!isValid) return;
+    const email = getValues("email").trim();
+    if (!email) return;
+    setEmailCheckStatus("loading");
+    setEmailHelperText("중복 확인 중...");
+    try {
+      const result = await apiFetch<{
+        isDuplicated?: boolean;
+        duplicated?: boolean;
+        isAvailable?: boolean;
+        available?: boolean;
+      }>(Endpoint.USER.CHECK.EMAIL(email));
+      const isDuplicated = result?.isDuplicated ?? result?.duplicated ?? false;
+      const isAvailable = result?.isAvailable ?? result?.available;
+      if (isDuplicated || isAvailable === false) {
+        setEmailCheckStatus("error");
+        setEmailHelperText("이미 사용 중인 이메일입니다.");
+        return;
+      }
+      setEmailCheckStatus("success");
+      setEmailHelperText("사용 가능한 이메일입니다.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "이미 사용 중인 이메일입니다.";
+      setEmailCheckStatus("error");
+      setEmailHelperText(message);
+    }
+  };
 
   return (
     <OnboardingQuestionLayout
@@ -81,18 +160,30 @@ export function ProfileStep() {
             onFileSelect={handleFileSelect}
             onUploadError={handleProfileImageError}
             previewUrl={previewUrl}
+            imageKey={imageKey}
             isDisabled={isUploading}
           />
         </FormField>
         <FormField
           label="이메일"
           error={emailError}
+          helperText={emailHelperText}
         >
-          <EmailInput
-            invalid={!!errors.email}
-            register={register("email")}
-            placeholder="이메일을 입력해주세요."
-          />
+          <div className="flex w-full items-center gap-2">
+            <EmailInput
+              invalid={!!errors.email}
+              register={register("email")}
+              placeholder="이메일을 입력해주세요."
+            />
+            <button
+              type="button"
+              className="h-12 shrink-0 rounded-xl border border-neutral-900 px-3 text-sm font-semibold text-neutral-900 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
+              onClick={handleEmailCheck}
+              disabled={emailCheckStatus === "loading" || !emailValue}
+            >
+              중복확인
+            </button>
+          </div>
         </FormField>
         <FormField
           label="비밀번호"
