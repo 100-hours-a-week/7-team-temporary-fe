@@ -17,7 +17,7 @@ import { MyInfoStackPage } from "./MyInfoStackPage";
 export function ProfilePage() {
   const { push } = useStackPage();
   const router = useRouter();
-  const { data: myProfile } = useMyProfileQuery();
+  const { data: myProfile, isLoading: isProfileLoading } = useMyProfileQuery();
   const { handleFileSelect, previewUrl, imageKey, isUploading } = useProfileImagePresign();
   const updateImageMutation = useUpdateMyProfileImageMutation();
   const { showToast } = useToast();
@@ -56,6 +56,7 @@ export function ProfilePage() {
   };
 
   const resolvedPreviewUrl = previewUrl ?? myProfile?.profileImageUrl ?? null;
+  const shouldShowImageSkeleton = isProfileLoading && !resolvedPreviewUrl;
 
   return (
     <div className="px-6 py-10">
@@ -65,14 +66,23 @@ export function ProfilePage() {
         className="items-center"
         contentClassName="flex flex-col items-center justify-center"
       >
-        <ProfileImageKeyInput
-          register={profileImageKeyRegister}
-          invalid={Boolean(errors.profileImageKey)}
-          previewUrl={resolvedPreviewUrl}
-          onFileSelect={handleFileSelect}
-          onUploadError={handleProfileImageError}
-          isDisabled={isUploading || updateImageMutation.isPending}
-        />
+        <div className="relative h-28 w-28">
+          <ProfileImageKeyInput
+            register={profileImageKeyRegister}
+            invalid={Boolean(errors.profileImageKey)}
+            previewUrl={resolvedPreviewUrl}
+            imageKey={imageKey}
+            onFileSelect={handleFileSelect}
+            onUploadError={handleProfileImageError}
+            isDisabled={isUploading || updateImageMutation.isPending || isProfileLoading}
+          />
+          {shouldShowImageSkeleton ? (
+            <div
+              className="pointer-events-none absolute inset-0 animate-pulse rounded-full bg-neutral-200"
+              aria-hidden
+            />
+          ) : null}
+        </div>
         <div className="mt-4 text-center text-lg font-semibold text-neutral-900">{username}</div>
       </FormField>
       <div className="mt-10 grid grid-cols-3 gap-4">
