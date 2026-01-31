@@ -1,6 +1,7 @@
 import styled from "@emotion/styled";
 
-import { useMemo } from "react";
+import type { RefObject } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { TodoCartTaskItemModel } from "../model/taskModels";
 import { useDayPlanScheduleByIdQuery } from "../model/useDayPlanScheduleByIdQuery";
@@ -16,6 +17,7 @@ interface TodoListProps {
   dayPlanId?: number | null;
   page?: number;
   size?: number;
+  scrollRootRef?: RefObject<HTMLElement | null>;
 }
 
 const EMPTY_TEXT = "작성된 할 일이 없습니다.";
@@ -30,18 +32,31 @@ export function TodoList({
   dayPlanId,
   page = 1,
   size = 10,
+  scrollRootRef,
 }: TodoListProps) {
   const shouldFetch = Boolean(dayPlanId);
-  const { data } = useDayPlanScheduleByIdQuery({
+  const [currentPage, setCurrentPage] = useState(page);
+  const [fetchedTasks, setFetchedTasks] = useState<TodoListTask[]>([]);
+  const [totalPages, setTotalPages] = useState<number | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  const scheduleQuery = useDayPlanScheduleByIdQuery({
     dayPlanId: dayPlanId ?? 0,
-    page,
+    page: currentPage,
     size,
     enabled: shouldFetch,
   });
 
-  const fetchedTasks = useMemo(
+  useEffect(() => {
+    if (!shouldFetch) return;
+    setCurrentPage(page);
+    setFetchedTasks([]);
+    setTotalPages(null);
+  }, [dayPlanId, page, shouldFetch]);
+
+  const mappedTasks = useMemo(
     () =>
-      data?.content.map((item) => ({
+      scheduleQuery.data?.content.map((item) => ({
         scheduleId: item.scheduleId,
         title: item.title,
         type: item.type,
@@ -54,8 +69,42 @@ export function TodoList({
         assignmentStatus: item.assignmentStatus,
         status: item.status,
       })) ?? [],
-    [data],
+    [scheduleQuery.data],
   );
+
+  useEffect(() => {
+    if (!scheduleQuery.data) return;
+    setTotalPages(scheduleQuery.data.totalPages);
+    setFetchedTasks((prev) => {
+      const base = currentPage === 1 ? [] : prev;
+      const map = new Map(base.map((task) => [task.scheduleId, task]));
+      mappedTasks.forEach((task) => map.set(task.scheduleId, task));
+      return Array.from(map.values());
+    });
+  }, [currentPage, mappedTasks, scheduleQuery.data]);
+
+  const hasMore =
+    totalPages === null ? mappedTasks.length === size : currentPage < totalPages;
+
+  useEffect(() => {
+    if (!shouldFetch) return;
+    if (!loadMoreRef.current) return;
+    if (!hasMore) return;
+    if (scheduleQuery.isFetching) return;
+
+    const root = scrollRootRef?.current ?? getScrollParent(loadMoreRef.current);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const isIntersecting = entries.some((entry) => entry.isIntersecting);
+        if (!isIntersecting) return;
+        setCurrentPage((prev) => prev + 1);
+      },
+      { root, rootMargin: "200px" },
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, scheduleQuery.isFetching, shouldFetch]);
 
   const mergedTasks = useMemo(() => {
     if (!shouldFetch) return tasks;
@@ -84,6 +133,14 @@ export function TodoList({
           onDelete={onDelete}
         />
       ))}
+      {shouldFetch ? (
+        <>
+          <LoadMoreTrigger ref={loadMoreRef} />
+          {scheduleQuery.isFetching && hasMore ? (
+            <LoadMoreIndicator>불러오는 중...</LoadMoreIndicator>
+          ) : null}
+        </>
+      ) : null}
     </ListContainer>
   );
 }
@@ -112,6 +169,30 @@ function toMinutes(time?: string) {
   return hours * 60 + minutes;
 }
 
+function getScrollParent(element: HTMLElement | null) {
+  if (!element || typeof window === "undefined") return null;
+  const classRoot = element.closest(
+    ".overflow-y-auto, .overflow-auto, .overflow-y-scroll",
+  ) as HTMLElement | null;
+  if (classRoot) return classRoot;
+  let current: HTMLElement | null = element.parentElement;
+  while (current) {
+    const styles = window.getComputedStyle(current);
+    const overflowY = styles.overflowY;
+    const overflow = styles.overflow;
+    if (
+      overflowY === "auto" ||
+      overflowY === "scroll" ||
+      overflow === "auto" ||
+      overflow === "scroll"
+    ) {
+      return current;
+    }
+    current = current.parentElement;
+  }
+  return null;
+}
+
 const ListContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -124,4 +205,14 @@ const EmptyState = styled.div`
   padding: 32px 0;
   color: #9ca3af;
   font-size: 14px;
+`;
+
+const LoadMoreTrigger = styled.div`
+  height: 1px;
+`;
+
+const LoadMoreIndicator = styled.div`
+  text-align: center;
+  font-size: 12px;
+  color: #9ca3af;
 `;
