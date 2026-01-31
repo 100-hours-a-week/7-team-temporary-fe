@@ -23,13 +23,18 @@ import {
   TaskBasketAddSheet,
   TaskBasketButton,
   type EditableTaskItemModel,
+  type TodoCartTaskItemModel,
   homeQueryKeys,
   useDayPlanScheduleByIdQuery,
   TimeSlotGrid,
   useDayPlanSchedulesQuery,
   useHomePlanStore,
 } from "@/features/home";
-import type { DayPlanScheduleResponseDto } from "@/features/home/api";
+import type {
+  CreateDayPlanScheduleRequestDto,
+  DayPlanScheduleDuration,
+  DayPlanScheduleResponseDto,
+} from "@/features/home/api";
 import { updateDayPlanSchedule } from "@/features/home/api";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
@@ -43,6 +48,7 @@ type DraggedTask = {
   id: string;
   task: EditableTaskItemModel;
 };
+type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 type PreviewSlot = { hour: number; minute: number };
 type InsertPreview = {
   scheduleId: number;
@@ -230,15 +236,7 @@ export function PlannerEditStackPage() {
   const updateScheduleMutation = useMutation({
     mutationFn: async (variables: {
       scheduleId: number;
-      payload: {
-        title: string;
-        type: "FIXED" | "FLEX";
-        startAt: string;
-        endAt: string;
-        estimatedTimeRange?: DayPlanScheduleResponseDto["content"][number]["estimatedTimeRange"];
-        focusLevel?: DayPlanScheduleResponseDto["content"][number]["focusLevel"];
-        isUrgent?: DayPlanScheduleResponseDto["content"][number]["isUrgent"];
-      };
+      payload: CreateDayPlanScheduleRequestDto;
       task: EditableTaskItemModel;
     }) => updateDayPlanSchedule(variables.scheduleId, variables.payload),
     onSuccess: (_, variables) => {
@@ -247,7 +245,13 @@ export function PlannerEditStackPage() {
       queryClient.setQueryData(
         homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
         (prev: DayPlanScheduleResponseDto | undefined) =>
-          updateScheduleCache(prev, scheduleId, payload.startAt, payload.endAt, task),
+          updateScheduleCache(
+            prev,
+            scheduleId,
+            payload.startAt ?? task.startAt,
+            payload.endAt ?? task.endAt,
+            task,
+          ),
       );
       queryClient.setQueryData(
         homeQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10),
@@ -279,17 +283,37 @@ export function PlannerEditStackPage() {
     }
   };
 
-  const handleUpdateTask = (nextTask: EditableTaskItemModel) => {
+  const handleUpdateTask = (nextTask: TodoTask) => {
+    const baseTask = mergedTasks.find((task) => task.scheduleId === nextTask.scheduleId);
+    const resolvedTask: EditableTaskItemModel = {
+      scheduleId: nextTask.scheduleId,
+      title: nextTask.title,
+      status: nextTask.status ?? baseTask?.status ?? "TODO",
+      type: nextTask.type,
+      assignedBy: nextTask.assignedBy ?? baseTask?.assignedBy ?? "USER",
+      assignmentStatus: baseTask?.assignmentStatus ?? "ASSIGNED",
+      startAt: nextTask.startAt,
+      endAt: nextTask.endAt,
+      estimatedTimeRange: nextTask.estimatedTimeRange ?? baseTask?.estimatedTimeRange ?? null,
+      focusLevel: nextTask.focusLevel ?? baseTask?.focusLevel ?? null,
+      isUrgent: nextTask.isUrgent ?? baseTask?.isUrgent ?? null,
+    };
     setDroppedTasks((prev) => {
       const map = new Map(prev.map((task) => [task.scheduleId, task]));
-      map.set(nextTask.scheduleId, nextTask);
+      map.set(resolvedTask.scheduleId, resolvedTask);
       return Array.from(map.values());
     });
     if (!dayPlanId) return;
     queryClient.setQueryData(
       homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
       (prev: DayPlanScheduleResponseDto | undefined) =>
-        updateScheduleCache(prev, nextTask.scheduleId, nextTask.startAt, nextTask.endAt, nextTask),
+        updateScheduleCache(
+          prev,
+          resolvedTask.scheduleId,
+          resolvedTask.startAt,
+          resolvedTask.endAt,
+          resolvedTask,
+        ),
     );
   };
 
@@ -325,7 +349,7 @@ export function PlannerEditStackPage() {
         type: task.type,
         startAt: task.startAt,
         endAt,
-        estimatedTimeRange: task.estimatedTimeRange ?? undefined,
+        estimatedTimeRange: toScheduleDuration(task.estimatedTimeRange),
         focusLevel: task.focusLevel ?? undefined,
         isUrgent: task.isUrgent ?? undefined,
       },
@@ -415,7 +439,7 @@ export function PlannerEditStackPage() {
         type: "FIXED",
         startAt,
         endAt,
-        estimatedTimeRange: payload.task.estimatedTimeRange ?? undefined,
+        estimatedTimeRange: toScheduleDuration(payload.task.estimatedTimeRange),
         focusLevel: payload.task.focusLevel ?? undefined,
         isUrgent: payload.task.isUrgent ?? undefined,
       },
@@ -741,6 +765,20 @@ function formatTime(totalMinutes: number) {
   const hour = Math.floor(minutes / 60) % 24;
   const minute = minutes % 60;
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function toScheduleDuration(value: string | null | undefined): DayPlanScheduleDuration | undefined {
+  if (!value) return undefined;
+  const allowed: DayPlanScheduleDuration[] = [
+    "MINUTE_UNDER_30",
+    "MINUTE_30_TO_60",
+    "HOUR_1_TO_2",
+    "HOUR_2_TO_4",
+    "HOUR_OVER_4",
+  ];
+  return allowed.includes(value as DayPlanScheduleDuration)
+    ? (value as DayPlanScheduleDuration)
+    : undefined;
 }
 
 function updateScheduleCache(
