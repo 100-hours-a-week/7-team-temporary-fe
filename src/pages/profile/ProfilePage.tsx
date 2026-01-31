@@ -9,6 +9,7 @@ import { useStackPage } from "@/widgets/stack";
 import { useMyProfileQuery, useUpdateMyProfileImageMutation } from "@/entities/user";
 import { useProfileImagePresign } from "@/features/image/model";
 import { ActionButton } from "@/shared/ui/button";
+import { useToast } from "@/shared/ui/toast";
 import { AuthService } from "@/shared/auth";
 
 import { MyInfoStackPage } from "./MyInfoStackPage";
@@ -19,6 +20,7 @@ export function ProfilePage() {
   const { data: myProfile } = useMyProfileQuery();
   const { handleFileSelect, previewUrl, imageKey, isUploading } = useProfileImagePresign();
   const updateImageMutation = useUpdateMyProfileImageMutation();
+  const { showToast } = useToast();
   const lastImageKeyRef = useRef<string | null>(null);
 
   const profileImageKeyRegister: UseFormRegisterReturn = {
@@ -30,6 +32,10 @@ export function ProfilePage() {
 
   const errors = { profileImageKey: undefined as string | undefined };
   const username = myProfile?.nickname ?? "";
+  const handleProfileImageError = (error: unknown) => {
+    const message = error instanceof Error ? error.message : "프로필 이미지 업로드에 실패했습니다.";
+    showToast(message, "error");
+  };
 
   useEffect(() => {
     if (!imageKey || imageKey === lastImageKeyRef.current) return;
@@ -64,6 +70,7 @@ export function ProfilePage() {
           invalid={Boolean(errors.profileImageKey)}
           previewUrl={resolvedPreviewUrl}
           onFileSelect={handleFileSelect}
+          onUploadError={handleProfileImageError}
           isDisabled={isUploading || updateImageMutation.isPending}
         />
         <div className="mt-4 text-center text-lg font-semibold text-neutral-900">{username}</div>
