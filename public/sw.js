@@ -30,12 +30,13 @@ try {
   console.warn("[SW] Firebase messaging setup failed", error);
 }
 
+/*백그라운드 푸시는 이쪽에서 받는다.*/
 if (messaging) {
   messaging.onBackgroundMessage((payload) => {
     console.log("[FCM SW] payload", payload);
 
     const title = payload.data?.title ?? "MOLIP";
-    const body = payload.data?.content ?? payload.data?.body ?? "푸시 알림 테스트";
+    const body = payload.data?.content ?? payload.data?.body ?? "백그라운드 푸시 알림 테스트!";
     const icon = payload.data?.icon ?? "/icons/icon.svg";
 
     self.registration.showNotification(title, {
@@ -46,7 +47,11 @@ if (messaging) {
 }
 
 // Fallback for non-FCM test pushes (DevTools "Push" may send plain text)
+/*백엔드가 보내는 푸시는 이쪽에서 받는다.
+ *
+ */
 self.addEventListener("push", (event) => {
+  console.log("[FCM SW] push event", event);
   let payload = {};
   if (event.data) {
     try {
@@ -56,9 +61,9 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  const title = payload.title ?? "MOLIP";
-  const body = payload.content ?? payload.body ?? "푸시 알림 테스트";
-  const icon = payload.icon ?? "/icons/icon.svg";
+  const title = payload.data?.title ?? "MOLIP";
+  const body = payload.data?.content ?? payload.data?.body ?? "push 푸시 알림 테스트";
+  const icon = payload.data?.icon ?? "/icons/icon.svg";
 
   event.waitUntil(self.registration.showNotification(title, { body, icon }));
 });
