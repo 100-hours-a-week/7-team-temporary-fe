@@ -1,12 +1,18 @@
 import { z } from "zod";
 
-import { isEmailValid, isPasswordValid } from "@/shared/validation";
+import { getEmailError, getPasswordError } from "@/shared/validation";
 
 import type { LoginFormModel } from "./types";
-import { PASSWORD_ERRORS } from "@/shared/validation";
-import { EMAIL_ERRORS } from "@/shared/validation";
 
 export const loginFormSchema = z.object({
-  email: z.string().trim().refine(isEmailValid, EMAIL_ERRORS.INVALID_FORMAT),
-  password: z.string().refine(isPasswordValid, PASSWORD_ERRORS.INVALID_LENGTH),
+  email: z.string().superRefine((value, ctx) => {
+    const error = getEmailError(value);
+    if (!error) return;
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+  }),
+  password: z.string().superRefine((value, ctx) => {
+    const error = getPasswordError(value);
+    if (!error) return;
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+  }),
 }) satisfies z.ZodType<LoginFormModel>;

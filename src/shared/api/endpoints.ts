@@ -44,4 +44,7 @@ export const Endpoint = {
   FCM: {
     TOKENS: path("/fcm-tokens"),
   },
+  NOTIFICATIONS: {
+    LIST: path("/notifications"),
+  },
 } as const;
