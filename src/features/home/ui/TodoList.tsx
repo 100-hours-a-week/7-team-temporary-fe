@@ -83,8 +83,7 @@ export function TodoList({
     });
   }, [currentPage, mappedTasks, scheduleQuery.data]);
 
-  const hasMore =
-    totalPages === null ? mappedTasks.length === size : currentPage < totalPages;
+  const hasMore = totalPages === null ? mappedTasks.length === size : currentPage < totalPages;
 
   useEffect(() => {
     if (!shouldFetch) return;
@@ -104,7 +103,7 @@ export function TodoList({
 
     observer.observe(loadMoreRef.current);
     return () => observer.disconnect();
-  }, [hasMore, scheduleQuery.isFetching, shouldFetch]);
+  }, [hasMore, scheduleQuery.isFetching, scrollRootRef, shouldFetch]);
 
   const mergedTasks = useMemo(() => {
     if (!shouldFetch) return tasks;
