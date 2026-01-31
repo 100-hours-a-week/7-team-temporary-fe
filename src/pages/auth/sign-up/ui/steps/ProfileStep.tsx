@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { SignUpFormModel } from "@/features/auth/sign-up/model";
 import { useProfileImagePresign } from "@/features/image/model";
@@ -20,6 +21,8 @@ import { SplitText } from "@/shared/ui";
 import { OnboardingQuestionLayout } from "@/widgets/auth/onboarding/ui";
 
 type EmailCheckStatus = "idle" | "loading" | "success" | "error";
+type ProfileImageDraft = { imageKey: string; previewUrl?: string | null };
+const PROFILE_IMAGE_DRAFT_KEY = ["signUp", "profileImageDraft"] as const;
 
 export function ProfileStep() {
   const titleText = "당신을 알고 싶어요. 당신은 어떤 사람인가요?";
@@ -33,10 +36,12 @@ export function ProfileStep() {
     setValue,
   } = useFormContext<SignUpFormModel>();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [emailCheckStatus, setEmailCheckStatus] = useState<EmailCheckStatus>("idle");
   const [emailHelperText, setEmailHelperText] = useState<string | undefined>(undefined);
   const profileImageKeyRegister = register("profileImageKey");
-  const { handleFileSelect, previewUrl, imageKey, isUploading } = useProfileImagePresign();
+  const { handleFileSelect, previewUrl, imageKey, isUploading, restoreImageState } =
+    useProfileImagePresign();
   const emailValue = watch("email");
   const emailError = errors.email?.message?.toString();
   const passwordError = errors.password?.message?.toString();
@@ -48,6 +53,14 @@ export function ProfileStep() {
     const message = error instanceof Error ? error.message : "프로필 이미지 업로드에 실패했습니다.";
     showToast(message, "error");
   };
+  const { data: cachedDraft } = useQuery<ProfileImageDraft | null>({
+    queryKey: PROFILE_IMAGE_DRAFT_KEY,
+    queryFn: async () => null,
+    enabled: false,
+    initialData: () => queryClient.getQueryData(PROFILE_IMAGE_DRAFT_KEY) ?? null,
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 10,
+  });
 
   useEffect(() => {
     setEmailCheckStatus("idle");
@@ -60,6 +73,29 @@ export function ProfileStep() {
       shouldDirty: false,
     });
   }, [imageKey, setValue]);
+
+  useEffect(() => {
+    if (!cachedDraft || imageKey) return;
+    restoreImageState({
+      imageKey: cachedDraft.imageKey,
+      previewUrl: cachedDraft.previewUrl ?? null,
+    });
+    setValue("profileImageKey", cachedDraft.imageKey, {
+      shouldValidate: true,
+      shouldDirty: false,
+    });
+  }, [cachedDraft, imageKey, restoreImageState, setValue]);
+
+  useEffect(() => {
+    if (!imageKey) {
+      queryClient.removeQueries({ queryKey: PROFILE_IMAGE_DRAFT_KEY });
+      return;
+    }
+    queryClient.setQueryData(PROFILE_IMAGE_DRAFT_KEY, {
+      imageKey,
+      previewUrl,
+    });
+  }, [imageKey, previewUrl, queryClient]);
 
   const handleEmailCheck = async () => {
     const isValid = await trigger("email");
