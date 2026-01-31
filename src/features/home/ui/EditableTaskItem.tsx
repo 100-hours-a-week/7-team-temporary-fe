@@ -47,8 +47,12 @@ export function EditableTaskItem({
               {task.isUrgent ? <UrgentBadge>긴급</UrgentBadge> : null}
             </TitleRow>
             <MetaRow>
-              <MetaLabel>{timeLabel}</MetaLabel>
-              <MetaValue>{timeValue}</MetaValue>
+              <MetaInfo>
+                <MetaValue>{timeValue}</MetaValue>
+              </MetaInfo>
+              <AssignmentBadge $isAi={isAiAssigned}>
+                {isAiAssigned ? "AI" : "사용자"}
+              </AssignmentBadge>
             </MetaRow>
           </TextColumn>
         </LeftColumn>
@@ -62,7 +66,6 @@ export function EditableTaskItem({
             editAriaLabel="작업 수정"
             deleteAriaLabel="작업 삭제"
           />
-          <AssignmentBadge $isAi={isAiAssigned}>{isAiAssigned ? "AI" : "사용자"}</AssignmentBadge>
         </RightColumn>
       </ContentRow>
     </Card>
@@ -162,7 +165,6 @@ const AssignmentBadge = styled.span<{ $isAi: boolean }>`
   color: ${({ $isAi }) => ($isAi ? "#4338ca" : "#4b5563")};
   font-size: 12px;
   font-weight: 600;
-  margin-top: auto;
 `;
 
 const UrgentBadge = styled.span`
@@ -177,9 +179,17 @@ const UrgentBadge = styled.span`
 const MetaRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 13px;
   color: #6b7280;
+`;
+
+const MetaInfo = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 `;
 
 const MetaLabel = styled.span`

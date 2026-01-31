@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { TaskSplitGroup, TaskSplitItem, TodoCartTaskItemModel } from "@/features/home";
 import {
@@ -50,6 +50,9 @@ export function TaskBasketStackPage() {
   const { setHeaderContent } = useStackPage();
   const today = useMemo(() => new Date(), []);
   const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
+  const scrollRootRef = useRef<HTMLElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const dayPlanDate = useHomePlanStore((state) => state.date);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TodoTask | null>(null);
@@ -69,13 +72,23 @@ export function TaskBasketStackPage() {
     size: 10,
     enabled: Boolean(dayPlanId),
   });
+  const invalidateScheduleKeys = useMemo(() => {
+    const keys: Array<readonly unknown[]> = [];
+    if (dayPlanId) {
+      keys.push(homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10));
+    }
+    if (dayPlanDate) {
+      keys.push(homeQueryKeys.dayPlanSchedule(dayPlanDate, 1, 10));
+    }
+    return keys;
+  }, [dayPlanDate, dayPlanId]);
 
   const deleteScheduleMutation = useApiMutation<number, void, void>({
     url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),
     method: "DELETE",
     authRequired: true,
     refreshOnUnauthorized: true,
-    invalidateKeys: dayPlanId ? [homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10)] : [],
+    invalidateKeys: invalidateScheduleKeys,
   });
 
   const aiArrangeMutation = useApiMutation<void, void, void>({
@@ -88,13 +101,20 @@ export function TaskBasketStackPage() {
     method: "POST",
     authRequired: true,
     refreshOnUnauthorized: true,
-    invalidateKeys: dayPlanId ? [homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10)] : [],
+    invalidateKeys: invalidateScheduleKeys,
   });
 
   useEffect(() => {
     setHeaderContent(<span className="text-xl font-semibold text-black">작업 바구니</span>);
     return () => setHeaderContent(null);
   }, [setHeaderContent]);
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+    scrollRootRef.current = contentRef.current.closest(
+      ".overflow-y-auto, .overflow-auto, .overflow-y-scroll",
+    ) as HTMLElement | null;
+  }, []);
 
   const fetchedTasks = useMemo(
     () =>
@@ -322,7 +342,10 @@ export function TaskBasketStackPage() {
 
   return (
     <>
-      <div className="px-6 pt-[13px] pb-32">
+      <div
+        ref={contentRef}
+        className="px-6 pt-[13px] pb-32"
+      >
         <div className="mb-4 text-[18px] font-semibold text-neutral-900">
           {today.getMonth() + 1}월 {today.getDate()}일{" "}
           {["일", "월", "화", "수", "목", "금", "토"][today.getDay()]}
@@ -344,6 +367,7 @@ export function TaskBasketStackPage() {
             dayPlanId={dayPlanId}
             onEdit={handleEditTask}
             onDelete={handleDeleteRequest}
+            scrollRootRef={scrollRootRef}
           />
         </div>
       </div>
@@ -419,6 +443,7 @@ export function TaskBasketStackPage() {
         onOpenChange={handleSheetOpenChange}
         tasks={tasks}
         dayPlanId={dayPlanId}
+        invalidateKeys={invalidateScheduleKeys}
         onAddTask={(task) => setTasks((prev) => [task, ...prev])}
         editingTask={editingTask}
         onUpdateTask={handleUpdateTask}

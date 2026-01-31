@@ -15,6 +15,8 @@ import Info from "./assets/Info-icon.svg";
 import Success from "./assets/Success-icon.svg";
 import Notification from "./assets/Notification-icon.svg";
 import Error from "./assets/Error-icon.svg";
+import Eye from "./assets/Eye-icon.svg";
+import EyeOff from "./assets/Eye-off-icon.svg";
 import Home_filled from "./assets/Home-filled-icon.svg";
 import Home_outline from "./assets/Home-outline-icon.svg";
 import User_filled from "./assets/User-filled-icon.svg";
@@ -40,6 +42,8 @@ export const IconMap = {
   success: Success,
   notification: Notification,
   error: Error,
+  eye: Eye,
+  eye_off: EyeOff,
   home_filled: Home_filled,
   home_outline: Home_outline,
   user_filled: User_filled,

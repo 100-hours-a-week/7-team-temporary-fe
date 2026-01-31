@@ -21,6 +21,7 @@ import { AuthService } from "@/shared/auth";
 import { BottomSheet, ConfirmDialog, Icon } from "@/shared/ui";
 import { useMutationErrorEffect } from "@/shared/query";
 import { apiFetch, Endpoint } from "@/shared/api";
+import { registerFcmToken } from "@/shared/firebase";
 
 const focusTimeOptions = [
   { value: "MORNING", label: "오전" },
@@ -55,6 +56,20 @@ export function MyInfoStackPage() {
   const [isTermsSheetOpen, setIsTermsSheetOpen] = useState(false);
   const [pendingTermsId, setPendingTermsId] = useState<number | null>(null);
   const queryClient = useQueryClient();
+  const handleNotificationClick = async () => {
+    try {
+      const token = await registerFcmToken({ promptPermission: true });
+      if (!token) {
+        showToast("푸시 알림을 실패하였습니다.", "error");
+        return;
+      }
+
+      showToast("푸시 알림이 등록되었습니다.", "success");
+    } catch (error) {
+      console.error("푸시 알림 에러", error);
+      showToast("푸시 알림 에러", "error");
+    }
+  };
 
   const form = useForm<UpdateMyProfileModel>({
     defaultValues: {
@@ -309,6 +324,13 @@ export function MyInfoStackPage() {
             onClick={() => setIsTermsSheetOpen(true)}
           >
             약관 변경하기
+          </button>
+          <button
+            type="button"
+            className="mt-3 w-full rounded-full border border-neutral-900 px-4 py-3 text-sm font-semibold text-neutral-900"
+            onClick={handleNotificationClick}
+          >
+            푸시 알림 등록
           </button>
         </div>
         <div className="h-[70px]" />

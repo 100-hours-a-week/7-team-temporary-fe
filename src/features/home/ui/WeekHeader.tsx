@@ -9,11 +9,11 @@ interface WeekHeaderProps {
 export function WeekHeader({ monthIndex, onPrev, onNext }: WeekHeaderProps) {
   return (
     <div className="flex items-center justify-between">
-      <h2 className="text-xl font-semibold text-neutral-900">{monthIndex + 1}월</h2>
+      <h2 className="text-[22px] font-semibold text-[#5B2B1F]">{monthIndex + 1}월</h2>
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="flex h-8 w-[29px] items-center justify-center rounded-full text-neutral-900 transition hover:bg-neutral-100"
+          className="flex h-8 w-[29px] items-center justify-center rounded-full text-[#5B2B1F] transition hover:bg-neutral-100"
           aria-label="이전 주"
           onClick={onPrev}
         >
@@ -26,7 +26,7 @@ export function WeekHeader({ monthIndex, onPrev, onNext }: WeekHeaderProps) {
         </button>
         <button
           type="button"
-          className="flex h-8 w-[29px] items-center justify-center rounded-full text-neutral-900 transition hover:bg-neutral-100"
+          className="flex h-8 w-[29px] items-center justify-center rounded-full text-[#5B2B1F] transition hover:bg-neutral-100"
           aria-label="다음 주"
           onClick={onNext}
         >

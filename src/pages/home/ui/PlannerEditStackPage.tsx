@@ -1,6 +1,7 @@
 "use client";
 
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   END_HOUR,
@@ -8,6 +9,7 @@ import {
   ExcludedTaskItem,
   START_HOUR,
   TaskBasketButton,
+  homeQueryKeys,
   useDayPlanScheduleByIdQuery,
   TimeSlotGrid,
   useDayPlanSchedulesQuery,
@@ -20,6 +22,8 @@ import { TaskBasketStackPage } from "./TaskBasketStackPage";
 export function PlannerEditStackPage() {
   const { push, setHeaderContent, stack } = useStackPage();
   const entry = useContext(StackPageEntryContext);
+  const queryClient = useQueryClient();
+  const prevDepthRef = useRef(stack.length);
   const today = useMemo(() => new Date(), []);
   const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
   const [isSheetOpen, setIsSheetOpen] = useState(true);
@@ -77,6 +81,18 @@ export function PlannerEditStackPage() {
       schedulesQuery.refetch();
     }
   }, [isTop, isSheetOpen, schedulesQuery]);
+
+  useEffect(() => {
+    const prevDepth = prevDepthRef.current;
+    const nextDepth = stack.length;
+    prevDepthRef.current = nextDepth;
+
+    if (prevDepth > nextDepth && isTop && dayPlanId) {
+      queryClient.invalidateQueries({
+        queryKey: homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
+      });
+    }
+  }, [dayPlanId, isTop, queryClient, stack.length]);
 
   return (
     <>
