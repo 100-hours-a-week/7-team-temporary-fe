@@ -1,10 +1,21 @@
+import { useEffect, useRef, useState } from "react";
 import { useStackPage } from "@/widgets/stack";
 import { HomePlanner } from "@/features/home";
 import { Icon } from "@/shared/ui/icon";
 import { PlannerEditStackPage } from "./ui/PlannerEditStackPage";
 
 export function HomePage() {
-  const { push } = useStackPage();
+  const { push, depth } = useStackPage();
+  const prevDepthRef = useRef(depth);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const prevDepth = prevDepthRef.current;
+    prevDepthRef.current = depth;
+    if (prevDepth > depth && depth === 0) {
+      setRefreshKey((prev) => prev + 1);
+    }
+  }, [depth]);
 
   const handleOpenPlannerEdit = () => {
     push(<PlannerEditStackPage />);
@@ -12,7 +23,10 @@ export function HomePage() {
 
   return (
     <div className="relative h-full pb-20">
-      <HomePlanner onOpenPlannerEdit={handleOpenPlannerEdit} />
+      <HomePlanner
+        onOpenPlannerEdit={handleOpenPlannerEdit}
+        refreshKey={refreshKey}
+      />
       <button
         type="button"
         aria-label="플래너 수정"

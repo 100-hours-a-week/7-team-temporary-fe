@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 
 import {
   addDays,
@@ -21,9 +21,9 @@ import { TimeSlotGrid } from "./TimeSlotGrid";
 import { WeekDateSelector } from "./WeekDateSelector";
 import { WeekHeader } from "./WeekHeader";
 import { WeekdayLabels } from "./WeekdayLabels";
-
 interface HomePlannerProps {
   onOpenPlannerEdit: () => void;
+  refreshKey?: number;
 }
 
 const PAGE_SIZE = 10;
@@ -35,7 +35,11 @@ const formatDateParam = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
+export function HomePlanner({
+  onOpenPlannerEdit: _onOpenPlannerEdit,
+  refreshKey,
+}: HomePlannerProps) {
+  const queryClient = useQueryClient();
   const today = useMemo(() => new Date(), []);
   const [weekStart, setWeekStart] = useState(() => toStartOfWeek(today));
   const [selectedDate, setSelectedDate] = useState<Date | null>(today);
@@ -139,6 +143,13 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
     },
     [baseCompletionById],
   );
+
+  useEffect(() => {
+    if (!refreshKey) return;
+    queryClient.invalidateQueries({
+      queryKey: homeQueryKeys.dayPlanSchedule(queryDate, 1, PAGE_SIZE),
+    });
+  }, [queryClient, queryDate, refreshKey]);
 
   useEffect(() => {
     if (data?.dayPlanId) {
