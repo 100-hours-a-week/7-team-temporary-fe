@@ -160,6 +160,7 @@ export function ProfileStep() {
             onFileSelect={handleFileSelect}
             onUploadError={handleProfileImageError}
             previewUrl={previewUrl}
+            imageKey={imageKey}
             isDisabled={isUploading}
           />
         </FormField>

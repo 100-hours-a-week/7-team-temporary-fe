@@ -1,4 +1,5 @@
 import type { ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 
 import { cn } from "@/shared/lib";
@@ -11,6 +12,7 @@ interface ProfileImageKeyInputProps {
   isDisabled?: boolean;
   invalid?: boolean;
   previewUrl?: string | null;
+  imageKey?: string | null;
   onFileSelect?: (file: File | null) => void | Promise<void>;
   onUploadError?: (error: unknown) => void;
 }
@@ -20,11 +22,17 @@ export function ProfileImageKeyInput({
   isDisabled,
   invalid,
   previewUrl,
+  imageKey,
   onFileSelect,
   onUploadError,
 }: ProfileImageKeyInputProps) {
   const inputId = register.name;
   const { onChange: _ignoredOnChange, ...registerProps } = register;
+  const [isImageError, setIsImageError] = useState(false);
+
+  useEffect(() => {
+    setIsImageError(false);
+  }, [previewUrl]);
 
   //파일 선택 시 실행되는 핸들러
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -76,10 +84,10 @@ export function ProfileImageKeyInput({
         name="edit"
         className="absolute right-0 bottom-0 z-10 h-8 w-8 rounded-full bg-[var(--color-neutral-800)] p-1.5 text-white shadow-md"
       />
-      {previewUrl ? (
+      {previewUrl && !isImageError && shouldShowPreview(previewUrl, imageKey) ? (
         <label
           className={cn(
-            "flex w-full items-center justify-center rounded-xl border-0 bg-transparent",
+            "flex w-full items-center justify-center rounded-full border-0 bg-[var(--color-neutral-200)]",
             "data-[invalid=true]:ring-error/20 data-[invalid=true]:ring-2",
           )}
           htmlFor={inputId}
@@ -91,6 +99,7 @@ export function ProfileImageKeyInput({
             width={120}
             height={120}
             className="h-28 w-28 rounded-full object-cover"
+            onError={() => setIsImageError(true)}
           />
         </label>
       ) : (
@@ -101,8 +110,21 @@ export function ProfileImageKeyInput({
             "data-[invalid=true]:ring-error/20 data-[invalid=true]:ring-2",
           )}
           htmlFor={inputId}
-        ></label>
+        >
+          <Icon
+            name="user_outline"
+            className="h-20 w-20 text-[var(--color-neutral-500)]"
+            aria-hidden
+          />
+        </label>
       )}
     </div>
   );
+}
+
+const DEFAULT_PROFILE_IMAGE_NAME = "default_image.png";
+
+function shouldShowPreview(previewUrl: string, imageKey?: string | null) {
+  if (imageKey === null || imageKey === undefined || imageKey === "") return false;
+  return !previewUrl.includes(DEFAULT_PROFILE_IMAGE_NAME);
 }
