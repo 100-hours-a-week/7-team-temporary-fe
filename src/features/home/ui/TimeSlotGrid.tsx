@@ -1,5 +1,7 @@
 import type { CSSProperties, Key, ReactNode } from "react";
 import { useMemo } from "react";
+import { useDroppable } from "@dnd-kit/core";
+import { cn } from "@/shared/lib";
 
 interface TimeSlotGridStatus {
   text: string;
@@ -14,6 +16,10 @@ interface TimeSlotGridProps<T> {
   getStartTime: (task: T) => string | undefined;
   getEndTime: (task: T) => string | undefined;
   renderTask: (task: T, style: CSSProperties) => ReactNode;
+  enableDropTargets?: boolean;
+  dropTargetIdPrefix?: string;
+  previewSlot?: { hour: number; minute: number } | null;
+  previewDurationMinutes?: number;
 }
 
 const TEN_MINUTE_BLOCK_PX = 22;
@@ -50,6 +56,10 @@ export function TimeSlotGrid<T>({
   getStartTime,
   getEndTime,
   renderTask,
+  enableDropTargets = false,
+  dropTargetIdPrefix = "planner-slot",
+  previewSlot = null,
+  previewDurationMinutes = 30,
 }: TimeSlotGridProps<T>) {
   const tasksByHour = useMemo(
     () =>
@@ -95,6 +105,35 @@ export function TimeSlotGrid<T>({
                 {statusMessage && index === 0 ? (
                   <div className={`text-sm ${statusMessage.className}`}>{statusMessage.text}</div>
                 ) : null}
+                {enableDropTargets
+                  ? Array.from({ length: 6 }, (_, step) => {
+                      const minute = step * 10;
+                      const top = step * TEN_MINUTE_BLOCK_PX;
+                      return (
+                        <TimeSlotDropTarget
+                          key={`${hour}-${minute}`}
+                          id={`${dropTargetIdPrefix}-${hour}-${minute}`}
+                          hour={hour}
+                          minute={minute}
+                          top={top}
+                          height={TEN_MINUTE_BLOCK_PX}
+                        />
+                      );
+                    })
+                  : null}
+                {previewSlot && previewSlot.hour === hour ? (
+                  <div
+                    className="bg-primary-200/40 pointer-events-none absolute right-0 left-0 z-0 rounded-xl"
+                    style={{
+                      top: (previewSlot.minute / 10) * TEN_MINUTE_BLOCK_PX,
+                      height: Math.max(
+                        TEN_MINUTE_BLOCK_PX,
+                        Math.ceil(previewDurationMinutes / 10) * TEN_MINUTE_BLOCK_PX,
+                      ),
+                    }}
+                    aria-hidden
+                  />
+                ) : null}
                 {items.map((task) => {
                   const startTime = getStartTime(task);
                   const endTime = getEndTime(task);
@@ -123,5 +162,33 @@ export function TimeSlotGrid<T>({
         );
       })}
     </div>
+  );
+}
+
+function TimeSlotDropTarget({
+  id,
+  hour,
+  minute,
+  top,
+  height,
+}: {
+  id: string;
+  hour: number;
+  minute: number;
+  top: number;
+  height: number;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id,
+    data: { type: "slot", hour, minute },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn("pointer-events-none absolute right-0 left-0", isOver && "bg-primary-100/40")}
+      style={{ top, height }}
+      aria-hidden
+    />
   );
 }

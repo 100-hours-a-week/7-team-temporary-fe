@@ -1,5 +1,7 @@
 import styled from "@emotion/styled";
 import type { CSSProperties } from "react";
+import { useCallback } from "react";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 
 import type { EditableTaskItemModel } from "../model/taskModels";
 import { TaskItemActionRow } from "./TaskItemActionRow";
@@ -12,6 +14,21 @@ interface EditableTaskItemProps {
   onExclude: (scheduleId: number) => void;
   className?: string;
   style?: CSSProperties;
+  droppableId?: string;
+  droppableData?: {
+    type?: string;
+    scheduleId: number;
+    startAt: string;
+    endAt: string;
+    index: number;
+  };
+  insertPosition?: "above" | "below" | null;
+  draggableId?: string;
+  draggableData?: {
+    type?: string;
+    task: EditableTaskItemModel;
+  };
+  dragHandleLabel?: string;
 }
 
 const EMPTY_TIME_TEXT = "시간 정보 없음";
@@ -27,48 +44,87 @@ export function EditableTaskItem({
   onExclude,
   className,
   style,
+  droppableId,
+  droppableData,
+  insertPosition = null,
+  draggableId,
+  draggableData,
+  dragHandleLabel = "작업 드래그",
 }: EditableTaskItemProps) {
   const isAiAssigned = task.assignedBy === "AI";
   const timeLabel = getTimeLabel(task);
   const timeValue = formatTimeRange(task.startAt, task.endAt);
+  const { setNodeRef: setDropNodeRef } = useDroppable({
+    id: droppableId ?? `task-${task.scheduleId}`,
+    data: droppableData,
+    disabled: !droppableData,
+  });
+  const {
+    setNodeRef: setDragNodeRef,
+    setActivatorNodeRef,
+    attributes,
+    listeners,
+  } = useDraggable({
+    id: draggableId ?? `task-${task.scheduleId}`,
+    data: draggableData,
+    disabled: !draggableData,
+  });
+  const setNodeRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setDropNodeRef(node);
+      setDragNodeRef(node);
+    },
+    [setDropNodeRef, setDragNodeRef],
+  );
 
   return (
-    <Card
-      $isLocked={isLocked}
+    <CardWrapper
+      ref={setNodeRef}
       className={className}
       style={style}
     >
-      <ContentRow>
-        <LeftColumn>
-          <Handle />
-          <TextColumn>
-            <TitleRow>
-              <Title>{task.title}</Title>
-              {task.isUrgent ? <UrgentBadge>긴급</UrgentBadge> : null}
-            </TitleRow>
-            <MetaRow>
-              <MetaInfo>
-                <MetaValue>{timeValue}</MetaValue>
-              </MetaInfo>
-              <AssignmentBadge $isAi={isAiAssigned}>
-                {isAiAssigned ? "AI" : "사용자"}
-              </AssignmentBadge>
-            </MetaRow>
-          </TextColumn>
-        </LeftColumn>
-        <RightColumn>
-          <TaskItemActionRow
-            onEdit={() =>
-              onUpdate({ scheduleId: task.scheduleId, startAt: task.startAt, endAt: task.endAt })
-            }
-            onDelete={() => onDelete(task.scheduleId)}
-            isDisabled={isLocked}
-            editAriaLabel="작업 수정"
-            deleteAriaLabel="작업 삭제"
-          />
-        </RightColumn>
-      </ContentRow>
-    </Card>
+      {insertPosition === "above" ? <InsertLine $position="above" /> : null}
+      <Card $isLocked={isLocked}>
+        <ContentRow>
+          <LeftColumn>
+            <HandleButton
+              type="button"
+              ref={setActivatorNodeRef}
+              aria-label={dragHandleLabel}
+              {...attributes}
+              {...listeners}
+              disabled={!draggableData}
+            />
+            <TextColumn>
+              <TitleRow>
+                <Title>{task.title}</Title>
+                {task.isUrgent ? <UrgentBadge>긴급</UrgentBadge> : null}
+              </TitleRow>
+              <MetaRow>
+                <MetaInfo>
+                  <MetaValue>{timeValue}</MetaValue>
+                </MetaInfo>
+                <AssignmentBadge $isAi={isAiAssigned}>
+                  {isAiAssigned ? "AI" : "사용자"}
+                </AssignmentBadge>
+              </MetaRow>
+            </TextColumn>
+          </LeftColumn>
+          <RightColumn>
+            <TaskItemActionRow
+              onEdit={() =>
+                onUpdate({ scheduleId: task.scheduleId, startAt: task.startAt, endAt: task.endAt })
+              }
+              onDelete={() => onDelete(task.scheduleId)}
+              isDisabled={isLocked}
+              editAriaLabel="작업 수정"
+              deleteAriaLabel="작업 삭제"
+            />
+          </RightColumn>
+        </ContentRow>
+      </Card>
+      {insertPosition === "below" ? <InsertLine $position="below" /> : null}
+    </CardWrapper>
   );
 }
 
@@ -92,6 +148,21 @@ const Card = styled.article<{ $isLocked: boolean }>`
   border: 1px solid #e5e7eb;
   background: ${({ $isLocked }) => ($isLocked ? "#f9fafb" : "#ffffff")};
   opacity: ${({ $isLocked }) => ($isLocked ? 0.7 : 1)};
+`;
+
+const CardWrapper = styled.div`
+  position: relative;
+`;
+
+const InsertLine = styled.div<{ $position: "above" | "below" }>`
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 107, 107, 0.7);
+  ${({ $position }) => ($position === "above" ? "top: -6px;" : "bottom: -6px;")}
+  pointer-events: none;
 `;
 
 const ContentRow = styled.div`
@@ -135,7 +206,7 @@ const TitleRow = styled.div`
   gap: 8px;
 `;
 
-const Handle = styled.div`
+const HandleButton = styled.button`
   width: 16px;
   height: 16px;
   border-radius: 4px;
@@ -146,6 +217,18 @@ const Handle = styled.div`
     transparent 2px,
     transparent 4px
   );
+  border: none;
+  padding: 0;
+  cursor: grab;
+  flex-shrink: 0;
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
 `;
 
 const Title = styled.div`
