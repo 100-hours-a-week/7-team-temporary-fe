@@ -15,8 +15,7 @@ export const Endpoint = {
     IMAGE: path("/users/image"),
     CHECK: {
       NICKNAME: (nickname: string) => path(`/users?nickname=${encodeURIComponent(nickname)}`),
-
-      EMAIL: (email: string) => path(`/users?email=${encodeURIComponent(email)}`),
+      EMAIL: (email: string) => path(`/users/email?email=${encodeURIComponent(email)}`),
     },
     NICKNAME: path("/users/nickname"),
     PASSWORD: path("/users/password"),
