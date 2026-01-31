@@ -20,6 +20,12 @@ import { AiArrangeSheetContent } from "./AiArrangeSheet";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 type FlowStep = "idle" | "loading" | "ai" | "taskSplit";
+type ScheduleChildrenPayload = {
+  schedules: Array<{
+    parentScheduleId: number;
+    titles: string[];
+  }>;
+};
 
 const LONG_DURATION_VALUES = new Set(["HOUR_2_TO_4", "HOUR_OVER_4", "2~4시간", "4시간~"]);
 const OVER_FOUR_HOURS_VALUES = new Set(["HOUR_OVER_4", "4시간~"]);
@@ -107,6 +113,23 @@ export function TaskBasketStackPage() {
     authRequired: true,
     refreshOnUnauthorized: true,
     invalidateKeys: invalidateScheduleKeys,
+  });
+
+  const scheduleChildrenMutation = useApiMutation<
+    ScheduleChildrenPayload,
+    ScheduleChildrenPayload,
+    void
+  >({
+    url: Endpoint.SCHEDULE.CHILDREN,
+    method: "POST",
+    authRequired: true,
+    refreshOnUnauthorized: true,
+    dtoFn: (payload) => payload,
+    invalidateKeys: invalidateScheduleKeys,
+    onSuccess: () => {
+      setTaskSplitHandled(true);
+      setFlowStep("idle");
+    },
   });
 
   useEffect(() => {
@@ -237,8 +260,19 @@ export function TaskBasketStackPage() {
   };
 
   const handleTaskSplitSubmit = () => {
-    setTaskSplitHandled(true);
-    setFlowStep("idle");
+    if (scheduleChildrenMutation.isPending) return;
+    const schedules = splitGroups
+      .map((group) => {
+        const parentScheduleId = Number(group.id);
+        if (Number.isNaN(parentScheduleId)) return null;
+        const titles = group.items.map((item) => item.value.trim()).filter(Boolean);
+        if (titles.length === 0) return null;
+        return { parentScheduleId, titles };
+      })
+      .filter((item): item is ScheduleChildrenPayload["schedules"][number] => item !== null);
+
+    if (schedules.length === 0) return;
+    scheduleChildrenMutation.mutate({ schedules });
   };
 
   const handleAddSplitItem = (groupId: TaskSplitGroup["id"]) => {
@@ -434,6 +468,7 @@ export function TaskBasketStackPage() {
             onChangeItem={handleChangeSplitItem}
             onRemoveItem={handleRemoveSplitItem}
             onSubmit={handleTaskSplitSubmit}
+            isSubmitting={scheduleChildrenMutation.isPending}
           />
         ) : null}
         {flowStep === "loading" ? (

@@ -39,6 +39,7 @@ export const Endpoint = {
   },
   SCHEDULE: {
     BY_ID: (scheduleId: number) => path(`/schedule/${scheduleId}`),
+    CHILDREN: path("/schedule/children"),
   },
   FCM: {
     TOKENS: path("/fcm-tokens"),
