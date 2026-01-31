@@ -117,8 +117,6 @@ export function EditableTaskItem({
               }
               onDelete={() => onDelete(task.scheduleId)}
               isDisabled={isLocked}
-              editAriaLabel="작업 수정"
-              deleteAriaLabel="작업 삭제"
             />
           </RightColumn>
         </ContentRow>
@@ -148,6 +146,8 @@ const Card = styled.article<{ $isLocked: boolean }>`
   border: 1px solid #e5e7eb;
   background: ${({ $isLocked }) => ($isLocked ? "#f9fafb" : "#ffffff")};
   opacity: ${({ $isLocked }) => ($isLocked ? 0.7 : 1)};
+  height: 100%;
+  box-sizing: border-box;
 `;
 
 const CardWrapper = styled.div`
