@@ -20,6 +20,7 @@ import {
   EditableTaskItem,
   ExcludedTaskItem,
   START_HOUR,
+  TaskBasketAddSheet,
   TaskBasketButton,
   type EditableTaskItemModel,
   homeQueryKeys,
@@ -30,6 +31,9 @@ import {
 } from "@/features/home";
 import type { DayPlanScheduleResponseDto } from "@/features/home/api";
 import { updateDayPlanSchedule } from "@/features/home/api";
+import { Endpoint } from "@/shared/api";
+import { useApiMutation } from "@/shared/query";
+import { ConfirmDialog } from "@/shared/ui";
 import { ExcludedListBottomSheet } from "./ExcludedListBottomSheet";
 import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
 import { TaskBasketStackPage } from "./TaskBasketStackPage";
@@ -67,6 +71,11 @@ export function PlannerEditStackPage() {
   const [insertPreview, setInsertPreview] = useState<InsertPreview | null>(null);
   const insertKeyRef = useRef<string | null>(null);
   const dragDurationRef = useRef(DEFAULT_DROP_DURATION_MINUTES);
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<EditableTaskItemModel | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [resizePreviewMap, setResizePreviewMap] = useState<Record<number, string>>({});
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { delay: 200, tolerance: 5 },
@@ -87,6 +96,16 @@ export function PlannerEditStackPage() {
     size: 10,
     enabled: Boolean(dayPlanId) && isSheetOpen,
   });
+  const invalidateScheduleKeys = useMemo(() => {
+    const keys: Array<readonly unknown[]> = [];
+    if (dayPlanId) {
+      keys.push(homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10));
+    }
+    if (dayPlanDate) {
+      keys.push(homeQueryKeys.dayPlanSchedule(dayPlanDate, 1, 10));
+    }
+    return keys;
+  }, [dayPlanDate, dayPlanId]);
 
   const timeSlots = useMemo(
     () => Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index),
@@ -110,6 +129,10 @@ export function PlannerEditStackPage() {
     mergedTasks.forEach((task, index) => map.set(task.scheduleId, index));
     return map;
   }, [mergedTasks]);
+  const sheetTasks = useMemo(() => {
+    if (!editingTask) return mergedTasks;
+    return mergedTasks.filter((task) => task.scheduleId !== editingTask.scheduleId);
+  }, [editingTask, mergedTasks]);
   const previewDurationMinutes = dragDurationRef.current;
   const statusMessage = scheduleQuery.isLoading
     ? { text: "일정을 불러오는 중...", className: "text-neutral-500" }
@@ -127,6 +150,27 @@ export function PlannerEditStackPage() {
   useEffect(() => {
     scrollParentRef.current = getScrollParent(pageRef.current);
   }, []);
+
+  useEffect(() => {
+    if (!dayPlanId) return;
+    if (scheduleQuery.isFetching) {
+      console.log("[PlannerEditStackPage] 일정 조회 요청", {
+        dayPlanId,
+        page: 1,
+        size: 10,
+      });
+    }
+  }, [dayPlanId, scheduleQuery.isFetching]);
+
+  useEffect(() => {
+    if (scheduleQuery.isError) {
+      console.error("[PlannerEditStackPage] 일정 조회 실패", scheduleQuery.error);
+      return;
+    }
+    if (scheduleQuery.data) {
+      console.log("[PlannerEditStackPage] 일정 조회 응답", scheduleQuery.data);
+    }
+  }, [scheduleQuery.data, scheduleQuery.error, scheduleQuery.isError]);
 
   const handleOpenTaskBasket = () => {
     push(<TaskBasketStackPage />);
@@ -215,6 +259,102 @@ export function PlannerEditStackPage() {
       restoreScrollPosition();
     },
   });
+  const deleteScheduleMutation = useApiMutation<number, void, void>({
+    url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),
+    method: "DELETE",
+    authRequired: true,
+    refreshOnUnauthorized: true,
+    invalidateKeys: invalidateScheduleKeys,
+  });
+
+  const handleEditTask = (task: EditableTaskItemModel) => {
+    setEditingTask(task);
+    setIsEditSheetOpen(true);
+  };
+
+  const handleEditSheetOpenChange = (nextOpen: boolean) => {
+    setIsEditSheetOpen(nextOpen);
+    if (!nextOpen) {
+      setEditingTask(null);
+    }
+  };
+
+  const handleUpdateTask = (nextTask: EditableTaskItemModel) => {
+    setDroppedTasks((prev) => {
+      const map = new Map(prev.map((task) => [task.scheduleId, task]));
+      map.set(nextTask.scheduleId, nextTask);
+      return Array.from(map.values());
+    });
+    if (!dayPlanId) return;
+    queryClient.setQueryData(
+      homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
+      (prev: DayPlanScheduleResponseDto | undefined) =>
+        updateScheduleCache(prev, nextTask.scheduleId, nextTask.startAt, nextTask.endAt, nextTask),
+    );
+  };
+
+  const handleResizePreview = (scheduleId: number, endAt: string) => {
+    setResizePreviewMap((prev) => {
+      if (prev[scheduleId] === endAt) return prev;
+      return { ...prev, [scheduleId]: endAt };
+    });
+  };
+
+  const clearResizePreview = (scheduleId: number) => {
+    setResizePreviewMap((prev) => {
+      if (!(scheduleId in prev)) return prev;
+      const next = { ...prev };
+      delete next[scheduleId];
+      return next;
+    });
+  };
+
+  const handleResizeEnd = (task: EditableTaskItemModel, endAt: string) => {
+    clearResizePreview(task.scheduleId);
+    if (endAt === task.endAt) return;
+    const nextTask: EditableTaskItemModel = { ...task, endAt };
+    setDroppedTasks((prev) => {
+      const map = new Map(prev.map((item) => [item.scheduleId, item]));
+      map.set(task.scheduleId, nextTask);
+      return Array.from(map.values());
+    });
+    updateScheduleMutation.mutate({
+      scheduleId: task.scheduleId,
+      payload: {
+        title: task.title,
+        type: task.type,
+        startAt: task.startAt,
+        endAt,
+        estimatedTimeRange: task.estimatedTimeRange ?? undefined,
+        focusLevel: task.focusLevel ?? undefined,
+        isUrgent: task.isUrgent ?? undefined,
+      },
+      task: nextTask,
+    });
+  };
+
+  const handleDeleteRequest = (scheduleId: number) => {
+    setDeleteTargetId(scheduleId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTargetId) return;
+    deleteScheduleMutation.mutate(deleteTargetId, {
+      onSuccess: () => {
+        setDroppedTasks((prev) => prev.filter((task) => task.scheduleId !== deleteTargetId));
+        if (dayPlanId) {
+          queryClient.setQueryData(
+            homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
+            (prev: DayPlanScheduleResponseDto | undefined) =>
+              removeScheduleCache(prev, deleteTargetId),
+          );
+        }
+        setIsDeleteDialogOpen(false);
+        setDeleteTargetId(null);
+      },
+    });
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const payload = event.active.data.current as DraggedTask | undefined;
@@ -395,15 +535,16 @@ export function PlannerEditStackPage() {
             statusMessage={statusMessage}
             getTaskKey={(task) => task.scheduleId}
             getStartTime={(task) => task.startAt}
-            getEndTime={(task) => task.endAt}
+            getEndTime={(task) => resizePreviewMap[task.scheduleId] ?? task.endAt}
             renderTask={(task, style) => (
               <EditableTaskItem
                 task={task}
                 style={style}
                 isLocked={false}
-                onUpdate={() => undefined}
-                onDelete={() => undefined}
+                onUpdate={() => handleEditTask(task)}
+                onDelete={() => handleDeleteRequest(task.scheduleId)}
                 onExclude={() => undefined}
+                previewEndAt={resizePreviewMap[task.scheduleId]}
                 droppableId={`task-${task.scheduleId}`}
                 droppableData={{
                   type: "item",
@@ -418,6 +559,8 @@ export function PlannerEditStackPage() {
                 draggableId={`task-${task.scheduleId}`}
                 draggableData={{ type: "task", task }}
                 dragHandleLabel="작업 드래그"
+                onResizePreview={handleResizePreview}
+                onResizeEnd={handleResizeEnd}
               />
             )}
             enableDropTargets
@@ -468,6 +611,41 @@ export function PlannerEditStackPage() {
             </div>
           ) : null}
         </DragOverlay>
+
+        <ConfirmDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={(open) => {
+            setIsDeleteDialogOpen(open);
+            if (!open) {
+              setDeleteTargetId(null);
+            }
+          }}
+          title="정말 삭제할까요?"
+          description="삭제한 작업은 복구할 수 없습니다."
+          confirmText={deleteScheduleMutation.isPending ? "삭제 중..." : "삭제"}
+          cancelText="취소"
+          confirmDisabled={deleteScheduleMutation.isPending}
+          cancelDisabled={deleteScheduleMutation.isPending}
+          onConfirm={handleDeleteConfirm}
+          contentClassName="bg-white rounded-3xl"
+          trigger={
+            <button
+              type="button"
+              className="hidden"
+            />
+          }
+        />
+
+        <TaskBasketAddSheet
+          open={isEditSheetOpen}
+          onOpenChange={handleEditSheetOpenChange}
+          tasks={sheetTasks}
+          dayPlanId={dayPlanId}
+          invalidateKeys={invalidateScheduleKeys}
+          onAddTask={() => undefined}
+          editingTask={editingTask}
+          onUpdateTask={handleUpdateTask}
+        />
       </>
     </DndContext>
   );
@@ -577,7 +755,19 @@ function updateScheduleCache(
   const nextContent = exists
     ? prev.content.map((item) =>
         item.scheduleId === scheduleId
-          ? { ...item, startAt, endAt, assignmentStatus: "ASSIGNED", type: "FIXED" }
+          ? {
+              ...item,
+              title: task.title,
+              type: task.type ?? item.type,
+              startAt,
+              endAt,
+              estimatedTimeRange: task.estimatedTimeRange ?? item.estimatedTimeRange,
+              focusLevel: task.focusLevel ?? item.focusLevel,
+              isUrgent: task.isUrgent ?? item.isUrgent,
+              assignedBy: task.assignedBy ?? item.assignedBy,
+              status: task.status ?? item.status,
+              assignmentStatus: task.assignmentStatus ?? item.assignmentStatus,
+            }
           : item,
       )
     : [

@@ -1,6 +1,6 @@
 import styled from "@emotion/styled";
-import type { CSSProperties } from "react";
-import { useCallback } from "react";
+import type { CSSProperties, PointerEvent } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 
 import type { EditableTaskItemModel } from "../model/taskModels";
@@ -14,6 +14,7 @@ interface EditableTaskItemProps {
   onExclude: (scheduleId: number) => void;
   className?: string;
   style?: CSSProperties;
+  previewEndAt?: string | null;
   droppableId?: string;
   droppableData?: {
     type?: string;
@@ -29,9 +30,16 @@ interface EditableTaskItemProps {
     task: EditableTaskItemModel;
   };
   dragHandleLabel?: string;
+  resizeHandleLabel?: string;
+  onResizePreview?: (scheduleId: number, endAt: string) => void;
+  onResizeEnd?: (task: EditableTaskItemModel, endAt: string) => void;
 }
 
 const EMPTY_TIME_TEXT = "시간 정보 없음";
+const TEN_MINUTE_BLOCK_PX = 22;
+const RESIZE_HANDLE_HEIGHT_PX = 10;
+const RESIZE_SNAP_MINUTES = 10;
+const MIN_RESIZE_MINUTES = 30;
 
 /**
  * 플래너 수정 페이지에서 일정 편집을 위한 단일 작업 아이템.
@@ -44,16 +52,27 @@ export function EditableTaskItem({
   onExclude,
   className,
   style,
+  previewEndAt = null,
   droppableId,
   droppableData,
   insertPosition = null,
   draggableId,
   draggableData,
   dragHandleLabel = "작업 드래그",
+  resizeHandleLabel = "작업 시간 조절",
+  onResizePreview,
+  onResizeEnd,
 }: EditableTaskItemProps) {
   const isAiAssigned = task.assignedBy === "AI";
-  const timeLabel = getTimeLabel(task);
-  const timeValue = formatTimeRange(task.startAt, task.endAt);
+  const [isResizing, setIsResizing] = useState(false);
+  const [localPreviewEndAt, setLocalPreviewEndAt] = useState<string | null>(null);
+  const resizeStateRef = useRef<{
+    startY: number;
+    startMinutes: number;
+    endMinutes: number;
+  } | null>(null);
+  const effectiveEndAt = previewEndAt ?? localPreviewEndAt ?? task.endAt;
+  const timeValue = formatTimeRange(task.startAt, effectiveEndAt);
   const { setNodeRef: setDropNodeRef } = useDroppable({
     id: droppableId ?? `task-${task.scheduleId}`,
     data: droppableData,
@@ -67,7 +86,7 @@ export function EditableTaskItem({
   } = useDraggable({
     id: draggableId ?? `task-${task.scheduleId}`,
     data: draggableData,
-    disabled: !draggableData,
+    disabled: !draggableData || isResizing,
   });
   const setNodeRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -76,6 +95,57 @@ export function EditableTaskItem({
     },
     [setDropNodeRef, setDragNodeRef],
   );
+
+  const handleResizePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (isLocked) return;
+    const startMinutes = parseTimeToMinutes(task.startAt);
+    const endMinutes = parseTimeToMinutes(task.endAt);
+    if (startMinutes === null || endMinutes === null) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setIsResizing(true);
+    resizeStateRef.current = {
+      startY: event.clientY,
+      startMinutes,
+      endMinutes,
+    };
+    setLocalPreviewEndAt(task.endAt);
+    onResizePreview?.(task.scheduleId, task.endAt);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleResizePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!isResizing || !resizeStateRef.current) return;
+    event.preventDefault();
+    const { startY, startMinutes, endMinutes } = resizeStateRef.current;
+    const deltaY = event.clientY - startY;
+    const step = Math.round(deltaY / TEN_MINUTE_BLOCK_PX);
+    const deltaMinutes = step * RESIZE_SNAP_MINUTES;
+    const minEndMinutes = startMinutes + MIN_RESIZE_MINUTES;
+    const nextEndMinutes = clampMinutes(Math.max(minEndMinutes, endMinutes + deltaMinutes));
+    const nextEndAt = formatTime(nextEndMinutes);
+    setLocalPreviewEndAt(nextEndAt);
+    onResizePreview?.(task.scheduleId, nextEndAt);
+  };
+
+  const handleResizePointerEnd = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!isResizing) return;
+    event.preventDefault();
+    setIsResizing(false);
+    const nextEndAt = localPreviewEndAt ?? task.endAt;
+    setLocalPreviewEndAt(null);
+    resizeStateRef.current = null;
+    onResizeEnd?.(task, nextEndAt);
+  };
+
+  const handleResizePointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!isResizing) return;
+    event.preventDefault();
+    setIsResizing(false);
+    setLocalPreviewEndAt(null);
+    resizeStateRef.current = null;
+    onResizeEnd?.(task, task.endAt);
+  };
 
   return (
     <CardWrapper
@@ -120,16 +190,20 @@ export function EditableTaskItem({
             />
           </RightColumn>
         </ContentRow>
+        <ResizeHandle
+          type="button"
+          aria-label={resizeHandleLabel}
+          onPointerDown={handleResizePointerDown}
+          onPointerMove={handleResizePointerMove}
+          onPointerUp={handleResizePointerEnd}
+          onPointerCancel={handleResizePointerCancel}
+          disabled={isLocked}
+          $isActive={isResizing}
+        />
       </Card>
       {insertPosition === "below" ? <InsertLine $position="below" /> : null}
     </CardWrapper>
   );
-}
-
-function getTimeLabel(task: EditableTaskItemModel) {
-  if (task.type === "FIXED") return "고정 시간";
-  if (task.assignedBy === "AI") return "배치 시간";
-  return "예상 소요시간";
 }
 
 function formatTimeRange(startAt: string, endAt: string) {
@@ -137,7 +211,29 @@ function formatTimeRange(startAt: string, endAt: string) {
   return `${startAt} ~ ${endAt}`;
 }
 
+function parseTimeToMinutes(value: string | undefined | null) {
+  if (!value) return null;
+  const [hourText, minuteText] = value.split(":");
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return hour * 60 + minute;
+}
+
+function clampMinutes(value: number) {
+  return Math.min(24 * 60, Math.max(0, value));
+}
+
+function formatTime(totalMinutes: number) {
+  const minutes = clampMinutes(totalMinutes);
+  const hour = Math.floor(minutes / 60) % 24;
+  const minute = minutes % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
 const Card = styled.article<{ $isLocked: boolean }>`
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -204,6 +300,33 @@ const TitleRow = styled.div`
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+`;
+
+const ResizeHandle = styled.button<{ $isActive: boolean }>`
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: ${RESIZE_HANDLE_HEIGHT_PX}px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: ns-resize;
+  z-index: 2;
+
+  &::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 2px;
+    margin: 0 auto;
+    border-radius: 999px;
+    background: ${({ $isActive }) => ($isActive ? "#6366f1" : "#e5e7eb")};
+  }
+
+  &:disabled {
+    cursor: default;
+  }
 `;
 
 const HandleButton = styled.button`
