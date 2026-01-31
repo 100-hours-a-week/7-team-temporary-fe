@@ -3,6 +3,7 @@ import type { UseFormRegisterReturn } from "react-hook-form";
 
 import { cn } from "@/shared/lib";
 import { Icon } from "@/shared/ui";
+import { prepareImageFile } from "@/shared/validation";
 import Image from "next/image";
 
 interface ProfileImageKeyInputProps {
@@ -27,7 +28,20 @@ export function ProfileImageKeyInput({
 
   //파일 선택 시 실행되는 핸들러
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null; //사용자가 선택한 file
+    const selectedFile = event.target.files?.[0] ?? null; //사용자가 선택한 file
+    let file = selectedFile;
+    if (file) {
+      try {
+        file = await prepareImageFile(file);
+      } catch (error) {
+        onUploadError?.(error);
+        if (!onUploadError) {
+          console.error("프로필 이미지 업로드 실패:", error);
+        }
+        event.target.value = "";
+        return;
+      }
+    }
     //외부에서 파일 선택 감지
     try {
       await onFileSelect?.(file);
@@ -54,7 +68,7 @@ export function ProfileImageKeyInput({
       <input
         id={inputId}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png"
         className="sr-only text-[rgba(112,112,112,1)]"
         onChange={handleFileChange}
         disabled={isDisabled}

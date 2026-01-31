@@ -1,12 +1,12 @@
 import { z } from "zod";
 
 import {
-  isBirthValid,
-  isDayEndTimeValid,
-  isEmailValid,
-  isGenderValid,
-  isNicknameValid,
-  isPasswordValid,
+  getBirthError,
+  getDayEndTimeError,
+  getEmailError,
+  getGenderError,
+  getNicknameError,
+  getPasswordError,
   isProfileImageKeyValid,
 } from "@/shared/validation";
 
@@ -14,21 +14,38 @@ import {
 //refine 내가 만든 규칙으로 검증하겠다.
 
 import type { SignUpFormModel } from "./types";
-import { BIRTH_ERRORS } from "@/shared/validation";
-import { EMAIL_ERRORS } from "@/shared/validation";
-import { PASSWORD_ERRORS } from "@/shared/validation";
-import { NICKNAME_ERRORS } from "@/shared/validation";
-import { GENDER_ERRORS } from "@/shared/validation";
-import { DAY_END_TIME_ERRORS } from "@/shared/validation";
-
 export const signUpFormSchema = z.object({
-  email: z.string().trim().refine(isEmailValid, EMAIL_ERRORS.INVALID_FORMAT),
-  password: z.string().refine(isPasswordValid, PASSWORD_ERRORS.INVALID_LENGTH),
-  nickname: z.string().refine(isNicknameValid, NICKNAME_ERRORS.ALLOWED_CHARS),
-  gender: z.enum(["MALE", "FEMALE"]).refine(isGenderValid, GENDER_ERRORS.REQUIRED),
-  birth: z.string().refine(isBirthValid, BIRTH_ERRORS.INVALID_FORMAT),
+  email: z.string().superRefine((value, ctx) => {
+    const error = getEmailError(value);
+    if (!error) return;
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+  }),
+  password: z.string().superRefine((value, ctx) => {
+    const error = getPasswordError(value);
+    if (!error) return;
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+  }),
+  nickname: z.string().superRefine((value, ctx) => {
+    const error = getNicknameError(value);
+    if (!error) return;
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+  }),
+  gender: z.enum(["MALE", "FEMALE"]).superRefine((value, ctx) => {
+    const error = getGenderError(value);
+    if (!error) return;
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+  }),
+  birth: z.string().superRefine((value, ctx) => {
+    const error = getBirthError(value);
+    if (!error) return;
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+  }),
   focusTimeZone: z.enum(["MORNING", "AFTERNOON", "EVENING", "NIGHT"]),
-  dayEndTime: z.string().refine(isDayEndTimeValid, DAY_END_TIME_ERRORS.INVALID_FORMAT),
+  dayEndTime: z.string().superRefine((value, ctx) => {
+    const error = getDayEndTimeError(value);
+    if (!error) return;
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
+  }),
   profileImageKey: z.string().nullable().optional().refine(isProfileImageKeyValid),
   terms: z
     .array(
