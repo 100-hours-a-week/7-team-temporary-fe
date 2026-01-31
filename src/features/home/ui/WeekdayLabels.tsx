@@ -2,11 +2,11 @@ import { WEEKDAY_LABELS } from "../model/calendar";
 
 export function WeekdayLabels() {
   return (
-    <div className="mt-8 grid grid-cols-7 text-center text-base font-semibold text-neutral-900">
+    <div className="mt-6 grid grid-cols-7 text-center text-[18px] font-semibold text-[#5B2B1F]">
       {WEEKDAY_LABELS.map((label) => (
         <div
           key={label}
-          className="py-2"
+          className="py-1"
         >
           {label}
         </div>

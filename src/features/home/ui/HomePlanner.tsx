@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 
 import {
   addDays,
@@ -10,6 +11,8 @@ import {
   START_HOUR,
   toStartOfWeek,
 } from "../model/calendar";
+import { fetchDayPlanSchedule } from "../api";
+import { homeQueryKeys } from "../model/queryKeys";
 import { toTaskItemModelFromHomeTask } from "../model/taskMappers";
 import { useHomePlanStore } from "../model/homePlan.store";
 import { useDayPlanScheduleQuery } from "../model/useDayPlanScheduleQuery";
@@ -59,6 +62,17 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
     page: 1,
     size: PAGE_SIZE,
   });
+  const weekPlanQueries = useQueries({
+    queries: weekDays.map((day) => {
+      const date = formatDateParam(day);
+      return {
+        queryKey: homeQueryKeys.dayPlanSchedule(date, 1, 1),
+        queryFn: ({ signal }) => fetchDayPlanSchedule({ date, page: 1, size: 1, signal }),
+        enabled: date !== queryDate,
+        staleTime: 1000 * 60,
+      };
+    }),
+  });
   const setHomePlan = useHomePlanStore((state) => state.setHomePlan);
 
   const baseTasks = useMemo(
@@ -85,6 +99,19 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
       })),
     [baseTasks, completionOverrides],
   );
+  const planPresenceByDate = useMemo(() => {
+    const map = new Map<string, boolean>();
+    weekDays.forEach((day, index) => {
+      const date = formatDateParam(day);
+      if (date === queryDate) {
+        map.set(date, (data?.content.length ?? 0) > 0);
+        return;
+      }
+      const query = weekPlanQueries[index];
+      map.set(date, (query?.data?.content.length ?? 0) > 0);
+    });
+    return map;
+  }, [weekDays, weekPlanQueries, data?.content.length, queryDate]);
   const statusMessage = isLoading
     ? { text: "일정을 불러오는 중...", className: "text-neutral-500" }
     : isError
@@ -134,6 +161,7 @@ export function HomePlanner({ onOpenPlannerEdit }: HomePlannerProps) {
         selectedDate={selectedDate}
         today={today}
         onSelect={setSelectedDate}
+        hasPlan={(day) => planPresenceByDate.get(formatDateParam(day)) ?? false}
       />
       <TimeSlotGrid
         slots={timeSlots}
