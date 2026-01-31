@@ -17,7 +17,6 @@ import type {
 } from "@/features/home/api";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation, useMutationErrorEffect } from "@/shared/query";
-import { homeQueryKeys } from "@/features/home/model/queryKeys";
 import { BottomSheet } from "@/shared/ui";
 import { FormField, BASE_INPUT_CLASS_NAME } from "@/shared/form/ui";
 import { PrimaryButton } from "@/shared/ui/button";
@@ -30,6 +29,7 @@ interface TaskBasketAddSheetProps {
   onOpenChange: (open: boolean) => void;
   tasks: TodoTask[];
   dayPlanId: number | null;
+  invalidateKeys?: Array<readonly unknown[]>;
   onAddTask: (task: TodoTask) => void;
   editingTask?: TodoTask | null;
   onUpdateTask?: (task: TodoTask) => void;
@@ -40,6 +40,7 @@ export function TaskBasketAddSheet({
   onOpenChange,
   tasks,
   dayPlanId,
+  invalidateKeys,
   onAddTask,
   editingTask = null,
   onUpdateTask,
@@ -78,7 +79,7 @@ export function TaskBasketAddSheet({
     dtoFn: (payload) => payload,
     authRequired: true,
     refreshOnUnauthorized: true,
-    invalidateKeys: dayPlanId ? [homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10)] : [],
+    invalidateKeys: invalidateKeys ?? [],
   });
   const updateScheduleMutation = useApiMutation<
     CreateDayPlanScheduleRequestDto,
@@ -95,6 +96,7 @@ export function TaskBasketAddSheet({
     dtoFn: (payload) => payload,
     authRequired: true,
     refreshOnUnauthorized: true,
+    invalidateKeys: invalidateKeys ?? [],
   });
   useMutationErrorEffect(createScheduleMutation);
   useMutationErrorEffect(updateScheduleMutation);
