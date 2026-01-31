@@ -29,18 +29,17 @@ export function ProfileImageKeyInput({
   //파일 선택 시 실행되는 핸들러
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] ?? null; //사용자가 선택한 file
+    if (!selectedFile) return;
     let file = selectedFile;
-    if (file) {
-      try {
-        file = await prepareImageFile(file);
-      } catch (error) {
-        onUploadError?.(error);
-        if (!onUploadError) {
-          console.error("프로필 이미지 업로드 실패:", error);
-        }
-        event.target.value = "";
-        return;
+    try {
+      file = await prepareImageFile(file);
+    } catch (error) {
+      onUploadError?.(error);
+      if (!onUploadError) {
+        console.error("프로필 이미지 업로드 실패:", error);
       }
+      event.target.value = "";
+      return;
     }
     //외부에서 파일 선택 감지
     try {
