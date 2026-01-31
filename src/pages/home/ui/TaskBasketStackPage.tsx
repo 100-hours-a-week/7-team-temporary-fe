@@ -50,9 +50,9 @@ export function TaskBasketStackPage() {
   const { setHeaderContent } = useStackPage();
   const today = useMemo(() => new Date(), []);
   const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
+  const dayPlanDate = useHomePlanStore((state) => state.date);
   const scrollRootRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const dayPlanDate = useHomePlanStore((state) => state.date);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TodoTask | null>(null);
@@ -72,6 +72,11 @@ export function TaskBasketStackPage() {
     size: 10,
     enabled: Boolean(dayPlanId),
   });
+  const selectedDate = useMemo(() => {
+    if (!dayPlanDate) return today;
+    const parsed = new Date(dayPlanDate);
+    return Number.isNaN(parsed.getTime()) ? today : parsed;
+  }, [dayPlanDate, today]);
   const invalidateScheduleKeys = useMemo(() => {
     const keys: Array<readonly unknown[]> = [];
     if (dayPlanId) {
@@ -146,15 +151,15 @@ export function TaskBasketStackPage() {
     [mergedTasks],
   );
   const taskSplitCandidates = longDurationCandidates;
-  const hasFixedTimeTask = mergedTasks.some((task) => task.type === "FIXED");
-  const shouldShowAiPrompt = mergedTasks.length > 0 && !hasFixedTimeTask;
+  const hasFlexTask = mergedTasks.some((task) => task.type === "FLEX");
+  const shouldShowAiPrompt = hasFlexTask;
   const shouldShowTaskSplitPrompt = taskSplitCandidates.length > 0;
   const flowSignature = useMemo(
     () =>
-      `${mergedTasks.length}:${hasFixedTimeTask}:${taskSplitCandidates
+      `${mergedTasks.length}:${hasFlexTask}:${taskSplitCandidates
         .map((task) => task.scheduleId)
         .join(",")}`,
-    [hasFixedTimeTask, mergedTasks.length, taskSplitCandidates],
+    [hasFlexTask, mergedTasks.length, taskSplitCandidates],
   );
 
   const shouldShowAiStep = shouldShowAiPrompt && !aiPromptHandled;
@@ -347,8 +352,8 @@ export function TaskBasketStackPage() {
         className="px-6 pt-[13px] pb-32"
       >
         <div className="mb-4 text-[18px] font-semibold text-neutral-900">
-          {today.getMonth() + 1}월 {today.getDate()}일{" "}
-          {["일", "월", "화", "수", "목", "금", "토"][today.getDay()]}
+          {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일{" "}
+          {["일", "월", "화", "수", "목", "금", "토"][selectedDate.getDay()]}
         </div>
         <div className="flex items-center justify-between">
           <div className="text-[18px] font-semibold text-neutral-900">수행되지 않은 Todo list</div>
