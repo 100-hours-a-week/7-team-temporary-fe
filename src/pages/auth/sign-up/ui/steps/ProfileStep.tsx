@@ -15,6 +15,7 @@ import {
   PasswordInput,
   ProfileImageKeyInput,
 } from "@/shared/form/ui";
+import { useToast } from "@/shared/ui/toast";
 import { SplitText } from "@/shared/ui";
 import { OnboardingQuestionLayout } from "@/widgets/auth/onboarding/ui";
 
@@ -26,6 +27,7 @@ export function ProfileStep() {
     formState: { errors },
     setValue,
   } = useFormContext<SignUpFormModel>();
+  const { showToast } = useToast();
   const profileImageKeyRegister = register("profileImageKey");
   const { handleFileSelect, previewUrl, imageKey, isUploading } = useProfileImagePresign();
   const emailError = errors.email?.message?.toString();
@@ -34,6 +36,10 @@ export function ProfileStep() {
   const genderError = errors.gender?.message?.toString();
   const birthError = errors.birth?.message?.toString();
   const profileImageKeyError = errors.profileImageKey?.message?.toString();
+  const handleProfileImageError = (error: unknown) => {
+    const message = error instanceof Error ? error.message : "프로필 이미지 업로드에 실패했습니다.";
+    showToast(message, "error");
+  };
 
   useEffect(() => {
     setValue("profileImageKey", imageKey ?? null, {
@@ -73,6 +79,7 @@ export function ProfileStep() {
             register={profileImageKeyRegister}
             invalid={!!errors.profileImageKey}
             onFileSelect={handleFileSelect}
+            onUploadError={handleProfileImageError}
             previewUrl={previewUrl}
             isDisabled={isUploading}
           />

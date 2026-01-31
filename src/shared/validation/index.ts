@@ -5,6 +5,12 @@ export { getGenderError, isGenderValid } from "./gender";
 export { getBirthError, isBirthValid } from "./birth";
 export { getDayEndTimeError, isDayEndTimeValid } from "./dayEndTime";
 export { normalizeProfileImageKey, isProfileImageKeyValid } from "./profileImage";
+export {
+  IMAGE_FILE_ERRORS,
+  MAX_IMAGE_FILE_SIZE_BYTES,
+  prepareImageFile,
+  validateImageFile,
+} from "./imageFile";
 export { EMAIL_ERRORS } from "./email";
 export { PASSWORD_ERRORS } from "./password";
 export { NICKNAME_ERRORS } from "./nickname";
