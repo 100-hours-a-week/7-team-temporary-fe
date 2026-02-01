@@ -31,10 +31,10 @@ export function AiArrangeSheetContent({
       <p className="mt-2 text-xs text-neutral-400">AI를 사용할 수 있는 남은 횟수는 1번 입니다.</p>
       <div className="mt-6 flex gap-3">
         <PrimaryButton
-          className="w-full bg-neutral-200 text-neutral-900 hover:bg-neutral-200"
+          className="bg-primary-600 hover:bg-primary-700 w-full text-white"
           isLoading={isPending}
           loadingText="배치 중..."
-          disabled={!canArrange}
+          disabled={!canArrange || isPending}
           onClick={onArrange}
         >
           AI 자동배치
@@ -59,12 +59,19 @@ export function AiArrangeSheet({
   onArrange,
   onCancel,
 }: AiArrangeSheetProps) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && isPending) return;
+    onOpenChange(nextOpen);
+  };
+
   return (
     <BottomSheet
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       peekHeight={35}
       expandHeight={35}
+      closeOnOverlayClick={!isPending}
+      fitContent
       className="pb-[env(safe-area-inset-bottom)]"
     >
       <AiArrangeSheetContent
