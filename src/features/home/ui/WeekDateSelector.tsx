@@ -1,4 +1,5 @@
 import { cn } from "@/shared/lib";
+import { DateSwapText } from "@/shared/ui";
 import { isSameDate } from "../model/calendar";
 import { useHomePlanStore } from "../model/homePlan.store";
 
@@ -26,14 +27,15 @@ export function WeekDateSelector({
 
   return (
     <div className="grid grid-cols-7 text-center">
-      {weekDays.map((day) => {
+      {weekDays.map((day, index) => {
         const isSelected = selectedDate ? isSameDate(day, selectedDate) : false;
         const isToday = isSameDate(day, today);
         const hasPlanForDay = hasPlan(day);
+        const dateValue = String(day.getDate());
 
         return (
           <button
-            key={day.toISOString()}
+            key={`weekday-${index}`}
             type="button"
             className="flex flex-col items-center gap-1 py-1 text-[#7B7B7B]"
             onClick={() => handleSelectDate(day)}
@@ -48,7 +50,11 @@ export function WeekDateSelector({
                     : "text-sm font-light text-[#a98a8a]",
               )}
             >
-              {day.getDate()}
+              <DateSwapText
+                value={dateValue}
+                delayMs={index * 90}
+                className="[font-variant-numeric:tabular-nums]"
+              />
             </span>
             <span
               className={cn(
