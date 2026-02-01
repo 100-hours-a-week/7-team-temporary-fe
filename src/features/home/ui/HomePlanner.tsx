@@ -21,6 +21,7 @@ import { WeekHeader } from "./WeekHeader";
 import { WeekdayLabels } from "./WeekdayLabels";
 import { apiFetch, Endpoint } from "@/shared/api";
 import type { DayPlanScheduleItemDto } from "../api/types";
+import { Icon } from "@/shared/ui/icon";
 interface HomePlannerProps {
   onOpenPlannerEdit: () => void;
   refreshKey?: number;
@@ -191,6 +192,10 @@ export function HomePlanner({
       : !currentTask
         ? { text: "지금 할 일이 없습니다.", className: "text-neutral-500" }
         : null;
+  const todayScheduleLabel = useMemo(
+    () => formatScheduleLabel(selectedDate ?? today),
+    [selectedDate, today],
+  );
 
   const handleMoveWeek = (offset: number) => {
     setWeekStart((prev) => addDays(prev, offset));
@@ -268,52 +273,71 @@ export function HomePlanner({
         onSelect={setSelectedDate}
         hasPlan={(day) => planPresenceByDate.get(formatDateParam(day)) ?? false}
       />
-      <div className="mt-6">
-        <div className="text-ink-900 text-xl font-semibold">지금 할 일</div>
-        <div className="mt-4">
-          {currentTaskStatus ? (
-            <div
-              className={`rounded-2xl border border-neutral-200 bg-white px-4 py-6 text-center text-sm ${currentTaskStatus.className}`}
-            >
-              {currentTaskStatus.text}
-            </div>
-          ) : currentTask ? (
-            <HomeTaskItem
-              task={currentTask}
-              onToggleComplete={handleToggleComplete}
+      <div className="mt-6 flex flex-col gap-6">
+        <section className="rounded-[28px] bg-white px-6 py-4 shadow-[0_6px_20px_rgba(217,111,111,0.1)]">
+          <div className="text-primary-600 flex items-center gap-2 text-lg font-bold">
+            <Icon
+              name="fire"
+              className="h-7 w-7"
+              aria-hidden
             />
-          ) : null}
-        </div>
-      </div>
-      <div className="mt-10">
-        <div className="text-ink-900 text-xl font-semibold">오늘 할 일 목록</div>
-        <div className="mt-4 flex flex-col gap-4">
-          {statusMessage ? (
-            <div
-              className={`rounded-2xl border border-neutral-200 bg-white px-4 py-6 text-center text-sm ${statusMessage.className}`}
-            >
-              {statusMessage.text}
-            </div>
-          ) : (
-            <>
-              {tasks.map((task) => (
-                <HomeTaskItem
-                  key={task.taskId}
-                  task={task}
-                  variant="list"
-                  onToggleComplete={handleToggleComplete}
-                />
-              ))}
+            지금 할 일
+          </div>
+          <div className="mt-5">
+            {currentTaskStatus ? (
               <div
-                ref={loadMoreRef}
-                className="h-px"
+                className={`rounded-2xl bg-white px-4 py-6 text-center text-sm ${currentTaskStatus.className}`}
+              >
+                {currentTaskStatus.text}
+              </div>
+            ) : currentTask ? (
+              <HomeTaskItem
+                task={currentTask}
+                onToggleComplete={handleToggleComplete}
+                className="text-primary-600 border-0 p-0"
+                iconClassName="text-primary-600"
               />
-              {isLoading && hasMore ? (
-                <div className="text-center text-xs text-neutral-400">불러오는 중...</div>
-              ) : null}
-            </>
-          )}
-        </div>
+            ) : null}
+          </div>
+        </section>
+        <section className="rounded-[28px] bg-white px-6 py-4 shadow-[0_6px_20px_rgba(217,111,111,0.1)]">
+          <div className="text-primary-600 flex items-center gap-2 text-lg font-bold">
+            <Icon
+              name="home_outline"
+              className="h-7 w-7"
+              style={{ "--icon-stroke": 3 } as React.CSSProperties}
+              aria-hidden
+            />
+            {todayScheduleLabel}
+          </div>
+          <div className="mt-5 flex flex-col">
+            {statusMessage ? (
+              <div
+                className={`rounded-2xl bg-white px-4 py-6 text-center text-sm ${statusMessage.className}`}
+              >
+                {statusMessage.text}
+              </div>
+            ) : (
+              <>
+                {tasks.map((task) => (
+                  <HomeTaskItem
+                    key={task.taskId}
+                    task={task}
+                    variant="list"
+                    onToggleComplete={handleToggleComplete}
+                  />
+                ))}
+                <div
+                  ref={loadMoreRef}
+                  className="h-px"
+                />
+                {isLoading && hasMore ? (
+                  <div className="text-center text-xs text-neutral-400">불러오는 중...</div>
+                ) : null}
+              </>
+            )}
+          </div>
+        </section>
       </div>
       <div
         className="h-24"
@@ -321,6 +345,15 @@ export function HomePlanner({
       />
     </div>
   );
+}
+
+function formatScheduleLabel(date: Date) {
+  if (Number.isNaN(date.getTime())) return "";
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const labels = ["일", "월", "화", "수", "목", "금", "토"];
+  const weekday = labels[date.getDay()] ?? "";
+  return `${month}.${day} (${weekday}) 일정`;
 }
 
 function getScrollParent(element: HTMLElement | null) {

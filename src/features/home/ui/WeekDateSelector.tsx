@@ -45,7 +45,7 @@ export function WeekDateSelector({
                   ? "bg-[#FF6B6B] text-white"
                   : isToday
                     ? "bg-primary-100 text-[#5B2B1F]"
-                    : "text-[#7B7B7B]",
+                    : "text-[#a98a8a]",
               )}
             >
               {day.getDate()}
