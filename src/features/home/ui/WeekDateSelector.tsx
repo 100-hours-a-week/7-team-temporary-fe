@@ -25,7 +25,7 @@ export function WeekDateSelector({
   };
 
   return (
-    <div className="mt-1 grid grid-cols-7 text-center">
+    <div className="grid grid-cols-7 text-center">
       {weekDays.map((day) => {
         const isSelected = selectedDate ? isSameDate(day, selectedDate) : false;
         const isToday = isSameDate(day, today);
@@ -35,17 +35,17 @@ export function WeekDateSelector({
           <button
             key={day.toISOString()}
             type="button"
-            className="flex flex-col items-center gap-3 py-2 text-[#7B7B7B]"
+            className="flex flex-col items-center gap-1 py-1 text-[#7B7B7B]"
             onClick={() => handleSelectDate(day)}
           >
             <span
               className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full text-base font-semibold transition",
+                "flex h-10 w-10 items-center justify-center rounded-full text-base transition",
                 isSelected
                   ? "bg-[#FF6B6B] text-white"
                   : isToday
                     ? "bg-primary-100 text-[#5B2B1F]"
-                    : "text-[#a98a8a]",
+                    : "text-sm font-light text-[#a98a8a]",
               )}
             >
               {day.getDate()}

@@ -8,7 +8,7 @@ interface WeekHeaderProps {
 
 export function WeekHeader({ monthIndex, onPrev, onNext }: WeekHeaderProps) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between px-3">
       <h2 className="text-[22px] font-semibold text-[#5B2B1F]">{monthIndex + 1}월</h2>
       <div className="flex items-center gap-2">
         <button

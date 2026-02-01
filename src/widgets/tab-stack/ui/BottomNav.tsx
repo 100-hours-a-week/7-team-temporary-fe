@@ -14,7 +14,7 @@ export function BottomNav() {
   const { activeTab, setActiveTab } = useTab();
 
   return (
-    <nav className="border-secondary-200 fixed bottom-0 left-1/2 z-50 mb-0 w-full max-w-[420px] -translate-x-1/2 rounded-t-2xl border-t bg-white px-6 pt-3 pb-[43px]">
+    <nav className="border-secondary-200 fixed bottom-0 left-1/2 z-50 mb-0 w-full max-w-[420px] -translate-x-1/2 rounded-t-2xl border-t bg-white px-6 pt-3 pb-[10px]">
       <ul className="flex items-center justify-center gap-[19px]">
         {TAB_ITEMS.map((item) => {
           const isActive = activeTab === item.id;
@@ -29,7 +29,7 @@ export function BottomNav() {
               <button
                 type="button"
                 onClick={() => setActiveTab(item.id)}
-                className={`flex h-[70px] w-[46px] flex-col items-center justify-end gap-1 text-sm font-medium ${isActive ? "text-ink-900" : "text-ink-300"}`}
+                className={`flex w-[46px] flex-col items-center justify-end pb-2 text-sm font-medium ${isActive ? "text-ink-900" : "text-ink-300"}`}
               >
                 <Icon
                   name={iconName}
