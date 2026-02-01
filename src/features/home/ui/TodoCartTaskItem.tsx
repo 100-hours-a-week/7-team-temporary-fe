@@ -132,7 +132,7 @@ function formatEstimatedTimeRange(value?: string | null) {
   if (!value) return EMPTY_TIME_TEXT;
   const labels: Record<string, string> = {
     MINUTE_UNDER_30: "30분 미만",
-    MINUTE_30_TO_60: "30~60분",
+    MINUTE_30_TO_60: "30~1시간",
     HOUR_1_TO_2: "1~2시간",
     HOUR_2_TO_4: "2~4시간",
     HOUR_OVER_4: "4시간 이상",
