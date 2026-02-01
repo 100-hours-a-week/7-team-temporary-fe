@@ -33,7 +33,7 @@ interface MetaItem {
 interface BadgeItem {
   key: string;
   label: string;
-  variant: "neutral" | "ai";
+  variant: "neutral" | "ai" | "arranged";
 }
 
 /**
@@ -132,7 +132,7 @@ function formatEstimatedTimeRange(value?: string | null) {
   if (!value) return EMPTY_TIME_TEXT;
   const labels: Record<string, string> = {
     MINUTE_UNDER_30: "30분 미만",
-    MINUTE_30_TO_60: "30~1시간",
+    MINUTE_30_TO_60: "30분~1시간",
     HOUR_1_TO_2: "1~2시간",
     HOUR_2_TO_4: "2~4시간",
     HOUR_OVER_4: "4시간 이상",
@@ -148,7 +148,11 @@ function getBadges({
   viewMode: TodoCartViewMode;
 }): BadgeItem[] {
   const items: BadgeItem[] = [
-    { key: "view", label: VIEW_MODE_BADGE_TEXT[viewMode], variant: "neutral" },
+    {
+      key: "view",
+      label: VIEW_MODE_BADGE_TEXT[viewMode],
+      variant: viewMode === "ARRANGED" ? "arranged" : "neutral",
+    },
   ];
 
   if (isAiAssigned) {
@@ -233,6 +237,13 @@ const Badge = styled.span<{ $variant: BadgeItem["variant"] }>`
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  background: ${({ $variant }) => ($variant === "ai" ? "#fecaca" : "#e5e7eb")};
-  color: ${({ $variant }) => ($variant === "ai" ? "#dc2626" : "#6b7280")};
+  background: ${({ $variant }) => {
+    if ($variant === "ai") return "#fecaca";
+    if ($variant === "arranged") return "#ffffff";
+    return "#e5e7eb";
+  }};
+  color: ${({ $variant }) =>
+    $variant === "ai" ? "#dc2626" : $variant === "arranged" ? "#FF6D6D" : "#6b7280"};
+  border: ${({ $variant }) =>
+    $variant === "arranged" ? "1px solid rgb(255, 161, 161)" : "1px solid transparent"};
 `;
