@@ -104,7 +104,7 @@ export function ProfilePage() {
       <div className="mt-10 grid grid-cols-3 gap-4">
         <button
           type="button"
-          className="text-neutral-900m flex h-[120px] w-[120px] items-center justify-center rounded-3xl bg-neutral-100 text-lg font-semibold"
+          className="text-neutral-900m flex h-[120px] w-[120px] items-center justify-center rounded-3xl bg-neutral-200 text-lg font-semibold"
           onClick={handleOpenMyInfo}
         >
           내 정보
