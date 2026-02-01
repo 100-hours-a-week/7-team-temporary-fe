@@ -286,10 +286,10 @@ export function HomePlanner({
           <div className="mt-2">
             {currentScheduleQuery.isLoading ? (
               <div className="flex items-center gap-3 px-2 py-2">
-                <div className="h-10 w-10 animate-pulse rounded-full bg-neutral-200" />
+                <div className="h-10 w-10 animate-pulse rounded-full bg-neutral-100" />
                 <div className="flex flex-1 flex-col gap-2">
-                  <div className="h-4 w-3/4 animate-pulse rounded-full bg-neutral-200" />
-                  <div className="h-3 w-1/2 animate-pulse rounded-full bg-neutral-200" />
+                  <div className="h-4 w-3/4 animate-pulse rounded-full bg-neutral-100" />
+                  <div className="h-3 w-1/2 animate-pulse rounded-full bg-neutral-100" />
                 </div>
               </div>
             ) : currentTaskStatus ? (
