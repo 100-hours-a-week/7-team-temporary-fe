@@ -245,28 +245,51 @@ export function PlannerEditStackPage() {
       payload: CreateDayPlanScheduleRequestDto;
       task: EditableTaskItemModel;
     }) => updateDayPlanSchedule(variables.scheduleId, variables.payload),
-    onSuccess: (_, variables) => {
-      if (!dayPlanId) return;
-      const { scheduleId, payload, task } = variables;
-      queryClient.setQueryData(
-        homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
-        (prev: DayPlanScheduleResponseDto | undefined) =>
-          updateScheduleCache(
-            prev,
-            scheduleId,
-            payload.startAt ?? task.startAt,
-            payload.endAt ?? task.endAt,
-            task,
-          ),
+    onMutate: async (variables) => {
+      captureScrollPosition();
+      if (!dayPlanId) return undefined;
+      const scheduleKey = homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10);
+      const excludedKey = homeQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
+      const prevSchedules = queryClient.getQueryData<DayPlanScheduleResponseDto>(scheduleKey);
+      const prevExcluded = queryClient.getQueryData<DayPlanScheduleResponseDto>(excludedKey);
+
+      queryClient.setQueryData(scheduleKey, (prev: DayPlanScheduleResponseDto | undefined) =>
+        updateScheduleCache(
+          prev,
+          variables.scheduleId,
+          variables.payload.startAt ?? variables.task.startAt,
+          variables.payload.endAt ?? variables.task.endAt,
+          variables.task,
+        ),
       );
-      queryClient.setQueryData(
-        homeQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10),
-        (prev: DayPlanScheduleResponseDto | undefined) => removeScheduleCache(prev, scheduleId),
+      queryClient.setQueryData(excludedKey, (prev: DayPlanScheduleResponseDto | undefined) =>
+        removeScheduleCache(prev, variables.scheduleId),
       );
-      restoreScrollPosition();
+
+      requestAnimationFrame(() => {
+        restoreScrollPosition();
+      });
+
+      return { prevSchedules, prevExcluded };
     },
-    onError: () => {
-      restoreScrollPosition();
+    onError: (_error, _variables, context) => {
+      if (!dayPlanId || !context) return;
+      const scheduleKey = homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10);
+      const excludedKey = homeQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
+      if (context.prevSchedules) {
+        queryClient.setQueryData(scheduleKey, context.prevSchedules);
+      }
+      if (context.prevExcluded) {
+        queryClient.setQueryData(excludedKey, context.prevExcluded);
+      }
+      requestAnimationFrame(() => {
+        restoreScrollPosition();
+      });
+    },
+    onSuccess: () => {
+      requestAnimationFrame(() => {
+        restoreScrollPosition();
+      });
     },
   });
 

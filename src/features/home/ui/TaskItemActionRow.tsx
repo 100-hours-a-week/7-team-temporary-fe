@@ -94,7 +94,7 @@ const IconButton = styled.button`
 `;
 
 const ActionIcon = styled(Icon)`
-  width: 1.2em;
-  height: 1.2em;
+  width: 1.35em;
+  height: 1.35em;
   overflow: visible;
 `;

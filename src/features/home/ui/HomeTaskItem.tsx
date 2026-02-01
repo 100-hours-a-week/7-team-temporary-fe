@@ -12,6 +12,7 @@ interface HomeTaskItemProps {
   onToggleComplete: (taskId: number) => void;
   className?: string;
   style?: CSSProperties;
+  variant?: "card" | "list";
 }
 
 const TIME_LABEL_BY_TYPE: Record<TaskItemModel["timeType"], string> = {
@@ -25,7 +26,13 @@ const EMPTY_TIME_TEXT = "시간 정보 없음";
 /**
  * 홈 플래너에서 작업을 표현하는 카드 컴포넌트.
  */
-export function HomeTaskItem({ task, onToggleComplete, className, style }: HomeTaskItemProps) {
+export function HomeTaskItem({
+  task,
+  onToggleComplete,
+  className,
+  style,
+  variant = "card",
+}: HomeTaskItemProps) {
   const timeLabel = TIME_LABEL_BY_TYPE[task.timeType];
   const timeValue = getTimeValue(task);
 
@@ -35,6 +42,7 @@ export function HomeTaskItem({ task, onToggleComplete, className, style }: HomeT
       style={style}
       $isCompleted={task.isCompleted}
       $isFixedTime={task.isFixedTime}
+      $variant={variant}
     >
       <Row>
         <CompleteButton
@@ -51,10 +59,15 @@ export function HomeTaskItem({ task, onToggleComplete, className, style }: HomeT
         </CompleteButton>
         <Content>
           <TitleRow>
-            <Title $isCompleted={task.isCompleted}>{task.title}</Title>
+            <Title
+              $isCompleted={task.isCompleted}
+              $variant={variant}
+            >
+              {task.title}
+            </Title>
             {task.isUrgent ? <UrgentBadge>중요</UrgentBadge> : null}
           </TitleRow>
-          <MetaRow>
+          <MetaRow $variant={variant}>
             <MetaValue>{timeValue}</MetaValue>
           </MetaRow>
         </Content>
@@ -72,17 +85,35 @@ function getTimeValue(task: TaskItemModel) {
   return `${task.startTime} ~ ${task.endTime}`;
 }
 
-const Card = styled.article<{ $isCompleted: boolean; $isFixedTime: boolean }>`
+const Card = styled.article<{
+  $isCompleted: boolean;
+  $isFixedTime: boolean;
+  $variant: "card" | "list";
+}>`
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px 16px;
   position: relative;
   z-index: 1;
-  border-radius: 16px;
-  border: 1px solid ${({ $isFixedTime }) => ($isFixedTime ? "#c7d2fe" : "#e5e7eb")};
-  background: ${({ $isCompleted }) => ($isCompleted ? "#f3f4f6" : "#ffffff")};
-  ${({ $isCompleted }) => ($isCompleted ? "color: #9ca3af;" : "")};
+  ${({ $variant }) =>
+    $variant === "list"
+      ? `
+    padding: 16px 0;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid #e5dcd7;
+    background: transparent;
+  `
+      : `
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid #fec7c7;
+    background: #ffffff;
+  `}
+  ${({ $isFixedTime, $variant }) =>
+    $variant === "card" && $isFixedTime ? "border-color: #FF6D6D;" : ""}
+  ${({ $isCompleted, $variant }) =>
+    $variant === "card" && $isCompleted ? "background: #f3f4f6; color: #9ca3af;" : ""}
 `;
 
 const Row = styled.div`
@@ -106,10 +137,11 @@ const TitleRow = styled.div`
   gap: 8px;
 `;
 
-const Title = styled.div<{ $isCompleted: boolean }>`
+const Title = styled.div<{ $isCompleted: boolean; $variant: "card" | "list" }>`
   font-size: 16px;
   font-weight: 600;
-  color: ${({ $isCompleted }) => ($isCompleted ? "#9ca3af" : "inherit")};
+  color: ${({ $isCompleted, $variant }) =>
+    $isCompleted ? "#9ca3af" : $variant === "list" ? "#541e0f" : "inherit"};
   text-decoration: ${({ $isCompleted }) => ($isCompleted ? "line-through" : "none")};
 `;
 
@@ -122,13 +154,13 @@ const UrgentBadge = styled.span`
   font-weight: 600;
 `;
 
-const MetaRow = styled.div`
+const MetaRow = styled.div<{ $variant: "card" | "list" }>`
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: inherit;
-  opacity: 0.7;
+  color: ${({ $variant }) => ($variant === "list" ? "#b8aca4" : "inherit")};
+  opacity: ${({ $variant }) => ($variant === "list" ? 1 : 0.7)};
 `;
 
 const MetaLabel = styled.span`

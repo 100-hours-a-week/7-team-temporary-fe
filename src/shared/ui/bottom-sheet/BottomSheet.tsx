@@ -196,7 +196,7 @@ export function BottomSheet({
         className={cn(
           "mx-auto w-full max-w-[420px] rounded-t-2xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)]",
           "relative z-40",
-          "pointer-events-auto transition-[height,transform,opacity] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+          "pointer-events-auto transition-[height,transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
           isDragging && "transition-none",
           sheetClassName,
         )}
