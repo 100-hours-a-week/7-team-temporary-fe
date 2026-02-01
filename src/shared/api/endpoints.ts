@@ -38,6 +38,7 @@ export const Endpoint = {
     SCHEDULES_BY_ID: (dayPlanId: number) => path(`/day-plan/${dayPlanId}/schedules`),
   },
   SCHEDULE: {
+    BASE: path("/schedule"),
     BY_ID: (scheduleId: number) => path(`/schedule/${scheduleId}`),
     CHILDREN: path("/schedule/children"),
   },

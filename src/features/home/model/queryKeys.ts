@@ -4,6 +4,7 @@ const baseKeys = queryKeyFactory("home");
 
 export const homeQueryKeys = {
   ...baseKeys,
+  currentSchedule: () => baseKeys.by("current-schedule"),
   dayPlanSchedule: (date: string, page: number, size: number) =>
     baseKeys.by("day-plan-schedule", date, page, size),
   dayPlanScheduleById: (dayPlanId: number, page: number, size: number) =>
