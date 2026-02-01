@@ -56,7 +56,7 @@ export function HomeTaskItem({
           <Icon
             name={task.isCompleted ? "todo_check" : "todo_unchecked"}
             className={cn(
-              "h-7 w-7",
+              "h-6 w-6",
               !task.isCompleted && variant === "card" && "text-primary-600",
               iconClassName,
             )}
@@ -107,7 +107,7 @@ const Card = styled.article<{
   ${({ $variant }) =>
     $variant === "list"
       ? `
-    padding: 0 0 30px 0;
+    padding: 10px 0 5px 5px;
     border-radius: 0;
     border: none;
     background: transparent;
