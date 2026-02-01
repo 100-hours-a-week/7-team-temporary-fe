@@ -248,7 +248,7 @@ export function TaskBasketStackPage() {
   };
 
   const handleAiCancel = () => {
-    setAiPromptHandled(true);
+    setAiPromptHandled(false);
     setAiArrangeError(false);
     setTaskSplitHandled(true);
     setFlowStep("idle");
@@ -256,7 +256,7 @@ export function TaskBasketStackPage() {
 
   const handleFlowOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
-      if (flowStep === "ai") setAiPromptHandled(true);
+      if (flowStep === "ai") setAiPromptHandled(false);
       if (flowStep === "taskSplit") setTaskSplitHandled(true);
       setAiArrangeError(false);
       setFlowStep("idle");
