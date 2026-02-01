@@ -1,7 +1,7 @@
 "use client";
 
 import type { UseFormRegisterReturn } from "react-hook-form";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { FormField, ProfileImageKeyInput } from "@/shared/form/ui";
@@ -18,10 +18,12 @@ export function ProfilePage() {
   const { push } = useStackPage();
   const router = useRouter();
   const { data: myProfile, isLoading: isProfileLoading } = useMyProfileQuery();
-  const { handleFileSelect, previewUrl, imageKey, isUploading } = useProfileImagePresign();
+  const { handleFileSelect, previewUrl, imageKey, isUploading, loadImageViewUrl } =
+    useProfileImagePresign();
   const updateImageMutation = useUpdateMyProfileImageMutation();
   const { showToast } = useToast();
   const lastImageKeyRef = useRef<string | null>(null);
+  const lastViewKeyRef = useRef<string | null>(null);
 
   const profileImageKeyRegister: UseFormRegisterReturn = {
     name: "profileImageKey",
@@ -32,10 +34,14 @@ export function ProfilePage() {
 
   const errors = { profileImageKey: undefined as string | undefined };
   const username = myProfile?.nickname ?? "";
-  const handleProfileImageError = (error: unknown) => {
-    const message = error instanceof Error ? error.message : "프로필 이미지 업로드에 실패했습니다.";
-    showToast(message, "error");
-  };
+  const handleProfileImageError = useCallback(
+    (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : "프로필 이미지 업로드에 실패했습니다.";
+      showToast(message, "error");
+    },
+    [showToast],
+  );
 
   useEffect(() => {
     if (!imageKey || imageKey === lastImageKeyRef.current) return;
@@ -45,6 +51,15 @@ export function ProfilePage() {
       profileImageUrl: previewUrl ?? null,
     });
   }, [imageKey, previewUrl, updateImageMutation]);
+
+  useEffect(() => {
+    const profileImageKey = myProfile?.profileImageKey;
+    if (!profileImageKey) return;
+    if (imageKey) return;
+    if (lastViewKeyRef.current === profileImageKey) return;
+    lastViewKeyRef.current = profileImageKey;
+    loadImageViewUrl(profileImageKey, "USERS").catch(handleProfileImageError);
+  }, [imageKey, loadImageViewUrl, myProfile?.profileImageKey, handleProfileImageError]);
 
   const handleOpenMyInfo = () => {
     push(<MyInfoStackPage />);
@@ -56,6 +71,7 @@ export function ProfilePage() {
   };
 
   const resolvedPreviewUrl = previewUrl ?? myProfile?.profileImageUrl ?? null;
+  const resolvedImageKey = imageKey ?? myProfile?.profileImageKey ?? null;
   const shouldShowImageSkeleton = isProfileLoading && !resolvedPreviewUrl;
 
   return (
@@ -71,7 +87,7 @@ export function ProfilePage() {
             register={profileImageKeyRegister}
             invalid={Boolean(errors.profileImageKey)}
             previewUrl={resolvedPreviewUrl}
-            imageKey={imageKey}
+            imageKey={resolvedImageKey}
             onFileSelect={handleFileSelect}
             onUploadError={handleProfileImageError}
             isDisabled={isUploading || updateImageMutation.isPending || isProfileLoading}

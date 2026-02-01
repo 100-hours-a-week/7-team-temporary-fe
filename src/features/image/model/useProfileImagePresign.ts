@@ -123,6 +123,16 @@ export const useProfileImageUpload = () => {
     return data.url;
   }, []);
 
+  const loadImageViewUrl = useCallback(
+    async (imageKey: string, type: ImageType) => {
+      setUploadError(null);
+      const viewUrl = await requestImageViewUrl(imageKey, type);
+      setPreviewUrl(viewUrl);
+      return viewUrl;
+    },
+    [requestImageViewUrl],
+  );
+
   return {
     previewUrl,
     imageKey,
@@ -130,5 +140,6 @@ export const useProfileImageUpload = () => {
     uploadError,
     handleFileSelect,
     restoreImageState,
+    loadImageViewUrl,
   };
 };
