@@ -64,6 +64,7 @@ self.addEventListener("push", (event) => {
   const title = payload.data?.title ?? "MOLIP";
   const body = payload.data?.content ?? payload.data?.body ?? "push 푸시 알림 테스트";
   const icon = payload.data?.icon ?? "/icons/icon.svg";
+  const badge = payload.data?.badge ?? "/icons/icon.svg";
 
-  event.waitUntil(self.registration.showNotification(title, { body, icon }));
+  event.waitUntil(self.registration.showNotification(title, { body, icon, badge }));
 });

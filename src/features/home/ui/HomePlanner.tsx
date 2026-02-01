@@ -257,7 +257,7 @@ export function HomePlanner({
   }, [hasMore, isLoading]);
 
   return (
-    <div className="scrollbar-hide mx-0 h-full overflow-y-auto px-[25px] py-[20px]">
+    <div className="scrollbar-hide mx-0 h-full overflow-y-auto px-5 py-5">
       <WeekHeader
         monthIndex={headerMonthIndex}
         onPrev={() => handleMoveWeek(-7)}
@@ -273,9 +273,9 @@ export function HomePlanner({
         onSelect={setSelectedDate}
         hasPlan={(day) => planPresenceByDate.get(formatDateParam(day)) ?? false}
       />
-      <div className="mt-6 flex flex-col gap-6">
-        <section className="rounded-[28px] bg-white px-6 py-4 shadow-[0_6px_20px_rgba(217,111,111,0.1)]">
-          <div className="text-primary-600 flex items-center gap-2 text-lg font-bold">
+      <div className="mt-6 flex flex-col gap-3">
+        <section className="1px border-ink-100 rounded-[15px] border border-solid bg-white px-4 py-4">
+          <div className="text-primary-600 flex items-center gap-2 pb-1 text-base font-bold">
             <Icon
               name="fire"
               className="h-7 w-7"
@@ -283,10 +283,10 @@ export function HomePlanner({
             />
             지금 할 일
           </div>
-          <div className="mt-5">
+          <div className="mt-2">
             {currentTaskStatus ? (
               <div
-                className={`rounded-2xl bg-white px-4 py-6 text-center text-sm ${currentTaskStatus.className}`}
+                className={`text rounded-2xl bg-white px-4 py-4 text-center text-sm ${currentTaskStatus.className}`}
               >
                 {currentTaskStatus.text}
               </div>
@@ -294,14 +294,14 @@ export function HomePlanner({
               <HomeTaskItem
                 task={currentTask}
                 onToggleComplete={handleToggleComplete}
-                className="text-primary-600 border-0 p-0"
+                className="text-primary-600 border-0 p-0 pl-1.5"
                 iconClassName="text-primary-600"
               />
             ) : null}
           </div>
         </section>
-        <section className="rounded-[28px] bg-white px-6 py-4 shadow-[0_6px_20px_rgba(217,111,111,0.1)]">
-          <div className="text-primary-600 flex items-center gap-2 text-lg font-bold">
+        <section className="1px border-ink-100 rounded-[15px] border border-solid bg-white px-4 py-4">
+          <div className="text-primary-600 flex items-center gap-2 pb-1 text-base font-bold">
             <Icon
               name="home_outline"
               className="h-7 w-7"
@@ -310,7 +310,7 @@ export function HomePlanner({
             />
             {todayScheduleLabel}
           </div>
-          <div className="mt-5 flex flex-col">
+          <div className="flex flex-col gap-2">
             {statusMessage ? (
               <div
                 className={`rounded-2xl bg-white px-4 py-6 text-center text-sm ${statusMessage.className}`}
