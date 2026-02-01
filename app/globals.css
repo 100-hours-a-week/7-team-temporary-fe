@@ -187,8 +187,8 @@ body {
 
 .stack-page-overlay-exit {
   animation: stack-page-slide-out 300ms ease-out;
-  /* animation-fill-mode: forwards;
-    pointer-events: none; */
+  animation-fill-mode: forwards;
+  pointer-events: none;
 }
 .stack-page-base {
   transform: translateX(-40%);
