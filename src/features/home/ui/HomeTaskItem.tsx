@@ -13,6 +13,7 @@ interface HomeTaskItemProps {
   className?: string;
   style?: CSSProperties;
   variant?: "card" | "list";
+  iconClassName?: string;
 }
 
 const TIME_LABEL_BY_TYPE: Record<TaskItemModel["timeType"], string> = {
@@ -32,6 +33,7 @@ export function HomeTaskItem({
   className,
   style,
   variant = "card",
+  iconClassName,
 }: HomeTaskItemProps) {
   const timeLabel = TIME_LABEL_BY_TYPE[task.timeType];
   const timeValue = getTimeValue(task);
@@ -53,7 +55,11 @@ export function HomeTaskItem({
         >
           <Icon
             name={task.isCompleted ? "todo_check" : "todo_unchecked"}
-            className="h-7 w-7"
+            className={cn(
+              "h-7 w-7",
+              !task.isCompleted && variant === "card" && "text-primary-600",
+              iconClassName,
+            )}
             aria-hidden
           />
         </CompleteButton>
@@ -77,12 +83,15 @@ export function HomeTaskItem({
 }
 
 function getTimeValue(task: TaskItemModel) {
+  if (task.startTime && task.endTime) {
+    return `${task.startTime} ~ ${task.endTime}`;
+  }
+
   if (task.timeType === "ESTIMATED") {
     return task.estimatedTimeRange ?? EMPTY_TIME_TEXT;
   }
 
-  if (!task.startTime || !task.endTime) return EMPTY_TIME_TEXT;
-  return `${task.startTime} ~ ${task.endTime}`;
+  return EMPTY_TIME_TEXT;
 }
 
 const Card = styled.article<{
@@ -98,22 +107,17 @@ const Card = styled.article<{
   ${({ $variant }) =>
     $variant === "list"
       ? `
-    padding: 16px 0;
+    padding: 0 0 30px 0;
     border-radius: 0;
     border: none;
-    border-bottom: 1px solid #e5dcd7;
     background: transparent;
   `
       : `
-    padding: 14px 16px;
-    border-radius: 16px;
-    border: 1px solid #fec7c7;
     background: #ffffff;
   `}
   ${({ $isFixedTime, $variant }) =>
     $variant === "card" && $isFixedTime ? "border-color: #FF6D6D;" : ""}
-  ${({ $isCompleted, $variant }) =>
-    $variant === "card" && $isCompleted ? "background: #f3f4f6; color: #9ca3af;" : ""}
+  ${({ $isCompleted, $variant }) => ($variant === "card" && $isCompleted ? "color: #9ca3af;" : "")}
 `;
 
 const Row = styled.div`
