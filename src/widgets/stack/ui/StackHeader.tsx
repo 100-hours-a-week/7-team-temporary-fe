@@ -18,7 +18,7 @@ export function StackHeader({
 }: StackHeaderProps) {
   const centerSlot =
     headerContent ??
-    (title ? <span className="text-xl font-semibold text-black">{title}</span> : null);
+    (title ? <span className="text-ink-900 text-xl font-semibold">{title}</span> : null);
 
   return (
     <HeaderFrame
@@ -28,8 +28,8 @@ export function StackHeader({
             icon="prev"
             label={actionLabel}
             onClick={onActionClick}
-            className="w-fit p-0 align-middle text-sm text-black"
-            iconClassName="h-6 w-6 text-black"
+            className="text-ink-900 w-fit p-0 align-middle text-sm"
+            iconClassName="h-6 w-6 text-ink-900"
           />
         ) : null
       }

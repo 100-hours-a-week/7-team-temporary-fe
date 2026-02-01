@@ -10,11 +10,13 @@ type BottomSheetProps = {
   peekHeight?: number;
   expandHeight?: number;
   heightUnit?: "vh" | "px";
+  fitContent?: boolean;
   expanded?: boolean;
   defaultExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
   enableDragHandle?: boolean;
   showOverlay?: boolean;
+  closeOnOverlayClick?: boolean;
   handleClassName?: string;
   className?: string;
   sheetClassName?: string;
@@ -27,11 +29,13 @@ export function BottomSheet({
   peekHeight = 30,
   expandHeight = 80,
   heightUnit = "vh",
+  fitContent = false,
   expanded,
   defaultExpanded = false,
   onExpandedChange,
   enableDragHandle = false,
   showOverlay = true,
+  closeOnOverlayClick = true,
   handleClassName,
   className,
   sheetClassName,
@@ -136,21 +140,26 @@ export function BottomSheet({
   const baseHeight = isExpanded ? expandHeight : peekHeight;
   const visibleHeight = dragHeight ?? baseHeight;
   const midpoint = (peekHeight + expandHeight) / 2;
+  const canDrag = enableDragHandle && !fitContent;
   const sheetTransform = isPresented
     ? "translateY(0px)"
     : `translateY(calc(100% + ${sheetOffsetPx}px))`;
   const sheetOpacity = isPresented ? 1 : 0;
   const overlayOpacity = isPresented
-    ? Math.max(0, Math.min(1, visibleHeight / expandHeight)) * maxOverlayOpacity
+    ? fitContent
+      ? maxOverlayOpacity
+      : Math.max(0, Math.min(1, visibleHeight / expandHeight)) * maxOverlayOpacity
     : 0;
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!canDrag) return;
     dragStartRef.current = { startY: event.clientY, startHeight: visibleHeight };
     setIsDragging(true);
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!canDrag) return;
     if (!dragStartRef.current) return;
     const deltaPx = dragStartRef.current.startY - event.clientY;
     const deltaHeight = heightUnit === "vh" ? (deltaPx / window.innerHeight) * 100 : deltaPx;
@@ -162,6 +171,7 @@ export function BottomSheet({
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!canDrag) return;
     if (!dragStartRef.current) return;
     event.currentTarget.releasePointerCapture(event.pointerId);
     const finalHeight = dragHeight ?? dragStartRef.current.startHeight;
@@ -187,6 +197,7 @@ export function BottomSheet({
           )}
           style={{ opacity: overlayOpacity }}
           onClick={() => {
+            if (!closeOnOverlayClick) return;
             setExpanded(false);
             onOpenChange?.(false);
           }}
@@ -198,10 +209,12 @@ export function BottomSheet({
           "relative z-40",
           "pointer-events-auto transition-[height,transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
           isDragging && "transition-none",
+          fitContent && "overflow-y-auto",
           sheetClassName,
         )}
         style={{
-          height: `${visibleHeight}${heightUnit}`,
+          height: fitContent ? "auto" : `${visibleHeight}${heightUnit}`,
+          maxHeight: fitContent ? `${expandHeight}${heightUnit}` : undefined,
           transform: sheetTransform,
           opacity: sheetOpacity,
         }}
@@ -215,7 +228,9 @@ export function BottomSheet({
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
-            onClick={() => setExpanded(!isExpanded)}
+            onClick={() => {
+              if (canDrag) setExpanded(!isExpanded);
+            }}
           >
             <span className="mx-auto block h-1.5 w-12 rounded-full bg-neutral-300" />
           </button>

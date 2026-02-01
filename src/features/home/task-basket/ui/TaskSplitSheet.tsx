@@ -178,8 +178,8 @@ export function TaskSplitSheet({
       onOpenChange={onOpenChange}
       peekHeight={70}
       expandHeight={70}
-      enableDragHandle
-      sheetClassName="max-h-[80vh] overflow-y-auto"
+      fitContent
+      sheetClassName="max-h-[80vh]"
       className="pb-[env(safe-area-inset-bottom)]"
     >
       <TaskSplitSheetContent
