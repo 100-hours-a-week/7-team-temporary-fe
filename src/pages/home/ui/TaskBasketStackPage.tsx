@@ -16,6 +16,7 @@ import { useApiMutation } from "@/shared/query";
 import { BottomSheet, ConfirmDialog } from "@/shared/ui";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useStackPage } from "@/widgets/stack";
+import { useToast } from "@/shared/ui/toast";
 import { AiArrangeSheetContent } from "./AiArrangeSheet";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
@@ -53,7 +54,8 @@ const buildTaskSplitGroups = (items: TodoTask[]): TaskSplitGroup[] =>
   });
 
 export function TaskBasketStackPage() {
-  const { setHeaderContent } = useStackPage();
+  const { setHeaderContent, pop } = useStackPage();
+  const { showToast } = useToast();
   const today = useMemo(() => new Date(), []);
   const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
   const dayPlanDate = useHomePlanStore((state) => state.date);
@@ -231,9 +233,11 @@ export function TaskBasketStackPage() {
     if (!dayPlanId || aiArrangeMutation.isPending) return;
     aiArrangeMutation.mutate(undefined, {
       onSuccess: () => {
+        showToast("AI 자동 배치가 완료되었습니다.", "success");
         setAiPromptHandled(true);
         setAiArrangeError(false);
         setFlowStep("loading");
+        pop();
       },
       onError: () => {
         setAiPromptHandled(false);
