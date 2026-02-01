@@ -14,6 +14,7 @@ import {
 import { Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
 import { BottomSheet, ConfirmDialog } from "@/shared/ui";
+import { Icon } from "@/shared/ui/icon";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useStackPage } from "@/widgets/stack";
 import { useToast } from "@/shared/ui/toast";
@@ -256,6 +257,7 @@ export function TaskBasketStackPage() {
 
   const handleFlowOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
+      if (flowStep === "ai" && aiArrangeMutation.isPending) return;
       if (flowStep === "ai") setAiPromptHandled(false);
       if (flowStep === "taskSplit") setTaskSplitHandled(true);
       setAiArrangeError(false);
@@ -389,22 +391,26 @@ export function TaskBasketStackPage() {
         ref={contentRef}
         className="px-6 pt-[13px] pb-32"
       >
-        <div className="mb-4 text-[18px] font-semibold text-neutral-900">
+        <div className="text-[18px] font-bold text-neutral-900">
           {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일{" "}
           {["일", "월", "화", "수", "목", "금", "토"][selectedDate.getDay()]}
         </div>
         <div className="flex items-center justify-between">
-          <div className="text-[18px] font-semibold text-neutral-900">수행되지 않은 Todo list</div>
+          <div className="text-[18px] font-medium text-neutral-900">수행되지 않은 Todo list</div>
           <button
             type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-xl bg-neutral-200 text-2xl text-neutral-900"
+            className="text-primary-400 flex h-11 w-11 items-center justify-center rounded-xl text-2xl"
             aria-label="할 일 추가"
             onClick={handleOpenSheet}
           >
-            +
+            <Icon
+              name="calendar_plus"
+              className="h-6 w-6"
+              aria-hidden
+            />
           </button>
         </div>
-        <div className="mt-6">
+        <div className="mt-3">
           <TodoList
             tasks={tasks}
             dayPlanId={dayPlanId}
@@ -453,6 +459,8 @@ export function TaskBasketStackPage() {
         onOpenChange={handleFlowOpenChange}
         peekHeight={flowStep === "taskSplit" ? 70 : 35}
         expandHeight={flowStep === "taskSplit" ? 70 : 35}
+        fitContent={flowStep !== "taskSplit"}
+        closeOnOverlayClick={!(flowStep === "ai" && aiArrangeMutation.isPending)}
         enableDragHandle={flowStep === "taskSplit"}
         sheetClassName={flowStep === "taskSplit" ? "max-h-[80vh] overflow-y-auto" : undefined}
         className="pb-[env(safe-area-inset-bottom)]"
