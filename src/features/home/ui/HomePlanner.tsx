@@ -148,7 +148,25 @@ export function HomePlanner({
         signal,
         authRequired: true,
       }),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
   });
+  useEffect(() => {
+    if (currentScheduleQuery.isFetching) {
+      console.log("[HomePlanner] 지금 할 일 조회 요청");
+    }
+  }, [currentScheduleQuery.isFetching]);
+  useEffect(() => {
+    if (currentScheduleQuery.isError) {
+      console.error("[HomePlanner] 지금 할 일 조회 실패", currentScheduleQuery.error);
+      return;
+    }
+    if (currentScheduleQuery.data !== undefined) {
+      console.log("[HomePlanner] 지금 할 일 조회 응답", currentScheduleQuery.data);
+    }
+  }, [currentScheduleQuery.data, currentScheduleQuery.error, currentScheduleQuery.isError]);
   const currentTask = useMemo(() => {
     if (!currentScheduleQuery.data) return null;
     const baseTask = toTaskItemModelFromHomeTask({
@@ -199,7 +217,12 @@ export function HomePlanner({
     queryClient.invalidateQueries({
       queryKey: homeQueryKeys.dayPlanSchedule(queryDate, 1, PAGE_SIZE),
     });
+    currentScheduleQuery.refetch();
   }, [queryClient, queryDate, refreshKey]);
+
+  useEffect(() => {
+    console.log("[HomePlanner] 현재 시각", new Date().toISOString());
+  }, []);
 
   useEffect(() => {
     if (data?.dayPlanId) {
