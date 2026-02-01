@@ -107,11 +107,11 @@ const Card = styled.article<{
       : `
     padding: 14px 16px;
     border-radius: 16px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #fec7c7;
     background: #ffffff;
   `}
   ${({ $isFixedTime, $variant }) =>
-    $variant === "card" && $isFixedTime ? "border-color: #c7d2fe;" : ""}
+    $variant === "card" && $isFixedTime ? "border-color: #FF6D6D;" : ""}
   ${({ $isCompleted, $variant }) =>
     $variant === "card" && $isCompleted ? "background: #f3f4f6; color: #9ca3af;" : ""}
 `;
