@@ -53,3 +53,26 @@ export const AI: Story = {
     onToggleComplete: () => undefined,
   },
 };
+
+export const CurrentTaskCard: Story = {
+  args: {
+    task: {
+      ...baseTask,
+      title: "코테 풀기",
+      startTime: "08:00",
+      endTime: "08:30",
+      isFixedTime: true,
+      timeType: "FIXED",
+      isUrgent: true,
+    },
+    onToggleComplete: () => undefined,
+  },
+  render: (args) => (
+    <div className="w-full max-w-[420px] bg-white px-6 py-8">
+      <div className="text-ink-900 text-xl font-semibold">지금 할 일</div>
+      <div className="mt-4">
+        <HomeTaskItem {...args} />
+      </div>
+    </div>
+  ),
+};
