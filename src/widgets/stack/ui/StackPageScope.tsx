@@ -72,7 +72,7 @@ export function StackPageScope({
     <Component className={cn("relative w-full overflow-hidden", className)}>
       <div
         className={cn(
-          "relative z-0 w-full bg-white py-10 transition-transform duration-300 ease-out",
+          "relative z-0 w-full bg-[#F8F8F8] py-10 transition-transform duration-300 ease-out",
           hasOverlay && !isPopping && STACK_PAGE_BASE_CLASS,
           hasOverlay && isPopping && STACK_PAGE_BASE_EXIT_CLASS,
           pageClassName,
@@ -86,7 +86,7 @@ export function StackPageScope({
         <div
           key={entry.key}
           className={cn(
-            "absolute inset-0 bg-[var(--color-neutral-100)]",
+            "absolute inset-0 bg-[#F8F8F8]",
             STACK_PAGE_OVERLAY_CLASS,
             entry.key === poppingKey && STACK_PAGE_OVERLAY_EXIT_CLASS,
             pageClassName,
