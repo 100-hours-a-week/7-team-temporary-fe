@@ -587,16 +587,16 @@ export function PlannerEditStackPage() {
       <>
         <div
           ref={pageRef}
-          className="px-6 pt-[13px] pb-32"
+          className="text-ink-900 px-6 pt-[13px] pb-32"
         >
-          <div className="mb-4 text-[18px] font-semibold text-neutral-900">
+          <div className="text-[18px] font-semibold text-neutral-900">
             {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일{" "}
             {["일", "월", "화", "수", "목", "금", "토"][selectedDate.getDay()]}
           </div>
           <div className="flex items-start justify-end gap-2">
             <button
               type="button"
-              className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-800"
+              className="text-ink-900 rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold"
               onClick={handleOpenExcludedList}
             >
               제외리스트

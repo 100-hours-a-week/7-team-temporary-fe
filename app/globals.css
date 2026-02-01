@@ -44,7 +44,7 @@
 /*Tailwind의 “기본 스타일 레이어”*/
 @layer base {
   body {
-    @apply text-neutral-700;
+    @apply text-ink-900;
   }
 }
 
@@ -63,6 +63,11 @@
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .text-black,
+  .text-neutral-900 {
+    color: var(--color-ink-900) !important;
   }
 }
 

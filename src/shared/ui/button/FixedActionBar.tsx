@@ -14,7 +14,7 @@ export function FixedActionBar({ children, className }: FixedActionBarProps) {
   return (
     <div
       className={cn(
-        "fixed right-0 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-0 mx-auto flex w-full max-w-[408px] gap-2 px-4",
+        "fixed right-0 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-0 mx-auto flex w-full max-w-[408px] gap-2 px-6",
         "pointer-events-auto z-10",
         className,
       )}
