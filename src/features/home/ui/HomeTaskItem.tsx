@@ -1,5 +1,7 @@
 import styled from "@emotion/styled";
 import type { CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
+import { css, keyframes } from "@emotion/react";
 
 import { cn } from "@/shared/lib";
 
@@ -37,6 +39,19 @@ export function HomeTaskItem({
 }: HomeTaskItemProps) {
   const timeLabel = TIME_LABEL_BY_TYPE[task.timeType];
   const timeValue = getTimeValue(task);
+  const [animateComplete, setAnimateComplete] = useState(false);
+  const prevCompletedRef = useRef(task.isCompleted);
+
+  useEffect(() => {
+    const wasCompleted = prevCompletedRef.current;
+    if (!wasCompleted && task.isCompleted) {
+      setAnimateComplete(true);
+      const timer = window.setTimeout(() => setAnimateComplete(false), 280);
+      prevCompletedRef.current = task.isCompleted;
+      return () => window.clearTimeout(timer);
+    }
+    prevCompletedRef.current = task.isCompleted;
+  }, [task.isCompleted]);
 
   return (
     <Card
@@ -52,6 +67,7 @@ export function HomeTaskItem({
           aria-pressed={task.isCompleted}
           aria-label={task.isCompleted ? "완료됨" : "완료"}
           onClick={() => onToggleComplete(task.taskId)}
+          $animate={animateComplete}
         >
           <Icon
             name={task.isCompleted ? "todo_check" : "todo_unchecked"}
@@ -68,6 +84,7 @@ export function HomeTaskItem({
             <Title
               $isCompleted={task.isCompleted}
               $variant={variant}
+              $animateComplete={animateComplete}
             >
               {task.title}
             </Title>
@@ -141,12 +158,47 @@ const TitleRow = styled.div`
   gap: 8px;
 `;
 
-const Title = styled.div<{ $isCompleted: boolean; $variant: "card" | "list" }>`
+const strikeIn = keyframes`
+  from {
+    transform: translateY(-50%) scaleX(0);
+  }
+  to {
+    transform: translateY(-50%) scaleX(1);
+  }
+`;
+
+const Title = styled.div<{
+  $isCompleted: boolean;
+  $variant: "card" | "list";
+  $animateComplete: boolean;
+}>`
   font-size: 16px;
   font-weight: 600;
   color: ${({ $isCompleted, $variant }) =>
     $isCompleted ? "#9ca3af" : $variant === "list" ? "#541e0f" : "inherit"};
-  text-decoration: ${({ $isCompleted }) => ($isCompleted ? "line-through" : "none")};
+  position: relative;
+  text-decoration: none;
+  ${({ $isCompleted, $animateComplete }) =>
+    $isCompleted
+      ? css`
+          &::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background: currentColor;
+            transform: translateY(-50%) scaleX(1);
+            transform-origin: left center;
+            ${$animateComplete
+              ? css`
+                  animation: ${strikeIn} 240ms ease-out;
+                `
+              : ""}
+          }
+        `
+      : ""}
 `;
 
 const UrgentBadge = styled.span`
@@ -177,7 +229,19 @@ const MetaValue = styled.span`
   font-weight: 500;
 `;
 
-const CompleteButton = styled.button`
+const completePop = keyframes`
+  0% {
+    transform: scale(0.9);
+  }
+  45% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+`;
+
+const CompleteButton = styled.button<{ $animate: boolean }>`
   border: none;
   padding: 0;
   border-radius: 8px;
@@ -189,4 +253,10 @@ const CompleteButton = styled.button`
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+  ${({ $animate }) =>
+    $animate
+      ? css`
+          animation: ${completePop} 260ms ease-out;
+        `
+      : ""}
 `;

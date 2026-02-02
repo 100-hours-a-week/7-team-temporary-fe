@@ -335,13 +335,18 @@ export function HomePlanner({
               </div>
             ) : (
               <>
-                {tasks.map((task) => (
-                  <HomeTaskItem
+                {tasks.map((task, index) => (
+                  <div
                     key={task.taskId}
-                    task={task}
-                    variant="list"
-                    onToggleComplete={handleToggleComplete}
-                  />
+                    className="task-card-enter"
+                    style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
+                  >
+                    <HomeTaskItem
+                      task={task}
+                      variant="list"
+                      onToggleComplete={handleToggleComplete}
+                    />
+                  </div>
                 ))}
                 <div
                   ref={loadMoreRef}
