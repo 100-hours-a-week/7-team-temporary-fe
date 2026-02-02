@@ -1,13 +1,15 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ToastProvider } from "@/shared/ui/toast";
 import { AuthRouteWatcher } from "@/shared/auth/ui/AuthRouteWatcher";
 import { useAuthStore } from "@/shared/auth";
 import { registerFcmToken } from "@/shared/firebase/registerFcmToken";
 import { registerServiceWorker } from "@/shared/pwa/registerServiceWorker";
 import { FcmForegroundListener } from "@/shared/firebase/FcmForegroundListener";
+import { useHomePlanStore, useAiArrangeNoticeStore } from "@/features/home";
+import { useUserPreferencesStore } from "@/entities/user";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -23,10 +25,25 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   const accessToken = useAuthStore((state) => state.accessToken);
+  const prevAccessTokenRef = useRef<string | undefined>(accessToken);
 
   useEffect(() => {
     registerServiceWorker();
   }, []);
+
+  useEffect(() => {
+    const prevAccessToken = prevAccessTokenRef.current;
+    if (prevAccessToken && !accessToken) {
+      queryClient.clear();
+      useHomePlanStore.getState().clearHomePlan();
+      useAiArrangeNoticeStore.getState().clearExcludedTitles();
+      useUserPreferencesStore.getState().setSchedulePreferences({
+        dayEndTime: null,
+        focusTimeZone: null,
+      });
+    }
+    prevAccessTokenRef.current = accessToken;
+  }, [accessToken, queryClient]);
 
   useEffect(() => {
     if (!accessToken) return;
