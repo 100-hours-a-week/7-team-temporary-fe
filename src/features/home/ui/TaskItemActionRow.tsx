@@ -69,8 +69,8 @@ const IconButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   box-sizing: content-box;
   border: none;
   background: #ffffff;
@@ -94,7 +94,7 @@ const IconButton = styled.button`
 `;
 
 const ActionIcon = styled(Icon)`
-  width: 1.35em;
-  height: 1.35em;
+  width: 1.2em;
+  height: 1.2em;
   overflow: visible;
 `;

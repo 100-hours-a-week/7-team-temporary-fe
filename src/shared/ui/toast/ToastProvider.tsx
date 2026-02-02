@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { ToastViewport } from "./ToastViewport";
 
@@ -30,6 +30,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setToasts((prev) => prev.filter((toast) => toast.id !== id));
     }, TOAST_DURATION_MS);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ message: string; type?: ToastType }>).detail;
+      if (!detail?.message) return;
+      showToast(detail.message, detail.type ?? "info");
+    };
+    window.addEventListener("app:toast", handler as EventListener);
+    return () => window.removeEventListener("app:toast", handler as EventListener);
+  }, [showToast]);
 
   return (
     <ToastContext.Provider value={{ showToast }}>

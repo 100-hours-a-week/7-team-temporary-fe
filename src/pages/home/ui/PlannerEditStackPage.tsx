@@ -37,6 +37,8 @@ import type {
   DayPlanScheduleResponseDto,
 } from "@/features/home/api";
 import { updateDayPlanSchedule } from "@/features/home/api";
+import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
+import { Icon } from "@/shared/ui/icon";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
 import { ConfirmDialog } from "@/shared/ui";
@@ -108,6 +110,7 @@ export function PlannerEditStackPage() {
     size: 10,
     enabled: Boolean(dayPlanId) && isSheetOpen,
   });
+  const { data: myProfile } = useMyProfileQuery();
   const invalidateScheduleKeys = useMemo(() => {
     const keys: Array<readonly unknown[]> = [];
     if (dayPlanId) {
@@ -119,9 +122,25 @@ export function PlannerEditStackPage() {
     return keys;
   }, [dayPlanDate, dayPlanId]);
 
+  const dayEndMinutes = useMemo(() => {
+    const parsed = parseTimeToMinutes(myProfile?.dayEndTime);
+    if (parsed === null) return END_HOUR * 60;
+    return Math.floor(parsed / 10) * 10;
+  }, [myProfile?.dayEndTime]);
+  const focusTimeRanges = useMemo(
+    () => buildFocusTimeRanges(myProfile?.focusTimeZone),
+    [myProfile?.focusTimeZone],
+  );
+  const focusTimeLabel = useMemo(
+    () => formatFocusTimeLabel(myProfile?.focusTimeZone),
+    [myProfile?.focusTimeZone],
+  );
   const timeSlots = useMemo(
-    () => Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index),
-    [],
+    () =>
+      Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index).filter(
+        (hour) => hour * 60 < dayEndMinutes,
+      ),
+    [dayEndMinutes],
   );
   const selectedDate = useMemo(() => {
     if (!dayPlanDate) return today;
@@ -382,6 +401,10 @@ export function PlannerEditStackPage() {
   const handleResizeEnd = (task: EditableTaskItemModel, endAt: string) => {
     clearResizePreview(task.scheduleId);
     if (endAt === task.endAt) return;
+    if (isAfterDayEnd(task.startAt, endAt, dayEndMinutes)) {
+      showToast("하루 마무리 시간 이후에는 배정할 수 없습니다.", "error");
+      return;
+    }
     if (hasResizeConflict(task.scheduleId, task.startAt, endAt)) {
       showToast("이미 다른 작업이 있는 시간입니다.", "error");
       return;
@@ -476,6 +499,18 @@ export function PlannerEditStackPage() {
       return;
     }
 
+    if (isAfterDayEnd(startAt, endAt, dayEndMinutes)) {
+      showToast("하루 마무리 시간 이후에는 배정할 수 없습니다.", "error");
+      setActiveDrag(null);
+      setPreviewSlot(null);
+      previewKeyRef.current = null;
+      setInsertPreview(null);
+      insertKeyRef.current = null;
+      dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
+      restoreScrollPosition();
+      return;
+    }
+
     const nextTask = toEditableTask(payload.task, startAt, endAt);
     setDroppedTasks((prev) => {
       const map = new Map(prev.map((task) => [task.scheduleId, task]));
@@ -521,6 +556,19 @@ export function PlannerEditStackPage() {
       const activeCenterY = activeRect ? activeRect.top + activeRect.height / 2 : 0;
       const overMidY = overRect ? overRect.top + overRect.height / 2 : 0;
       const position: "above" | "below" = activeCenterY <= overMidY ? "above" : "below";
+      const previewStart = position === "above" ? data.startAt : data.endAt;
+      const previewEnd = buildTimeRangeFromStart(previewStart, dragDurationRef.current);
+      if (isAfterDayEnd(previewStart, previewEnd, dayEndMinutes)) {
+        if (insertPreview) {
+          setInsertPreview(null);
+          insertKeyRef.current = null;
+        }
+        if (previewSlot) {
+          setPreviewSlot(null);
+          previewKeyRef.current = null;
+        }
+        return;
+      }
       const key = `${data.scheduleId}-${position}`;
       if (insertKeyRef.current !== key) {
         insertKeyRef.current = key;
@@ -589,11 +637,11 @@ export function PlannerEditStackPage() {
           ref={pageRef}
           className="text-ink-900 px-6 pt-[13px] pb-32"
         >
-          <div className="text-[18px] font-semibold text-neutral-900">
-            {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일{" "}
-            {["일", "월", "화", "수", "목", "금", "토"][selectedDate.getDay()]}
-          </div>
-          <div className="flex items-start justify-end gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-[18px] font-semibold text-neutral-900">
+              {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일{" "}
+              {["일", "월", "화", "수", "목", "금", "토"][selectedDate.getDay()]}
+            </div>
             <button
               type="button"
               className="text-ink-900 rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold"
@@ -601,8 +649,12 @@ export function PlannerEditStackPage() {
             >
               제외리스트
             </button>
-            <TaskBasketButton onClick={handleOpenTaskBasket} />
           </div>
+          {focusTimeLabel ? (
+            <div className="mt-3 text-sm font-semibold text-red-400">
+              내 집중시간대: {focusTimeLabel}
+            </div>
+          ) : null}
           <TimeSlotGrid
             slots={timeSlots}
             tasks={mergedTasks}
@@ -618,6 +670,7 @@ export function PlannerEditStackPage() {
                 onUpdate={() => handleEditTask(task)}
                 onDelete={() => handleDeleteRequest(task.scheduleId)}
                 onExclude={() => undefined}
+                dayEndMinutes={dayEndMinutes}
                 previewEndAt={resizePreviewMap[task.scheduleId]}
                 droppableId={`task-${task.scheduleId}`}
                 droppableData={{
@@ -641,7 +694,24 @@ export function PlannerEditStackPage() {
             dropTargetIdPrefix="planner-slot"
             previewSlot={previewSlot}
             previewDurationMinutes={previewDurationMinutes}
+            endTimeMinutes={dayEndMinutes}
+            highlightRanges={focusTimeRanges}
           />
+        </div>
+
+        <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
+          <button
+            type="button"
+            aria-label="플래너 수정"
+            onClick={handleOpenTaskBasket}
+            className="bg-ink-900 hover:bg-primary-500 pointer-events-auto absolute right-5 bottom-[calc(env(safe-area-inset-bottom)+110px)] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg"
+          >
+            <Icon
+              name="basket"
+              className="h-8 w-8"
+              aria-hidden
+            />
+          </button>
         </div>
 
         <ExcludedListBottomSheet
@@ -731,9 +801,13 @@ function DraggableExcludedTaskItem({ task }: { task: EditableTaskItemModel }) {
     id,
     data: { id, task, type: "excluded" },
   });
+  const baseTransform = CSS.Translate.toString(transform);
   const style = {
-    transform: CSS.Translate.toString(transform),
+    transform: isDragging
+      ? `${baseTransform ? `${baseTransform} ` : ""}scale(1.03)`
+      : baseTransform,
     opacity: isDragging ? 0.5 : 1,
+    boxShadow: isDragging ? "0 18px 36px rgba(15, 23, 42, 0.28)" : "none",
     touchAction: "none",
   };
 
@@ -800,6 +874,46 @@ function parseTimeToMinutes(value: string | undefined | null) {
   if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
   if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
   return hour * 60 + minute;
+}
+
+function isAfterDayEnd(startAt: string, endAt: string, dayEndMinutes: number) {
+  const startMinutes = parseTimeToMinutes(startAt);
+  const endMinutes = parseTimeToMinutes(endAt);
+  if (startMinutes === null || endMinutes === null) return false;
+  return startMinutes >= dayEndMinutes || endMinutes > dayEndMinutes;
+}
+
+function buildFocusTimeRanges(focusTimeZone?: UserFocusTimeZone | null) {
+  switch (focusTimeZone) {
+    case "MORNING":
+      return [{ startMinutes: 8 * 60, endMinutes: 12 * 60 }];
+    case "AFTERNOON":
+      return [{ startMinutes: 12 * 60, endMinutes: 18 * 60 }];
+    case "EVENING":
+      return [{ startMinutes: 18 * 60, endMinutes: 21 * 60 }];
+    case "NIGHT":
+      return [
+        { startMinutes: 21 * 60, endMinutes: 24 * 60 },
+        { startMinutes: 0, endMinutes: 8 * 60 },
+      ];
+    default:
+      return [];
+  }
+}
+
+function formatFocusTimeLabel(focusTimeZone?: UserFocusTimeZone | null) {
+  switch (focusTimeZone) {
+    case "MORNING":
+      return "오전(08:00–12:00)";
+    case "AFTERNOON":
+      return "오후(12:00–18:00)";
+    case "EVENING":
+      return "저녁(18:00–21:00)";
+    case "NIGHT":
+      return "밤(21:00–08:00)";
+    default:
+      return null;
+  }
 }
 
 function getTaskDurationMinutes(task: EditableTaskItemModel | undefined | null) {

@@ -83,6 +83,14 @@ export async function apiFetch<TResponse, TBody = unknown>(
       if (shouldRedirectOnUnauthorized && typeof window !== "undefined") {
         const { pathname } = window.location;
         if (pathname !== "/login") {
+          window.dispatchEvent(
+            new CustomEvent("app:toast", {
+              detail: {
+                message: "로그인이 만료되었습니다. 다시 로그인해 주세요.",
+                type: "error",
+              },
+            }),
+          );
           window.location.assign("/login");
         }
       }

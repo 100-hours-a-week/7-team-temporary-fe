@@ -5,4 +5,5 @@ export * from "./button";
 export * from "./bottom-sheet";
 export * from "./dialog";
 export * from "./dialogs/ConfirmDialog";
+export { DateSwapText } from "./DateSwapText";
 export { default as SplitText } from "./SplitText";

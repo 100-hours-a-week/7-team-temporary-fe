@@ -33,6 +33,7 @@ interface EditableTaskItemProps {
   resizeHandleLabel?: string;
   onResizePreview?: (scheduleId: number, endAt: string) => void;
   onResizeEnd?: (task: EditableTaskItemModel, endAt: string) => void;
+  dayEndMinutes?: number | null;
 }
 
 const EMPTY_TIME_TEXT = "시간 정보 없음";
@@ -62,9 +63,11 @@ export function EditableTaskItem({
   resizeHandleLabel = "작업 시간 조절",
   onResizePreview,
   onResizeEnd,
+  dayEndMinutes = null,
 }: EditableTaskItemProps) {
   const isAiAssigned = task.assignedBy === "AI";
   const [isResizing, setIsResizing] = useState(false);
+  const [isHandleActive, setIsHandleActive] = useState(false);
   const [localPreviewEndAt, setLocalPreviewEndAt] = useState<string | null>(null);
   const resizeStateRef = useRef<{
     startY: number;
@@ -122,7 +125,14 @@ export function EditableTaskItem({
     const step = Math.round(deltaY / TEN_MINUTE_BLOCK_PX);
     const deltaMinutes = step * RESIZE_SNAP_MINUTES;
     const minEndMinutes = startMinutes + MIN_RESIZE_MINUTES;
-    const nextEndMinutes = clampMinutes(Math.max(minEndMinutes, endMinutes + deltaMinutes));
+    let nextEndMinutes = clampMinutes(Math.max(minEndMinutes, endMinutes + deltaMinutes));
+    if (dayEndMinutes !== null) {
+      const maxAllowed = dayEndMinutes;
+      nextEndMinutes = Math.min(nextEndMinutes, maxAllowed);
+      if (maxAllowed < minEndMinutes) {
+        nextEndMinutes = maxAllowed;
+      }
+    }
     const nextEndAt = formatTime(nextEndMinutes);
     setLocalPreviewEndAt(nextEndAt);
     onResizePreview?.(task.scheduleId, nextEndAt);
@@ -154,13 +164,23 @@ export function EditableTaskItem({
       style={style}
     >
       {insertPosition === "above" ? <InsertLine $position="above" /> : null}
-      <Card $isLocked={isLocked}>
+      <Card
+        $isLocked={isLocked}
+        $isHandleActive={isHandleActive}
+      >
         <ContentRow>
           <LeftColumn>
             <HandleButton
               type="button"
               ref={setActivatorNodeRef}
               aria-label={dragHandleLabel}
+              onMouseEnter={() => setIsHandleActive(true)}
+              onMouseLeave={() => setIsHandleActive(false)}
+              onFocus={() => setIsHandleActive(true)}
+              onBlur={() => setIsHandleActive(false)}
+              onPointerDown={() => setIsHandleActive(true)}
+              onPointerUp={() => setIsHandleActive(false)}
+              onPointerCancel={() => setIsHandleActive(false)}
               {...attributes}
               {...listeners}
               disabled={!draggableData}
@@ -232,18 +252,21 @@ function formatTime(totalMinutes: number) {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
-const Card = styled.article<{ $isLocked: boolean }>`
+const Card = styled.article<{ $isLocked: boolean; $isHandleActive: boolean }>`
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 14px 16px;
+  padding: 10px 12px;
   border-radius: 16px;
   border: 1px solid #e5e7eb;
   background: ${({ $isLocked }) => ($isLocked ? "#f9fafb" : "#ffffff")};
   opacity: ${({ $isLocked }) => ($isLocked ? 0.7 : 1)};
   height: 100%;
   box-sizing: border-box;
+  transform: ${({ $isHandleActive }) => ($isHandleActive ? "scale(1.02)" : "scale(1)")};
+  transition: transform 120ms ease;
+  transform-origin: center;
 `;
 
 const CardWrapper = styled.div`
@@ -332,8 +355,8 @@ const ResizeHandle = styled.button<{ $isActive: boolean }>`
 `;
 
 const HandleButton = styled.button`
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 4px;
   background: repeating-linear-gradient(
     to bottom,

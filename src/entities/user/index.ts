@@ -20,6 +20,7 @@ export {
   useUpdatePasswordMutation,
   useDeleteMyProfileMutation,
   userQueryKeys,
+  useUserPreferencesStore,
   toMyProfileModel,
   toUpdateMyProfileRequestDto,
   toUpdatePasswordRequestDto,

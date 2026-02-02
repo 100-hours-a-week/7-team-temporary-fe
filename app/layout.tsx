@@ -15,12 +15,15 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "MOLIP",
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ff8686",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#F8F8F8",
 };
 
 export default function RootLayout({
