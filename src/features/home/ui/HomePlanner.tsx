@@ -20,6 +20,7 @@ import { WeekDateSelector } from "./WeekDateSelector";
 import { WeekHeader } from "./WeekHeader";
 import { WeekdayLabels } from "./WeekdayLabels";
 import { apiFetch, Endpoint } from "@/shared/api";
+import { ShinyText } from "@/shared/ui";
 import type { DayPlanScheduleItemDto } from "../api/types";
 import { Icon } from "@/shared/ui/icon";
 interface HomePlannerProps {
@@ -281,7 +282,15 @@ export function HomePlanner({
               className="h-7 w-7"
               aria-hidden
             />
-            지금 할 일
+            <ShinyText
+              text="지금 할 일"
+              className="text-base font-bold"
+              color="var(--color-primary-600)"
+              shineColor="var(--color-primary-200)"
+              speed={3}
+              delay={1.5}
+              spread={30}
+            />
           </div>
           <div className="mt-2">
             {currentScheduleQuery.isLoading ? (

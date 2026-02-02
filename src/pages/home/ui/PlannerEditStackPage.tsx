@@ -122,11 +122,10 @@ export function PlannerEditStackPage() {
     return keys;
   }, [dayPlanDate, dayPlanId]);
 
-  const dayEndMinutes = useMemo(() => {
-    const parsed = parseTimeToMinutes(myProfile?.dayEndTime);
-    if (parsed === null) return END_HOUR * 60;
-    return Math.floor(parsed / 10) * 10;
-  }, [myProfile?.dayEndTime]);
+  const dayEndMinutes = useMemo(
+    () => getDayEndLimitMinutes(myProfile?.dayEndTime),
+    [myProfile?.dayEndTime],
+  );
   const focusTimeRanges = useMemo(
     () => buildFocusTimeRanges(myProfile?.focusTimeZone),
     [myProfile?.focusTimeZone],
@@ -138,7 +137,7 @@ export function PlannerEditStackPage() {
   const timeSlots = useMemo(
     () =>
       Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index).filter(
-        (hour) => hour * 60 < dayEndMinutes,
+        (hour) => (dayEndMinutes === null ? true : hour * 60 < dayEndMinutes),
       ),
     [dayEndMinutes],
   );
@@ -876,11 +875,19 @@ function parseTimeToMinutes(value: string | undefined | null) {
   return hour * 60 + minute;
 }
 
-function isAfterDayEnd(startAt: string, endAt: string, dayEndMinutes: number) {
+function isAfterDayEnd(startAt: string, endAt: string, dayEndMinutes: number | null) {
+  if (dayEndMinutes === null) return false;
   const startMinutes = parseTimeToMinutes(startAt);
   const endMinutes = parseTimeToMinutes(endAt);
   if (startMinutes === null || endMinutes === null) return false;
   return startMinutes >= dayEndMinutes || endMinutes > dayEndMinutes;
+}
+
+function getDayEndLimitMinutes(dayEndTime?: string | null) {
+  const parsed = parseTimeToMinutes(dayEndTime);
+  if (parsed === null) return null;
+  if (parsed < 12 * 60) return null;
+  return Math.floor(parsed / 10) * 10;
 }
 
 function buildFocusTimeRanges(focusTimeZone?: UserFocusTimeZone | null) {

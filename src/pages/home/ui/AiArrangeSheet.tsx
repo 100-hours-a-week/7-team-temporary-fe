@@ -1,7 +1,6 @@
 "use client";
 
-import { BottomSheet } from "@/shared/ui";
-import { PrimaryButton } from "@/shared/ui/button";
+import { ActionSheetContent, BottomSheet } from "@/shared/ui";
 
 interface AiArrangeSheetProps {
   open: boolean;
@@ -22,40 +21,32 @@ export function AiArrangeSheetContent({
   onCancel,
   aiUsageRemainingCount,
 }: AiArrangeSheetContentProps) {
+  const infoText =
+    aiUsageRemainingCount !== null && aiUsageRemainingCount !== undefined
+      ? `남은 자동 배치 횟수: ${aiUsageRemainingCount}회`
+      : null;
+
   return (
-    <div className="px-6 pt-6 pb-6 text-center">
-      <p className="text-lg font-semibold text-neutral-900">
-        시간이 입력되어 있지 않은
-        <br />
-        작업이 존재합니다.
-      </p>
-      <p className="mt-3 text-sm text-neutral-700">집중 시간에 따라 AI가 자동으로 배치할께요!</p>
-      {aiUsageRemainingCount !== null && aiUsageRemainingCount !== undefined ? (
-        <p className="mt-2 text-xs text-neutral-400">
-          남은 자동 배치 횟수: {aiUsageRemainingCount}회
-        </p>
-      ) : (
-        <p className="mt-2 text-xs text-neutral-400" />
-      )}
-      <div className="mt-6 flex gap-3">
-        <PrimaryButton
-          className="bg-primary-600 hover:bg-primary-700 w-full text-white"
-          isLoading={isPending}
-          loadingText="배치 중..."
-          disabled={!canArrange || isPending}
-          onClick={onArrange}
-        >
-          자동배치
-        </PrimaryButton>
-        <PrimaryButton
-          className="w-full bg-neutral-100 text-neutral-500 hover:bg-neutral-100"
-          disabled={isPending}
-          onClick={onCancel}
-        >
-          취소
-        </PrimaryButton>
-      </div>
-    </div>
+    <ActionSheetContent
+      title={
+        <>
+          시간이 입력되어 있지 않은
+          <br />
+          작업이 존재합니다.
+        </>
+      }
+      description="집중 시간에 따라 AI가 자동으로 배치할께요!"
+      info={infoText}
+      reserveInfoSpace
+      primaryLabel="자동배치"
+      secondaryLabel="취소"
+      primaryLoading={isPending}
+      primaryLoadingText="배치 중..."
+      primaryDisabled={!canArrange || isPending}
+      secondaryDisabled={isPending}
+      onPrimary={onArrange}
+      onSecondary={onCancel}
+    />
   );
 }
 
