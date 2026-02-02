@@ -48,4 +48,7 @@ export const Endpoint = {
   NOTIFICATIONS: {
     LIST: path("/notifications"),
   },
+  ISSUE: {
+    BASE: path("/issue"),
+  },
 } as const;
