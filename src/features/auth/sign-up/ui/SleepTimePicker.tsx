@@ -32,6 +32,17 @@ export function SleepTimePicker({ value: valueProp, onChange }: SleepTimePickerP
     onChange?.(nextValue);
   };
 
+  const handleWheel = (event: React.WheelEvent<HTMLDivElement>, column: keyof SleepTimeValue) => {
+    event.preventDefault();
+    const direction = event.deltaY > 0 ? 1 : -1;
+    const list = column === "hour" ? HOURS : MINUTES;
+    const currentIndex = list.indexOf(value[column]);
+    if (currentIndex < 0) return;
+    const nextIndex = Math.max(0, Math.min(list.length - 1, currentIndex + direction));
+    if (nextIndex === currentIndex) return;
+    handleChange({ ...value, [column]: list[nextIndex] });
+  };
+
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
@@ -60,7 +71,10 @@ export function SleepTimePicker({ value: valueProp, onChange }: SleepTimePickerP
         height={180}
         itemHeight={56}
       >
-        <Picker.Column name="hour">
+        <Picker.Column
+          name="hour"
+          onWheel={(event) => handleWheel(event, "hour")}
+        >
           {HOURS.map((hour) => (
             <Picker.Item
               key={hour}
@@ -71,7 +85,10 @@ export function SleepTimePicker({ value: valueProp, onChange }: SleepTimePickerP
           ))}
         </Picker.Column>
 
-        <Picker.Column name="minute">
+        <Picker.Column
+          name="minute"
+          onWheel={(event) => handleWheel(event, "minute")}
+        >
           {MINUTES.map((minute) => (
             <Picker.Item
               key={minute}
