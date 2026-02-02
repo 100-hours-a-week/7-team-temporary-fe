@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "molip",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/icons/icon.svg",
+    icon: "/icons/icon-v2.svg",
   },
   appleWebApp: {
     capable: true,
