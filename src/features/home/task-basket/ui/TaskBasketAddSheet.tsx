@@ -274,17 +274,18 @@ export function TaskBasketAddSheet({
   const immersion = watch("immersion");
 
   const dayEndTime = useUserPreferencesStore((state) => state.dayEndTime);
-  const dayEndMinutes = useMemo(() => {
-    if (!dayEndTime) return 24 * 60;
+  const dayEndLimitMinutes = useMemo(() => {
+    if (!dayEndTime) return null;
     const [hourText, minuteText] = dayEndTime.split(":");
     const hour = Number(hourText);
     const minute = Number(minuteText);
-    if (Number.isNaN(hour) || Number.isNaN(minute)) return 24 * 60;
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
     const total = hour * 60 + minute;
+    if (total < 12 * 60) return null;
     return Math.floor(total / 10) * 10;
   }, [dayEndTime]);
-  const dayEndHour = Math.floor(dayEndMinutes / 60);
-  const dayEndMinute = dayEndMinutes % 60;
+  const dayEndHour = dayEndLimitMinutes !== null ? Math.floor(dayEndLimitMinutes / 60) : 23;
+  const dayEndMinute = dayEndLimitMinutes !== null ? dayEndLimitMinutes % 60 : 50;
   const hourOptions = useMemo(() => {
     const startHour = 0;
     const endHour = Math.max(startHour, dayEndHour);
@@ -295,13 +296,14 @@ export function TaskBasketAddSheet({
     (hourValue: string) => {
       const hour = Number(hourValue);
       if (Number.isNaN(hour)) return baseMinuteOptions;
+      if (dayEndLimitMinutes === null) return baseMinuteOptions;
       if (hour < dayEndHour) return baseMinuteOptions;
       if (hour === dayEndHour) {
         return baseMinuteOptions.filter((minute) => minute <= dayEndMinute);
       }
       return baseMinuteOptions;
     },
-    [baseMinuteOptions, dayEndHour, dayEndMinute],
+    [baseMinuteOptions, dayEndHour, dayEndLimitMinutes, dayEndMinute],
   );
 
   useEffect(() => {
