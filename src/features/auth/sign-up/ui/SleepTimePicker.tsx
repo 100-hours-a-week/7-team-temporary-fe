@@ -32,10 +32,7 @@ export function SleepTimePicker({ value: valueProp, onChange }: SleepTimePickerP
     onChange?.(nextValue);
   };
 
-  const handleWheel = (
-    event: React.WheelEvent<HTMLDivElement>,
-    column: keyof SleepTimeValue,
-  ) => {
+  const handleWheel = (event: React.WheelEvent<HTMLDivElement>, column: keyof SleepTimeValue) => {
     event.preventDefault();
     const direction = event.deltaY > 0 ? 1 : -1;
     const list = column === "hour" ? HOURS : MINUTES;
