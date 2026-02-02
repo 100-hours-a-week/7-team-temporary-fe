@@ -69,8 +69,8 @@ main
 
 ## 3. CI / CD 범위
 
-| 브랜치  | CI | CD | 설명             |
-| ------- | -- | -- | ---------------- |
+| 브랜치  | CI  | CD  | 설명             |
+| ------- | --- | --- | ---------------- |
 | feature | ❌  | ❌  | 로컬/셀프 리뷰   |
 | develop | ✅  | ❌  | 개발 안정성 확인 |
 | release | ✅  | ✅  | 스테이징 배포    |
@@ -104,14 +104,14 @@ main
 
 ### 기능 개발 브랜치
 
-1) `develop` 최신화
+1. `develop` 최신화
 
 ```
 git checkout develop
 git pull origin develop
 ```
 
-2) feature 브랜치 생성
+2. feature 브랜치 생성
 
 ```
 git checkout -b feature/<기능명>
@@ -119,7 +119,7 @@ git checkout -b feature/<기능명>
 
 예) `feature/login-form`
 
-3) 작업 후 develop으로 PR
+3. 작업 후 develop으로 PR
 
 ```
 git push -u origin feature/<기능명>
@@ -131,7 +131,7 @@ PR 대상: `develop`
 
 ### 스테이징 배포 브랜치
 
-1) `develop` 기준으로 release 브랜치 생성
+1. `develop` 기준으로 release 브랜치 생성
 
 ```
 git checkout develop
@@ -139,11 +139,10 @@ git pull origin develop
 git checkout -b release/x.y.z
 ```
 
-2) release 브랜치 push 및 PR/merge
+2. release 브랜치 push 및 PR/merge
 
 ```
 git push -u origin release/x.y.z
 ```
 
 PR/merge 대상: `release/x.y.z` (운영 방식에 맞게 진행)
-

@@ -1,0 +1,28 @@
+---
+description: State management and data flow rules
+scope: repository
+priority: high
+---
+
+## Server State
+- Use TanStack Query exclusively for server state.
+- Access queries and mutations only via `useApiQuery` / `useApiMutation`.
+- Query keys must be created using `queryKeyFactory`.
+- Do not mutate cache directly.
+- Synchronize state via explicit invalidate → refetch.
+- Global invalidation is forbidden; invalidate related queries only.
+
+## Client State
+- Global UI state is managed via Zustand.
+- Domain data SSOT must remain on the server.
+- Avoid duplicating server data into client global stores.
+
+## Route Handler / API
+- Route Handlers are used only for:
+  - token forwarding
+  - access control
+  - status code propagation
+- Do not place business logic in `app/api`.
+- Do not transform or reshape response data in Route Handlers.
+- All network requests go through `apiFetch`.
+- Endpoint definitions live in `shared/api/endpoints`.

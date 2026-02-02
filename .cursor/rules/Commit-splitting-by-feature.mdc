@@ -1,0 +1,33 @@
+---
+description: Enforce feature-based git commit splitting (FSD)
+scope: repository
+priority: high
+---
+
+When asked to create or suggest git commits, always follow these rules:
+
+[Commit grouping rules]
+- One commit must represent exactly one feature, responsibility, or use-case.
+- Follow Feature-Sliced Design (FSD) boundaries strictly.
+  - A single commit must not span multiple slices (feature/entity/shared).
+- Do not group unrelated changes even if they are small.
+
+[Separation rules]
+- UI changes, business logic changes, and style/token changes must be in separate commits.
+- Refactoring must never be mixed with feature additions or bug fixes.
+- Design tokens or shared styles (shared/styles) must always be a standalone commit.
+
+[Commit message rules]
+- Use Conventional Commits format.
+- Examples:
+  - feat(auth): add login mutation
+  - style(shared): apply color tokens
+  - refactor(planner): extract timeline logic
+
+[Output format]
+- List commits sequentially.
+- Each commit must include:
+  - Commit message
+  - Explicit list of included files
+
+If changes do not clearly belong to the same feature or responsibility, split them into separate commits.

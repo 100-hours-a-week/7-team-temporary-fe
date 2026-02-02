@@ -1,0 +1,19 @@
+---
+description: Authentication and access control rules
+scope: repository
+priority: high
+---
+
+## Authentication
+- SSOT for authentication state is `AuthStore`.
+- Access control is split into:
+  - `middleware` (request stage)
+  - `AuthGuard` (UI stage)
+
+## Middleware
+- Middleware checks only refreshToken cookie existence.
+- Do not reissue tokens or load user data in middleware.
+
+## Error Handling
+- 401 responses are interpreted by `AuthService`.
+- State mutation resulting from auth errors is handled by `AuthStore`.
