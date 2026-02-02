@@ -11,6 +11,7 @@ import { useProfileImagePresign } from "@/features/image/model";
 import { ActionButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { AuthService } from "@/shared/auth";
+import { ApiError } from "@/shared/api";
 
 import { MyInfoStackPage } from "./MyInfoStackPage";
 
@@ -24,6 +25,9 @@ export function ProfilePage() {
   const { showToast } = useToast();
   const lastImageKeyRef = useRef<string | null>(null);
   const lastViewKeyRef = useRef<string | null>(null);
+  const DEFAULT_PROFILE_IMAGE_NAME = "default_image.png";
+  const isDefaultProfileKey = (key?: string | null) =>
+    typeof key === "string" && key.includes(DEFAULT_PROFILE_IMAGE_NAME);
 
   const profileImageKeyRegister: UseFormRegisterReturn = {
     name: "profileImageKey",
@@ -36,6 +40,10 @@ export function ProfilePage() {
   const username = myProfile?.nickname ?? "";
   const handleProfileImageError = useCallback(
     (error: unknown) => {
+      const viewKey = lastViewKeyRef.current;
+      if (isDefaultProfileKey(viewKey)) {
+        if (error instanceof Error && error.message.includes("이미지 조회 URL이 없습니다.")) return;
+      }
       const message =
         error instanceof Error ? error.message : "프로필 이미지 업로드에 실패했습니다.";
       showToast(message, "error");
@@ -55,6 +63,7 @@ export function ProfilePage() {
   useEffect(() => {
     const profileImageKey = myProfile?.profileImageKey;
     if (!profileImageKey) return;
+    if (isDefaultProfileKey(profileImageKey)) return;
     if (imageKey) return;
     if (lastViewKeyRef.current === profileImageKey) return;
     lastViewKeyRef.current = profileImageKey;

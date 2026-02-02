@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
 
   compiler: {
     emotion: true,
+    removeConsole: true,
   },
 
   webpack(config) {
