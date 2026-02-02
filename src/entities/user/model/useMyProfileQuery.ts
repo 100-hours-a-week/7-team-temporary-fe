@@ -12,7 +12,7 @@ interface UseMyProfileQueryOptions {
 }
 
 export function useMyProfileQuery(options: UseMyProfileQueryOptions = {}) {
-  const { enabled = true, staleTime, gcTime } = options;
+  const { enabled = true, staleTime = Infinity, gcTime = Infinity } = options;
   const setSchedulePreferences = useUserPreferencesStore((state) => state.setSchedulePreferences);
 
   const query = useQuery({

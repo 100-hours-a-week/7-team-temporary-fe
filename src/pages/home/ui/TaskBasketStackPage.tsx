@@ -11,7 +11,7 @@ import {
   useDayPlanScheduleByIdQuery,
   useHomePlanStore,
 } from "@/features/home";
-import { Endpoint } from "@/shared/api";
+import { ApiError, Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
 import { BottomSheet, ConfirmDialog } from "@/shared/ui";
 import { Icon } from "@/shared/ui/icon";
@@ -60,6 +60,8 @@ export function TaskBasketStackPage() {
   const today = useMemo(() => new Date(), []);
   const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
   const dayPlanDate = useHomePlanStore((state) => state.date);
+  const aiUsageRemainingCount = useHomePlanStore((state) => state.aiUsageRemainingCount);
+  const setAiUsageRemainingCount = useHomePlanStore((state) => state.setAiUsageRemainingCount);
   const scrollRootRef = useRef<HTMLElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
@@ -139,6 +141,12 @@ export function TaskBasketStackPage() {
     setHeaderContent(<span className="text-xl font-semibold text-black">작업 바구니</span>);
     return () => setHeaderContent(null);
   }, [setHeaderContent]);
+
+  useEffect(() => {
+    if (!scheduleQuery.data) return;
+    const nextCount = scheduleQuery.data.aiUsageRemainingCount ?? null;
+    setAiUsageRemainingCount(nextCount);
+  }, [scheduleQuery.data, setAiUsageRemainingCount]);
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -240,7 +248,10 @@ export function TaskBasketStackPage() {
         setFlowStep("loading");
         pop();
       },
-      onError: () => {
+      onError: (error) => {
+        if (error instanceof ApiError && error.httpStatus === 400) {
+          showToast(error.message || "AI 자동 배치 사용 가능 횟수를 모두 사용했습니다.", "error");
+        }
         setAiPromptHandled(false);
         setAiArrangeError(true);
         setFlowStep(shouldShowTaskSplitStep ? "taskSplit" : "idle");
@@ -468,9 +479,10 @@ export function TaskBasketStackPage() {
         {flowStep === "ai" ? (
           <AiArrangeSheetContent
             isPending={aiArrangeMutation.isPending}
-            canArrange={Boolean(dayPlanId)}
+            canArrange={Boolean(dayPlanId) && (aiUsageRemainingCount ?? 1) > 0}
             onArrange={handleAiArrange}
             onCancel={handleAiCancel}
+            aiUsageRemainingCount={aiUsageRemainingCount}
           />
         ) : null}
         {flowStep === "taskSplit" ? (
