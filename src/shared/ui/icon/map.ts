@@ -15,6 +15,8 @@ import Next from "./assets/Next-icon.svg";
 import Info from "./assets/Info-icon.svg";
 import Success from "./assets/Success-icon.svg";
 import Notification from "./assets/Notification-icon.svg";
+import Report from "./assets/Report-icon.svg";
+import Siren from "./assets/Siren-icon.svg";
 import Error from "./assets/Error-icon.svg";
 import Eye from "./assets/Eye-icon.svg";
 import EyeOff from "./assets/Eye-off-icon.svg";
@@ -46,6 +48,8 @@ export const IconMap = {
   info: Info,
   success: Success,
   notification: Notification,
+  report: Report,
+  siren: Siren,
   error: Error,
   eye: Eye,
   eye_off: EyeOff,
