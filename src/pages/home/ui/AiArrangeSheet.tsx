@@ -27,8 +27,8 @@ export function AiArrangeSheetContent({
         <br />
         작업이 존재합니다.
       </p>
-      <p className="mt-3 text-sm text-neutral-700">집중 시간에 따라 AI 자동으로 배치할까요?</p>
-      <p className="mt-2 text-xs text-neutral-400">AI를 사용할 수 있는 남은 횟수는 1번 입니다.</p>
+      <p className="mt-3 text-sm text-neutral-700">집중 시간에 따라 AI가 자동으로 배치할께요!</p>
+      <p className="mt-2 text-xs text-neutral-400"></p>
       <div className="mt-6 flex gap-3">
         <PrimaryButton
           className="bg-primary-600 hover:bg-primary-700 w-full text-white"
@@ -37,7 +37,7 @@ export function AiArrangeSheetContent({
           disabled={!canArrange || isPending}
           onClick={onArrange}
         >
-          AI 자동배치
+          자동배치
         </PrimaryButton>
         <PrimaryButton
           className="w-full bg-neutral-100 text-neutral-500 hover:bg-neutral-100"
