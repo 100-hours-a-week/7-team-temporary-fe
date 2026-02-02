@@ -10,6 +10,7 @@ interface AiArrangeSheetProps {
   canArrange: boolean;
   onArrange: () => void;
   onCancel: () => void;
+  aiUsageRemainingCount?: number | null;
 }
 
 type AiArrangeSheetContentProps = Omit<AiArrangeSheetProps, "open" | "onOpenChange">;
@@ -19,6 +20,7 @@ export function AiArrangeSheetContent({
   canArrange,
   onArrange,
   onCancel,
+  aiUsageRemainingCount,
 }: AiArrangeSheetContentProps) {
   return (
     <div className="px-6 pt-6 pb-6 text-center">
@@ -28,7 +30,13 @@ export function AiArrangeSheetContent({
         작업이 존재합니다.
       </p>
       <p className="mt-3 text-sm text-neutral-700">집중 시간에 따라 AI가 자동으로 배치할께요!</p>
-      <p className="mt-2 text-xs text-neutral-400"></p>
+      {aiUsageRemainingCount !== null && aiUsageRemainingCount !== undefined ? (
+        <p className="mt-2 text-xs text-neutral-400">
+          남은 자동 배치 횟수: {aiUsageRemainingCount}회
+        </p>
+      ) : (
+        <p className="mt-2 text-xs text-neutral-400" />
+      )}
       <div className="mt-6 flex gap-3">
         <PrimaryButton
           className="bg-primary-600 hover:bg-primary-700 w-full text-white"
@@ -58,6 +66,7 @@ export function AiArrangeSheet({
   canArrange,
   onArrange,
   onCancel,
+  aiUsageRemainingCount,
 }: AiArrangeSheetProps) {
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && isPending) return;
@@ -79,6 +88,7 @@ export function AiArrangeSheet({
         canArrange={canArrange}
         onArrange={onArrange}
         onCancel={onCancel}
+        aiUsageRemainingCount={aiUsageRemainingCount}
       />
     </BottomSheet>
   );
