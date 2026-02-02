@@ -1,13 +1,19 @@
 "use client";
 
-import { AppHeader } from "@/widgets/app-header";
+import { useState } from "react";
+
+import { AppHeader, ReportSheet } from "@/widgets/app-header";
 import { BottomNav, TabRoot, TabScope, useTab } from "@/widgets/tab-stack";
 import { StackPageRoot, StackPageScope, useStackPage } from "@/widgets/stack";
 import { HomePage } from "@/pages/home";
 import { ProfilePage } from "@/pages/profile";
 import { NotificationStackPage } from "@/pages/notification";
 
-function AppShellHeader() {
+interface AppShellHeaderProps {
+  onReportClick?: () => void;
+}
+
+function AppShellHeader({ onReportClick }: AppShellHeaderProps) {
   const { activeTab } = useTab();
   const { push } = useStackPage();
 
@@ -20,6 +26,7 @@ function AppShellHeader() {
       <AppHeader
         title="홈"
         onNotificationClick={handleNotificationClick}
+        onReportClick={onReportClick}
       />
     );
   }
@@ -29,6 +36,7 @@ function AppShellHeader() {
       <AppHeader
         title="프로필"
         onNotificationClick={handleNotificationClick}
+        onReportClick={onReportClick}
       />
     );
   }
@@ -37,6 +45,10 @@ function AppShellHeader() {
 }
 
 export function AppShellPage() {
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const handleReportClick = () => setIsReportOpen(true);
+  const handleReportClose = () => setIsReportOpen(false);
+
   return (
     <StackPageRoot>
       <StackPageScope
@@ -46,7 +58,7 @@ export function AppShellPage() {
       >
         <TabRoot initialTab="home">
           <div className="relative flex h-dvh w-full flex-col overflow-hidden">
-            <AppShellHeader />
+            <AppShellHeader onReportClick={handleReportClick} />
             <div className="relative flex-1 overflow-hidden">
               <TabScope
                 tab="home"
@@ -64,6 +76,12 @@ export function AppShellPage() {
             <BottomNav />
           </div>
         </TabRoot>
+        <ReportSheet
+          open={isReportOpen}
+          onOpenChange={setIsReportOpen}
+          onConfirm={handleReportClose}
+          onCancel={handleReportClose}
+        />
       </StackPageScope>
     </StackPageRoot>
   );
