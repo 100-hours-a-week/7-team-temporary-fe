@@ -284,9 +284,17 @@ export function HomePlanner({
             지금 할 일
           </div>
           <div className="mt-2">
-            {currentTaskStatus ? (
+            {currentScheduleQuery.isLoading ? (
+              <div className="flex items-center gap-3 px-2 py-2">
+                <div className="h-10 w-10 animate-pulse rounded-full bg-neutral-100" />
+                <div className="flex flex-1 flex-col gap-2">
+                  <div className="h-4 w-3/4 animate-pulse rounded-full bg-neutral-100" />
+                  <div className="h-3 w-1/2 animate-pulse rounded-full bg-neutral-100" />
+                </div>
+              </div>
+            ) : currentTaskStatus ? (
               <div
-                className={`text rounded-2xl bg-white px-4 py-4 text-center text-sm ${currentTaskStatus.className}`}
+                className={`text rounded-2xl bg-white px-6 py-6 text-center text-sm ${currentTaskStatus.className}`}
               >
                 {currentTaskStatus.text}
               </div>
@@ -311,7 +319,15 @@ export function HomePlanner({
             {todayScheduleLabel}
           </div>
           <div className="flex flex-col gap-2">
-            {statusMessage ? (
+            {isLoading ? (
+              <div className="flex items-center gap-3 px-2 py-2">
+                <div className="h-8 w-8 animate-pulse rounded-full bg-neutral-100" />
+                <div className="flex flex-1 flex-col gap-2">
+                  <div className="h-4 w-3/5 animate-pulse rounded-full bg-neutral-100" />
+                  <div className="h-3 w-2/5 animate-pulse rounded-full bg-neutral-100" />
+                </div>
+              </div>
+            ) : statusMessage ? (
               <div
                 className={`rounded-2xl bg-white px-4 py-6 text-center text-sm ${statusMessage.className}`}
               >
@@ -319,13 +335,18 @@ export function HomePlanner({
               </div>
             ) : (
               <>
-                {tasks.map((task) => (
-                  <HomeTaskItem
+                {tasks.map((task, index) => (
+                  <div
                     key={task.taskId}
-                    task={task}
-                    variant="list"
-                    onToggleComplete={handleToggleComplete}
-                  />
+                    className="task-card-enter"
+                    style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
+                  >
+                    <HomeTaskItem
+                      task={task}
+                      variant="list"
+                      onToggleComplete={handleToggleComplete}
+                    />
+                  </div>
                 ))}
                 <div
                   ref={loadMoreRef}

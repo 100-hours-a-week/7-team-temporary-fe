@@ -20,11 +20,12 @@ interface TimeSlotGridProps<T> {
   dropTargetIdPrefix?: string;
   previewSlot?: { hour: number; minute: number } | null;
   previewDurationMinutes?: number;
+  endTimeMinutes?: number | null;
+  highlightRanges?: Array<{ startMinutes: number; endMinutes: number }>;
 }
 
 const TEN_MINUTE_BLOCK_PX = 22;
 const GRID_LINE_THICKNESS_PX = 1;
-const HOUR_BLOCK_MIN_HEIGHT_PX = TEN_MINUTE_BLOCK_PX * 6;
 const GRID_LINE_COLOR = "rgba(229,231,235,1)";
 const GRID_LINE_DARK_COLOR = "rgba(84,30,15,0.5)";
 
@@ -60,6 +61,8 @@ export function TimeSlotGrid<T>({
   dropTargetIdPrefix = "planner-slot",
   previewSlot = null,
   previewDurationMinutes = 30,
+  endTimeMinutes = null,
+  highlightRanges = [],
 }: TimeSlotGridProps<T>) {
   const tasksByHour = useMemo(
     () =>
@@ -73,10 +76,31 @@ export function TimeSlotGrid<T>({
     [getStartTime, tasks],
   );
 
+  const resolvedEndMinutes = endTimeMinutes ?? 24 * 60;
+
   return (
-    <div className="mt-10 flex flex-col pb-0">
+    <div className="mt-2 flex flex-col pb-0">
       {slots.map((hour, index) => {
         const items = tasksByHour.get(hour) ?? [];
+        const hourStartMinutes = hour * 60;
+        const remainingMinutes = Math.max(0, resolvedEndMinutes - hourStartMinutes);
+        const availableMinutes = Math.min(60, remainingMinutes);
+        const availableStepCount = Math.floor(availableMinutes / 10);
+        const hourHeight = Math.max(0, availableStepCount * TEN_MINUTE_BLOCK_PX);
+        if (availableStepCount <= 0) return null;
+        const hourEndMinutes = hourStartMinutes + availableMinutes;
+        const highlightSegments = highlightRanges
+          .map((range) => {
+            const start = Math.max(hourStartMinutes, range.startMinutes);
+            const end = Math.min(hourEndMinutes, range.endMinutes);
+            if (end <= start) return null;
+            const startOffset = start - hourStartMinutes;
+            const durationMinutes = end - start;
+            const top = (startOffset / 10) * TEN_MINUTE_BLOCK_PX;
+            const height = Math.max(1, Math.ceil(durationMinutes / 10) * TEN_MINUTE_BLOCK_PX);
+            return { top, height };
+          })
+          .filter((segment): segment is { top: number; height: number } => Boolean(segment));
 
         return (
           <div
@@ -96,17 +120,25 @@ export function TimeSlotGrid<T>({
             <div
               className="relative py-0"
               style={{
-                minHeight: `${HOUR_BLOCK_MIN_HEIGHT_PX}px`,
+                minHeight: `${hourHeight}px`,
                 paddingTop: 0,
                 paddingBottom: 0,
               }}
             >
               <div className="relative h-full">
+                {highlightSegments.map((segment, segmentIndex) => (
+                  <div
+                    key={`highlight-${hour}-${segmentIndex}`}
+                    className="pointer-events-none absolute right-0 left-0 bg-red-200/20"
+                    style={{ top: segment.top, height: segment.height }}
+                    aria-hidden
+                  />
+                ))}
                 {statusMessage && index === 0 ? (
                   <div className={`text-sm ${statusMessage.className}`}>{statusMessage.text}</div>
                 ) : null}
                 {enableDropTargets
-                  ? Array.from({ length: 6 }, (_, step) => {
+                  ? Array.from({ length: availableStepCount }, (_, step) => {
                       const minute = step * 10;
                       const top = step * TEN_MINUTE_BLOCK_PX;
                       return (

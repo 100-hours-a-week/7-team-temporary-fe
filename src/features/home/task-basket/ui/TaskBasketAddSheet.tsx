@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { TodoCartTaskItemModel } from "@/features/home/model/taskModels";
 import type { TaskDurationOption } from "@/shared/validation";
@@ -21,6 +21,7 @@ import { BottomSheet } from "@/shared/ui";
 import { FormField, BASE_INPUT_CLASS_NAME } from "@/shared/form/ui";
 import { PrimaryButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
+import { useUserPreferencesStore } from "@/entities/user";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 
@@ -272,8 +273,36 @@ export function TaskBasketAddSheet({
   const duration = watch("duration");
   const immersion = watch("immersion");
 
-  const hourOptions = useMemo(() => Array.from({ length: 16 }, (_, i) => i + 8), []);
-  const minuteOptions = useMemo(() => [0, 10, 20, 30, 40, 50], []);
+  const dayEndTime = useUserPreferencesStore((state) => state.dayEndTime);
+  const dayEndMinutes = useMemo(() => {
+    if (!dayEndTime) return 24 * 60;
+    const [hourText, minuteText] = dayEndTime.split(":");
+    const hour = Number(hourText);
+    const minute = Number(minuteText);
+    if (Number.isNaN(hour) || Number.isNaN(minute)) return 24 * 60;
+    const total = hour * 60 + minute;
+    return Math.floor(total / 10) * 10;
+  }, [dayEndTime]);
+  const dayEndHour = Math.floor(dayEndMinutes / 60);
+  const dayEndMinute = dayEndMinutes % 60;
+  const hourOptions = useMemo(() => {
+    const startHour = 0;
+    const endHour = Math.max(startHour, dayEndHour);
+    return Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
+  }, [dayEndHour]);
+  const baseMinuteOptions = useMemo(() => [0, 10, 20, 30, 40, 50], []);
+  const getMinuteOptions = useCallback(
+    (hourValue: string) => {
+      const hour = Number(hourValue);
+      if (Number.isNaN(hour)) return baseMinuteOptions;
+      if (hour < dayEndHour) return baseMinuteOptions;
+      if (hour === dayEndHour) {
+        return baseMinuteOptions.filter((minute) => minute <= dayEndMinute);
+      }
+      return baseMinuteOptions;
+    },
+    [baseMinuteOptions, dayEndHour, dayEndMinute],
+  );
 
   useEffect(() => {
     if (open) {
@@ -369,7 +398,7 @@ export function TaskBasketAddSheet({
                     <TimeSelect
                       label="시작 시간"
                       hourOptions={hourOptions}
-                      minuteOptions={minuteOptions}
+                      minuteOptions={getMinuteOptions(watch("startHour"))}
                       hourValue={watch("startHour")}
                       minuteValue={watch("startMinute")}
                       onHourChange={(value) =>
@@ -387,7 +416,7 @@ export function TaskBasketAddSheet({
                     <TimeSelect
                       label="종료 시간"
                       hourOptions={hourOptions}
-                      minuteOptions={minuteOptions}
+                      minuteOptions={getMinuteOptions(watch("endHour"))}
                       hourValue={watch("endHour")}
                       minuteValue={watch("endMinute")}
                       onHourChange={(value) =>
@@ -402,11 +431,6 @@ export function TaskBasketAddSheet({
                       }
                     />
                   </div>
-                  {errors.startHour?.message && (
-                    <p className="text-xs text-[var(--color-red-400)]">
-                      {errors.startHour?.message}
-                    </p>
-                  )}
                 </div>
               )}
             </div>
