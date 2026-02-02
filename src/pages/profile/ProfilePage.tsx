@@ -24,6 +24,9 @@ export function ProfilePage() {
   const { showToast } = useToast();
   const lastImageKeyRef = useRef<string | null>(null);
   const lastViewKeyRef = useRef<string | null>(null);
+  const DEFAULT_PROFILE_IMAGE_NAME = "default_image.png";
+  const isDefaultProfileKey = (key?: string | null) =>
+    typeof key === "string" && key.includes(DEFAULT_PROFILE_IMAGE_NAME);
 
   const profileImageKeyRegister: UseFormRegisterReturn = {
     name: "profileImageKey",
@@ -55,6 +58,7 @@ export function ProfilePage() {
   useEffect(() => {
     const profileImageKey = myProfile?.profileImageKey;
     if (!profileImageKey) return;
+    if (isDefaultProfileKey(profileImageKey)) return;
     if (imageKey) return;
     if (lastViewKeyRef.current === profileImageKey) return;
     lastViewKeyRef.current = profileImageKey;
