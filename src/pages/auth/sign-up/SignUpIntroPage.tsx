@@ -15,6 +15,7 @@ import type { AuthState } from "@/shared/auth";
 import { useAuthStore } from "@/entities";
 import { useStackPage } from "@/widgets/stack";
 import { SignUpSuccessPage } from "./SignUpSuccessPage";
+import { registerFcmToken } from "@/shared/firebase";
 
 /**
  * 회원가입 인트로 화면
@@ -31,6 +32,9 @@ export function SignUpIntroPage() {
       onSuccess={(data) => {
         setSuppressPublicRedirect(true);
         setAuthenticated(data.accessToken);
+        void registerFcmToken({ promptPermission: true }).catch((error) => {
+          console.warn("[FCM] token register failed after sign up", error);
+        });
         push(<SignUpSuccessPage />);
       }}
     >
