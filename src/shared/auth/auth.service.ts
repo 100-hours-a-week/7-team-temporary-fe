@@ -3,10 +3,6 @@ import { useAuthStore } from "./auth.store";
 
 export const AuthService = {
   async refresh() {
-    if (process.env.NODE_ENV === "development") {
-      console.warn("[AuthService] refresh disabled in development");
-      return undefined;
-    }
     try {
       console.log("[AuthService] refresh start");
       const res = await apiFetch<{ accessToken: string }>(Endpoint.TOKEN.REFRESH, {
@@ -28,11 +24,12 @@ export const AuthService = {
       return await request();
     } catch (e) {
       const isUnauthorized =
-        e instanceof ApiError ||
-        (typeof e === "object" &&
-          e !== null &&
-          "httpStatus" in e &&
-          (e as ApiError).httpStatus === 401);
+        e instanceof ApiError
+          ? e.httpStatus === 401
+          : typeof e === "object" &&
+            e !== null &&
+            "httpStatus" in e &&
+            (e as ApiError).httpStatus === 401;
 
       if (isUnauthorized) {
         console.log("[AuthService] 401 detected, try refresh");
