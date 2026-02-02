@@ -1,6 +1,6 @@
 export const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"] as const;
 export const DAYS_IN_WEEK = 7;
-export const START_HOUR = 8;
+export const START_HOUR = 0;
 export const END_HOUR = 24;
 
 export const toStartOfWeek = (date: Date) => {
