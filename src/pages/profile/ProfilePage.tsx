@@ -63,6 +63,7 @@ export function ProfilePage() {
   useEffect(() => {
     const profileImageKey = myProfile?.profileImageKey;
     if (!profileImageKey) return;
+    if (isDefaultProfileKey(profileImageKey)) return;
     if (imageKey) return;
     if (lastViewKeyRef.current === profileImageKey) return;
     lastViewKeyRef.current = profileImageKey;
