@@ -49,6 +49,10 @@ export function TaskBasketAddSheet({
   const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
   const isEditMode = Boolean(editingTask);
+  const isAssignedAiEditing =
+    Boolean(editingTask) &&
+    editingTask?.assignmentStatus === "ASSIGNED" &&
+    editingTask?.assignedBy === "AI";
 
   const hasTimeConflict = (newStart: number, newEnd: number) =>
     tasks.some((task) => {
@@ -143,12 +147,20 @@ export function TaskBasketAddSheet({
       };
     }
 
-    return {
+    const flexPayload: CreateDayPlanScheduleRequestDto = {
       ...basePayload,
       estimatedTimeRange: mapDurationToApi(values.duration),
       focusLevel: values.immersion,
       isUrgent: values.isUrgent,
     };
+    if (shouldShowTimeFields) {
+      return {
+        ...flexPayload,
+        startAt,
+        endAt,
+      };
+    }
+    return flexPayload;
   };
 
   const buildTodoTask = (
@@ -210,16 +222,17 @@ export function TaskBasketAddSheet({
       return;
     }
 
+    const shouldUseTime = values.isFixed || isAssignedAiEditing;
     const startMinutes =
-      values.isFixed && values.startHour !== "" && values.startMinute !== ""
+      shouldUseTime && values.startHour !== "" && values.startMinute !== ""
         ? Number(values.startHour) * 60 + Number(values.startMinute)
         : null;
     const endMinutes =
-      values.isFixed && values.endHour !== "" && values.endMinute !== ""
+      shouldUseTime && values.endHour !== "" && values.endMinute !== ""
         ? Number(values.endHour) * 60 + Number(values.endMinute)
         : null;
 
-    if (values.isFixed && startMinutes !== null && endMinutes !== null) {
+    if (shouldUseTime && startMinutes !== null && endMinutes !== null) {
       if (hasTimeConflict(startMinutes, endMinutes)) {
         showToast("기존 시간에 다른 일정이 이미 존재합니다.", "error");
         return;
@@ -228,11 +241,11 @@ export function TaskBasketAddSheet({
 
     const timeLabel = (value: number) => String(value).padStart(2, "0");
     const startAt =
-      values.isFixed && startMinutes !== null
+      shouldUseTime && startMinutes !== null
         ? `${timeLabel(Number(values.startHour))}:${timeLabel(Number(values.startMinute))}`
         : "";
     const endAt =
-      values.isFixed && endMinutes !== null
+      shouldUseTime && endMinutes !== null
         ? `${timeLabel(Number(values.endHour))}:${timeLabel(Number(values.endMinute))}`
         : "";
 
@@ -272,6 +285,7 @@ export function TaskBasketAddSheet({
   const isFixed = watch("isFixed");
   const duration = watch("duration");
   const immersion = watch("immersion");
+  const shouldShowTimeFields = isFixed || isAssignedAiEditing;
 
   const dayEndTime = useUserPreferencesStore((state) => state.dayEndTime);
   const dayEndLimitMinutes = useMemo(() => {
@@ -388,14 +402,17 @@ export function TaskBasketAddSheet({
                 고정 시간
               </label>
 
-              {!isFixed && (
+              {!isFixed && !isAssignedAiEditing && (
                 <div className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-[var(--color-ink-300)]">
                   고정 시간이 지정되어있지 않을 경우, AI가 잘 맞는 시간대로 배치합니다!
                 </div>
               )}
 
-              {isFixed && (
+              {shouldShowTimeFields && (
                 <div className="flex flex-col gap-2">
+                  {isAssignedAiEditing && !isFixed ? (
+                    <div className="text-sm font-semibold text-neutral-900">배치 시간</div>
+                  ) : null}
                   <div className="flex items-center justify-between gap-3 text-base font-semibold text-neutral-900">
                     <TimeSelect
                       label="시작 시간"
