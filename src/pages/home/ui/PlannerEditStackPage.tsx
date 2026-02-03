@@ -32,8 +32,9 @@ import {
   useHomePlanStore,
 } from "@/features/home";
 import type {
+  CreateDayPlanScheduleRequestDto,
+  DayPlanScheduleDuration,
   DayPlanScheduleResponseDto,
-  UpdateDayPlanSchedulePatchRequestDto,
 } from "@/features/home/api";
 import { updateDayPlanSchedule } from "@/features/home/api";
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
@@ -58,8 +59,6 @@ type InsertPreview = {
   position: "above" | "below";
   targetStartAt: string;
   targetEndAt: string;
-  startAt: string;
-  endAt: string;
 };
 
 const DEFAULT_DROP_DURATION_MINUTES = 30;
@@ -78,7 +77,6 @@ export function PlannerEditStackPage() {
   const dayPlanDate = useHomePlanStore((state) => state.date);
   const [droppedTasks, setDroppedTasks] = useState<EditableTaskItemModel[]>([]);
   const [activeDrag, setActiveDrag] = useState<DraggedTask | null>(null);
-  const [draggingType, setDraggingType] = useState<DraggedTask["type"] | null>(null);
   const [previewSlot, setPreviewSlot] = useState<PreviewSlot | null>(null);
   const previewKeyRef = useRef<string | null>(null);
   const [insertPreview, setInsertPreview] = useState<InsertPreview | null>(null);
@@ -262,7 +260,7 @@ export function PlannerEditStackPage() {
   const updateScheduleMutation = useMutation({
     mutationFn: async (variables: {
       scheduleId: number;
-      payload: UpdateDayPlanSchedulePatchRequestDto;
+      payload: CreateDayPlanScheduleRequestDto;
       task: EditableTaskItemModel;
     }) => updateDayPlanSchedule(variables.scheduleId, variables.payload),
     onMutate: async (variables) => {
@@ -277,8 +275,8 @@ export function PlannerEditStackPage() {
         updateScheduleCache(
           prev,
           variables.scheduleId,
-          variables.payload.startAt,
-          variables.payload.endAt,
+          variables.payload.startAt ?? variables.task.startAt,
+          variables.payload.endAt ?? variables.task.endAt,
           variables.task,
         ),
       );
@@ -416,13 +414,16 @@ export function PlannerEditStackPage() {
       map.set(task.scheduleId, nextTask);
       return Array.from(map.values());
     });
-    if (!dayPlanId) return;
     updateScheduleMutation.mutate({
       scheduleId: task.scheduleId,
       payload: {
-        targetDayPlanId: dayPlanId,
-        startAt: nextTask.startAt,
-        endAt: nextTask.endAt,
+        title: task.title,
+        type: task.type,
+        startAt: task.startAt,
+        endAt,
+        estimatedTimeRange: toScheduleDuration(task.estimatedTimeRange),
+        focusLevel: task.focusLevel ?? undefined,
+        isUrgent: task.isUrgent ?? undefined,
       },
       task: nextTask,
     });
@@ -458,7 +459,6 @@ export function PlannerEditStackPage() {
       | undefined;
     if (!payload) {
       setActiveDrag(null);
-      setDraggingType(null);
       setPreviewSlot(null);
       previewKeyRef.current = null;
       setInsertPreview(null);
@@ -472,8 +472,11 @@ export function PlannerEditStackPage() {
     const durationMinutes = dragDurationRef.current;
 
     if (insertPreview) {
-      startAt = insertPreview.startAt;
-      endAt = insertPreview.endAt;
+      startAt =
+        insertPreview.position === "above"
+          ? insertPreview.targetStartAt
+          : insertPreview.targetEndAt;
+      endAt = buildTimeRangeFromStart(startAt, durationMinutes);
     } else if (
       dropData?.type === "slot" &&
       dropData.hour !== undefined &&
@@ -507,28 +510,26 @@ export function PlannerEditStackPage() {
       return;
     }
 
-    const nextTask: EditableTaskItemModel = {
-      ...payload.task,
-      startAt,
-      endAt,
-    };
+    const nextTask = toEditableTask(payload.task, startAt, endAt);
     setDroppedTasks((prev) => {
       const map = new Map(prev.map((task) => [task.scheduleId, task]));
       map.set(nextTask.scheduleId, nextTask);
       return Array.from(map.values());
     });
-    if (!dayPlanId) return;
     updateScheduleMutation.mutate({
       scheduleId: payload.task.scheduleId,
       payload: {
-        targetDayPlanId: dayPlanId,
+        title: payload.task.title,
+        type: "FIXED",
         startAt,
         endAt,
+        estimatedTimeRange: toScheduleDuration(payload.task.estimatedTimeRange),
+        focusLevel: payload.task.focusLevel ?? undefined,
+        isUrgent: payload.task.isUrgent ?? undefined,
       },
       task: nextTask,
     });
     setActiveDrag(null);
-    setDraggingType(null);
     setPreviewSlot(null);
     previewKeyRef.current = null;
     setInsertPreview(null);
@@ -554,14 +555,8 @@ export function PlannerEditStackPage() {
       const activeCenterY = activeRect ? activeRect.top + activeRect.height / 2 : 0;
       const overMidY = overRect ? overRect.top + overRect.height / 2 : 0;
       const position: "above" | "below" = activeCenterY <= overMidY ? "above" : "below";
-      const previewStart =
-        position === "above"
-          ? buildTimeRangeFromEnd(data.startAt, dragDurationRef.current)
-          : data.endAt;
-      const previewEnd =
-        position === "above"
-          ? data.startAt
-          : buildTimeRangeFromStart(previewStart, dragDurationRef.current);
+      const previewStart = position === "above" ? data.startAt : data.endAt;
+      const previewEnd = buildTimeRangeFromStart(previewStart, dragDurationRef.current);
       if (isAfterDayEnd(previewStart, previewEnd, dayEndMinutes)) {
         if (insertPreview) {
           setInsertPreview(null);
@@ -581,8 +576,6 @@ export function PlannerEditStackPage() {
           position,
           targetStartAt: data.startAt,
           targetEndAt: data.endAt,
-          startAt: previewStart,
-          endAt: previewEnd,
         });
       }
       if (previewSlot) {
@@ -624,14 +617,12 @@ export function PlannerEditStackPage() {
         captureScrollPosition();
         dragDurationRef.current =
           getTaskDurationMinutes(payload?.task) ?? DEFAULT_DROP_DURATION_MINUTES;
-        setDraggingType(payload?.type ?? null);
         setActiveDrag(payload?.type === "excluded" ? payload : null);
       }}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={() => {
         setActiveDrag(null);
-        setDraggingType(null);
         setPreviewSlot(null);
         previewKeyRef.current = null;
         setInsertPreview(null);
@@ -681,17 +672,13 @@ export function PlannerEditStackPage() {
                 dayEndMinutes={dayEndMinutes}
                 previewEndAt={resizePreviewMap[task.scheduleId]}
                 droppableId={`task-${task.scheduleId}`}
-                droppableData={
-                  draggingType === "task"
-                    ? undefined
-                    : {
-                        type: "item",
-                        scheduleId: task.scheduleId,
-                        startAt: task.startAt,
-                        endAt: task.endAt,
-                        index: taskIndexMap.get(task.scheduleId) ?? 0,
-                      }
-                }
+                droppableData={{
+                  type: "item",
+                  scheduleId: task.scheduleId,
+                  startAt: task.startAt,
+                  endAt: task.endAt,
+                  index: taskIndexMap.get(task.scheduleId) ?? 0,
+                }}
                 insertPosition={
                   insertPreview?.scheduleId === task.scheduleId ? insertPreview.position : null
                 }
@@ -838,6 +825,26 @@ function DraggableExcludedTaskItem({ task }: { task: EditableTaskItemModel }) {
   );
 }
 
+function toEditableTask(
+  task: EditableTaskItemModel,
+  startAt: string,
+  endAt: string,
+): EditableTaskItemModel {
+  return {
+    scheduleId: task.scheduleId,
+    title: task.title,
+    status: "TODO",
+    type: "FIXED",
+    assignedBy: task.assignedBy ?? "USER",
+    assignmentStatus: "ASSIGNED",
+    startAt,
+    endAt,
+    estimatedTimeRange: task.estimatedTimeRange ?? null,
+    focusLevel: task.focusLevel ?? null,
+    isUrgent: task.isUrgent ?? false,
+  };
+}
+
 function buildTimeRange(hour: number, minute: number, durationMinutes: number) {
   const startMinutes = hour * 60 + minute;
   const endMinutes = (startMinutes + durationMinutes) % (24 * 60);
@@ -856,13 +863,6 @@ function buildTimeRangeFromStart(startAt: string, durationMinutes: number) {
   }
   const totalMinutes = hour * 60 + minute + durationMinutes;
   return formatTime(totalMinutes);
-}
-
-function buildTimeRangeFromEnd(endAt: string, durationMinutes: number) {
-  const endMinutes = parseTimeToMinutes(endAt);
-  if (endMinutes === null) return endAt;
-  const startMinutes = endMinutes - durationMinutes;
-  return formatTime(startMinutes);
 }
 
 function parseTimeToMinutes(value: string | undefined | null) {
@@ -939,6 +939,20 @@ function formatTime(totalMinutes: number) {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
+function toScheduleDuration(value: string | null | undefined): DayPlanScheduleDuration | undefined {
+  if (!value) return undefined;
+  const allowed: DayPlanScheduleDuration[] = [
+    "MINUTE_UNDER_30",
+    "MINUTE_30_TO_60",
+    "HOUR_1_TO_2",
+    "HOUR_2_TO_4",
+    "HOUR_OVER_4",
+  ];
+  return allowed.includes(value as DayPlanScheduleDuration)
+    ? (value as DayPlanScheduleDuration)
+    : undefined;
+}
+
 function updateScheduleCache(
   prev: DayPlanScheduleResponseDto | undefined,
   scheduleId: number,
@@ -972,10 +986,10 @@ function updateScheduleCache(
           scheduleId,
           parentTitle: null,
           title: task.title,
-          status: task.status,
-          type: task.type,
-          assignedBy: task.assignedBy,
-          assignmentStatus: task.assignmentStatus,
+          status: "TODO",
+          type: "FIXED",
+          assignedBy: task.assignedBy ?? "USER",
+          assignmentStatus: "ASSIGNED",
           startAt,
           endAt,
           estimatedTimeRange: task.estimatedTimeRange ?? null,
@@ -1021,7 +1035,10 @@ function getPreviewTimeRange(
   durationMinutes: number,
 ) {
   if (insertPreview) {
-    return `${insertPreview.startAt} ~ ${insertPreview.endAt}`;
+    const startAt =
+      insertPreview.position === "above" ? insertPreview.targetStartAt : insertPreview.targetEndAt;
+    const endAt = buildTimeRangeFromStart(startAt, durationMinutes);
+    return `${startAt} ~ ${endAt}`;
   }
   if (previewSlot) {
     const range = buildTimeRange(previewSlot.hour, previewSlot.minute, durationMinutes);

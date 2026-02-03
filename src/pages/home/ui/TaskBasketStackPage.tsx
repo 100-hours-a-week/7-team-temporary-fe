@@ -138,7 +138,7 @@ export function TaskBasketStackPage() {
   });
 
   useEffect(() => {
-    setHeaderContent(<span className="text-xl font-semibold text-black">작업 리스트</span>);
+    setHeaderContent(<span className="text-xl font-semibold text-black">작업 바구니</span>);
     return () => setHeaderContent(null);
   }, [setHeaderContent]);
 
