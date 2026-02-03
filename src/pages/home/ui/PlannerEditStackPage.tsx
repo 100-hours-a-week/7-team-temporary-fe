@@ -58,6 +58,8 @@ type InsertPreview = {
   position: "above" | "below";
   targetStartAt: string;
   targetEndAt: string;
+  startAt: string;
+  endAt: string;
 };
 
 const DEFAULT_DROP_DURATION_MINUTES = 30;
@@ -76,6 +78,7 @@ export function PlannerEditStackPage() {
   const dayPlanDate = useHomePlanStore((state) => state.date);
   const [droppedTasks, setDroppedTasks] = useState<EditableTaskItemModel[]>([]);
   const [activeDrag, setActiveDrag] = useState<DraggedTask | null>(null);
+  const [draggingType, setDraggingType] = useState<DraggedTask["type"] | null>(null);
   const [previewSlot, setPreviewSlot] = useState<PreviewSlot | null>(null);
   const previewKeyRef = useRef<string | null>(null);
   const [insertPreview, setInsertPreview] = useState<InsertPreview | null>(null);
@@ -85,6 +88,7 @@ export function PlannerEditStackPage() {
   const [editingTask, setEditingTask] = useState<EditableTaskItemModel | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [resizePreviewStartMap, setResizePreviewStartMap] = useState<Record<number, string>>({});
   const [resizePreviewMap, setResizePreviewMap] = useState<Record<number, string>>({});
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -387,6 +391,22 @@ export function PlannerEditStackPage() {
     });
   };
 
+  const handleResizeStartPreview = (scheduleId: number, startAt: string) => {
+    setResizePreviewStartMap((prev) => {
+      if (prev[scheduleId] === startAt) return prev;
+      return { ...prev, [scheduleId]: startAt };
+    });
+  };
+
+  const clearResizeStartPreview = (scheduleId: number) => {
+    setResizePreviewStartMap((prev) => {
+      if (!(scheduleId in prev)) return prev;
+      const next = { ...prev };
+      delete next[scheduleId];
+      return next;
+    });
+  };
+
   const clearResizePreview = (scheduleId: number) => {
     setResizePreviewMap((prev) => {
       if (!(scheduleId in prev)) return prev;
@@ -408,6 +428,35 @@ export function PlannerEditStackPage() {
       return;
     }
     const nextTask: EditableTaskItemModel = { ...task, endAt };
+    setDroppedTasks((prev) => {
+      const map = new Map(prev.map((item) => [item.scheduleId, item]));
+      map.set(task.scheduleId, nextTask);
+      return Array.from(map.values());
+    });
+    if (!dayPlanId) return;
+    updateScheduleMutation.mutate({
+      scheduleId: task.scheduleId,
+      payload: {
+        targetDayPlanId: dayPlanId,
+        startAt: nextTask.startAt,
+        endAt: nextTask.endAt,
+      },
+      task: nextTask,
+    });
+  };
+
+  const handleResizeStartEnd = (task: EditableTaskItemModel, startAt: string) => {
+    clearResizeStartPreview(task.scheduleId);
+    if (startAt === task.startAt) return;
+    if (isAfterDayEnd(startAt, task.endAt, dayEndMinutes)) {
+      showToast("하루 마무리 시간 이후에는 배정할 수 없습니다.", "error");
+      return;
+    }
+    if (hasResizeConflict(task.scheduleId, startAt, task.endAt)) {
+      showToast("이미 다른 작업이 있는 시간입니다.", "error");
+      return;
+    }
+    const nextTask: EditableTaskItemModel = { ...task, startAt };
     setDroppedTasks((prev) => {
       const map = new Map(prev.map((item) => [item.scheduleId, item]));
       map.set(task.scheduleId, nextTask);
@@ -455,6 +504,7 @@ export function PlannerEditStackPage() {
       | undefined;
     if (!payload) {
       setActiveDrag(null);
+      setDraggingType(null);
       setPreviewSlot(null);
       previewKeyRef.current = null;
       setInsertPreview(null);
@@ -468,11 +518,8 @@ export function PlannerEditStackPage() {
     const durationMinutes = dragDurationRef.current;
 
     if (insertPreview) {
-      startAt =
-        insertPreview.position === "above"
-          ? insertPreview.targetStartAt
-          : insertPreview.targetEndAt;
-      endAt = buildTimeRangeFromStart(startAt, durationMinutes);
+      startAt = insertPreview.startAt;
+      endAt = insertPreview.endAt;
     } else if (
       dropData?.type === "slot" &&
       dropData.hour !== undefined &&
@@ -527,6 +574,7 @@ export function PlannerEditStackPage() {
       task: nextTask,
     });
     setActiveDrag(null);
+    setDraggingType(null);
     setPreviewSlot(null);
     previewKeyRef.current = null;
     setInsertPreview(null);
@@ -552,8 +600,14 @@ export function PlannerEditStackPage() {
       const activeCenterY = activeRect ? activeRect.top + activeRect.height / 2 : 0;
       const overMidY = overRect ? overRect.top + overRect.height / 2 : 0;
       const position: "above" | "below" = activeCenterY <= overMidY ? "above" : "below";
-      const previewStart = position === "above" ? data.startAt : data.endAt;
-      const previewEnd = buildTimeRangeFromStart(previewStart, dragDurationRef.current);
+      const previewStart =
+        position === "above"
+          ? buildTimeRangeFromEnd(data.startAt, dragDurationRef.current)
+          : data.endAt;
+      const previewEnd =
+        position === "above"
+          ? data.startAt
+          : buildTimeRangeFromStart(previewStart, dragDurationRef.current);
       if (isAfterDayEnd(previewStart, previewEnd, dayEndMinutes)) {
         if (insertPreview) {
           setInsertPreview(null);
@@ -573,6 +627,8 @@ export function PlannerEditStackPage() {
           position,
           targetStartAt: data.startAt,
           targetEndAt: data.endAt,
+          startAt: previewStart,
+          endAt: previewEnd,
         });
       }
       if (previewSlot) {
@@ -614,12 +670,14 @@ export function PlannerEditStackPage() {
         captureScrollPosition();
         dragDurationRef.current =
           getTaskDurationMinutes(payload?.task) ?? DEFAULT_DROP_DURATION_MINUTES;
+        setDraggingType(payload?.type ?? null);
         setActiveDrag(payload?.type === "excluded" ? payload : null);
       }}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={() => {
         setActiveDrag(null);
+        setDraggingType(null);
         setPreviewSlot(null);
         previewKeyRef.current = null;
         setInsertPreview(null);
@@ -656,7 +714,7 @@ export function PlannerEditStackPage() {
             tasks={mergedTasks}
             statusMessage={statusMessage}
             getTaskKey={(task) => task.scheduleId}
-            getStartTime={(task) => task.startAt}
+            getStartTime={(task) => resizePreviewStartMap[task.scheduleId] ?? task.startAt}
             getEndTime={(task) => resizePreviewMap[task.scheduleId] ?? task.endAt}
             renderTask={(task, style) => (
               <EditableTaskItem
@@ -667,15 +725,20 @@ export function PlannerEditStackPage() {
                 onDelete={() => handleDeleteRequest(task.scheduleId)}
                 onExclude={() => undefined}
                 dayEndMinutes={dayEndMinutes}
+                previewStartAt={resizePreviewStartMap[task.scheduleId]}
                 previewEndAt={resizePreviewMap[task.scheduleId]}
                 droppableId={`task-${task.scheduleId}`}
-                droppableData={{
-                  type: "item",
-                  scheduleId: task.scheduleId,
-                  startAt: task.startAt,
-                  endAt: task.endAt,
-                  index: taskIndexMap.get(task.scheduleId) ?? 0,
-                }}
+                droppableData={
+                  draggingType === "task"
+                    ? undefined
+                    : {
+                        type: "item",
+                        scheduleId: task.scheduleId,
+                        startAt: task.startAt,
+                        endAt: task.endAt,
+                        index: taskIndexMap.get(task.scheduleId) ?? 0,
+                      }
+                }
                 insertPosition={
                   insertPreview?.scheduleId === task.scheduleId ? insertPreview.position : null
                 }
@@ -683,7 +746,9 @@ export function PlannerEditStackPage() {
                 draggableData={{ type: "task", task }}
                 dragHandleLabel="작업 드래그"
                 onResizePreview={handleResizePreview}
+                onResizeStartPreview={handleResizeStartPreview}
                 onResizeEnd={handleResizeEnd}
+                onResizeStartEnd={handleResizeStartEnd}
               />
             )}
             enableDropTargets
@@ -842,6 +907,13 @@ function buildTimeRangeFromStart(startAt: string, durationMinutes: number) {
   return formatTime(totalMinutes);
 }
 
+function buildTimeRangeFromEnd(endAt: string, durationMinutes: number) {
+  const endMinutes = parseTimeToMinutes(endAt);
+  if (endMinutes === null) return endAt;
+  const startMinutes = endMinutes - durationMinutes;
+  return formatTime(startMinutes);
+}
+
 function parseTimeToMinutes(value: string | undefined | null) {
   if (!value) return null;
   const [hourText, minuteText] = value.split(":");
@@ -998,10 +1070,7 @@ function getPreviewTimeRange(
   durationMinutes: number,
 ) {
   if (insertPreview) {
-    const startAt =
-      insertPreview.position === "above" ? insertPreview.targetStartAt : insertPreview.targetEndAt;
-    const endAt = buildTimeRangeFromStart(startAt, durationMinutes);
-    return `${startAt} ~ ${endAt}`;
+    return `${insertPreview.startAt} ~ ${insertPreview.endAt}`;
   }
   if (previewSlot) {
     const range = buildTimeRange(previewSlot.hour, previewSlot.minute, durationMinutes);
