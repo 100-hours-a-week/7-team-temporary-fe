@@ -88,7 +88,6 @@ export function PlannerEditStackPage() {
   const [editingTask, setEditingTask] = useState<EditableTaskItemModel | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
-  const [resizePreviewStartMap, setResizePreviewStartMap] = useState<Record<number, string>>({});
   const [resizePreviewMap, setResizePreviewMap] = useState<Record<number, string>>({});
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -391,22 +390,6 @@ export function PlannerEditStackPage() {
     });
   };
 
-  const handleResizeStartPreview = (scheduleId: number, startAt: string) => {
-    setResizePreviewStartMap((prev) => {
-      if (prev[scheduleId] === startAt) return prev;
-      return { ...prev, [scheduleId]: startAt };
-    });
-  };
-
-  const clearResizeStartPreview = (scheduleId: number) => {
-    setResizePreviewStartMap((prev) => {
-      if (!(scheduleId in prev)) return prev;
-      const next = { ...prev };
-      delete next[scheduleId];
-      return next;
-    });
-  };
-
   const clearResizePreview = (scheduleId: number) => {
     setResizePreviewMap((prev) => {
       if (!(scheduleId in prev)) return prev;
@@ -445,34 +428,6 @@ export function PlannerEditStackPage() {
     });
   };
 
-  const handleResizeStartEnd = (task: EditableTaskItemModel, startAt: string) => {
-    clearResizeStartPreview(task.scheduleId);
-    if (startAt === task.startAt) return;
-    if (isAfterDayEnd(startAt, task.endAt, dayEndMinutes)) {
-      showToast("하루 마무리 시간 이후에는 배정할 수 없습니다.", "error");
-      return;
-    }
-    if (hasResizeConflict(task.scheduleId, startAt, task.endAt)) {
-      showToast("이미 다른 작업이 있는 시간입니다.", "error");
-      return;
-    }
-    const nextTask: EditableTaskItemModel = { ...task, startAt };
-    setDroppedTasks((prev) => {
-      const map = new Map(prev.map((item) => [item.scheduleId, item]));
-      map.set(task.scheduleId, nextTask);
-      return Array.from(map.values());
-    });
-    if (!dayPlanId) return;
-    updateScheduleMutation.mutate({
-      scheduleId: task.scheduleId,
-      payload: {
-        targetDayPlanId: dayPlanId,
-        startAt: nextTask.startAt,
-        endAt: nextTask.endAt,
-      },
-      task: nextTask,
-    });
-  };
 
   const handleDeleteRequest = (scheduleId: number) => {
     setDeleteTargetId(scheduleId);
@@ -714,7 +669,7 @@ export function PlannerEditStackPage() {
             tasks={mergedTasks}
             statusMessage={statusMessage}
             getTaskKey={(task) => task.scheduleId}
-            getStartTime={(task) => resizePreviewStartMap[task.scheduleId] ?? task.startAt}
+            getStartTime={(task) => task.startAt}
             getEndTime={(task) => resizePreviewMap[task.scheduleId] ?? task.endAt}
             renderTask={(task, style) => (
               <EditableTaskItem
@@ -725,7 +680,6 @@ export function PlannerEditStackPage() {
                 onDelete={() => handleDeleteRequest(task.scheduleId)}
                 onExclude={() => undefined}
                 dayEndMinutes={dayEndMinutes}
-                previewStartAt={resizePreviewStartMap[task.scheduleId]}
                 previewEndAt={resizePreviewMap[task.scheduleId]}
                 droppableId={`task-${task.scheduleId}`}
                 droppableData={
@@ -746,9 +700,7 @@ export function PlannerEditStackPage() {
                 draggableData={{ type: "task", task }}
                 dragHandleLabel="작업 드래그"
                 onResizePreview={handleResizePreview}
-                onResizeStartPreview={handleResizeStartPreview}
                 onResizeEnd={handleResizeEnd}
-                onResizeStartEnd={handleResizeStartEnd}
               />
             )}
             enableDropTargets
