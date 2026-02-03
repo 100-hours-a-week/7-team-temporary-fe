@@ -368,7 +368,8 @@ export function TaskBasketAddSheet({
         peekHeight={85}
         expandHeight={90}
         enableDragHandle
-        className="pb-[env(safe-area-inset-bottom)]"
+        className="z-[99] pb-[env(safe-area-inset-bottom)]"
+        sheetClassName="z-[99]"
       >
         <div className="flex h-full flex-col px-6">
           <h2 className="text-2xl font-semibold text-neutral-900">
@@ -490,7 +491,10 @@ export function TaskBasketAddSheet({
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <div className="text-base font-semibold text-neutral-900">몰입도</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-base font-semibold text-neutral-900">몰입도</div>
+                    <div className="text-sm font-semibold text-neutral-900">{immersion}</div>
+                  </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-neutral-400">1</span>
                     <input

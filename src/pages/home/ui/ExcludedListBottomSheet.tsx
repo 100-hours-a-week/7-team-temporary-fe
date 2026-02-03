@@ -28,6 +28,7 @@ export function ExcludedListBottomSheet({
       enableDragHandle
       showOverlay={false}
       heightUnit="vh"
+      className="z-[70]"
     >
       <div className="flex h-full min-h-0 flex-col">
         <div className="shrink-0 px-6 pt-6">
