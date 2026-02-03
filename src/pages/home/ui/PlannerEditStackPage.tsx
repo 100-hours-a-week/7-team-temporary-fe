@@ -32,9 +32,8 @@ import {
   useHomePlanStore,
 } from "@/features/home";
 import type {
-  CreateDayPlanScheduleRequestDto,
-  DayPlanScheduleDuration,
   DayPlanScheduleResponseDto,
+  UpdateDayPlanSchedulePatchRequestDto,
 } from "@/features/home/api";
 import { updateDayPlanSchedule } from "@/features/home/api";
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
@@ -260,7 +259,7 @@ export function PlannerEditStackPage() {
   const updateScheduleMutation = useMutation({
     mutationFn: async (variables: {
       scheduleId: number;
-      payload: CreateDayPlanScheduleRequestDto;
+      payload: UpdateDayPlanSchedulePatchRequestDto;
       task: EditableTaskItemModel;
     }) => updateDayPlanSchedule(variables.scheduleId, variables.payload),
     onMutate: async (variables) => {
@@ -275,8 +274,8 @@ export function PlannerEditStackPage() {
         updateScheduleCache(
           prev,
           variables.scheduleId,
-          variables.payload.startAt ?? variables.task.startAt,
-          variables.payload.endAt ?? variables.task.endAt,
+          variables.payload.startAt,
+          variables.payload.endAt,
           variables.task,
         ),
       );
@@ -414,16 +413,13 @@ export function PlannerEditStackPage() {
       map.set(task.scheduleId, nextTask);
       return Array.from(map.values());
     });
+    if (!dayPlanId) return;
     updateScheduleMutation.mutate({
       scheduleId: task.scheduleId,
       payload: {
-        title: task.title,
-        type: task.type,
-        startAt: task.startAt,
-        endAt,
-        estimatedTimeRange: toScheduleDuration(task.estimatedTimeRange),
-        focusLevel: task.focusLevel ?? undefined,
-        isUrgent: task.isUrgent ?? undefined,
+        targetDayPlanId: dayPlanId,
+        startAt: nextTask.startAt,
+        endAt: nextTask.endAt,
       },
       task: nextTask,
     });
@@ -510,22 +506,23 @@ export function PlannerEditStackPage() {
       return;
     }
 
-    const nextTask = toEditableTask(payload.task, startAt, endAt);
+    const nextTask: EditableTaskItemModel = {
+      ...payload.task,
+      startAt,
+      endAt,
+    };
     setDroppedTasks((prev) => {
       const map = new Map(prev.map((task) => [task.scheduleId, task]));
       map.set(nextTask.scheduleId, nextTask);
       return Array.from(map.values());
     });
+    if (!dayPlanId) return;
     updateScheduleMutation.mutate({
       scheduleId: payload.task.scheduleId,
       payload: {
-        title: payload.task.title,
-        type: "FIXED",
+        targetDayPlanId: dayPlanId,
         startAt,
         endAt,
-        estimatedTimeRange: toScheduleDuration(payload.task.estimatedTimeRange),
-        focusLevel: payload.task.focusLevel ?? undefined,
-        isUrgent: payload.task.isUrgent ?? undefined,
       },
       task: nextTask,
     });
@@ -825,26 +822,6 @@ function DraggableExcludedTaskItem({ task }: { task: EditableTaskItemModel }) {
   );
 }
 
-function toEditableTask(
-  task: EditableTaskItemModel,
-  startAt: string,
-  endAt: string,
-): EditableTaskItemModel {
-  return {
-    scheduleId: task.scheduleId,
-    title: task.title,
-    status: "TODO",
-    type: "FIXED",
-    assignedBy: task.assignedBy ?? "USER",
-    assignmentStatus: "ASSIGNED",
-    startAt,
-    endAt,
-    estimatedTimeRange: task.estimatedTimeRange ?? null,
-    focusLevel: task.focusLevel ?? null,
-    isUrgent: task.isUrgent ?? false,
-  };
-}
-
 function buildTimeRange(hour: number, minute: number, durationMinutes: number) {
   const startMinutes = hour * 60 + minute;
   const endMinutes = (startMinutes + durationMinutes) % (24 * 60);
@@ -939,20 +916,6 @@ function formatTime(totalMinutes: number) {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
-function toScheduleDuration(value: string | null | undefined): DayPlanScheduleDuration | undefined {
-  if (!value) return undefined;
-  const allowed: DayPlanScheduleDuration[] = [
-    "MINUTE_UNDER_30",
-    "MINUTE_30_TO_60",
-    "HOUR_1_TO_2",
-    "HOUR_2_TO_4",
-    "HOUR_OVER_4",
-  ];
-  return allowed.includes(value as DayPlanScheduleDuration)
-    ? (value as DayPlanScheduleDuration)
-    : undefined;
-}
-
 function updateScheduleCache(
   prev: DayPlanScheduleResponseDto | undefined,
   scheduleId: number,
@@ -986,10 +949,10 @@ function updateScheduleCache(
           scheduleId,
           parentTitle: null,
           title: task.title,
-          status: "TODO",
-          type: "FIXED",
-          assignedBy: task.assignedBy ?? "USER",
-          assignmentStatus: "ASSIGNED",
+          status: task.status,
+          type: task.type,
+          assignedBy: task.assignedBy,
+          assignmentStatus: task.assignmentStatus,
           startAt,
           endAt,
           estimatedTimeRange: task.estimatedTimeRange ?? null,
