@@ -74,6 +74,7 @@ export function TodoList({
 
   useEffect(() => {
     if (!scheduleQuery.data) return;
+    console.log("[TodoList] 일정 조회 응답", scheduleQuery.data);
     setTotalPages(scheduleQuery.data.totalPages);
     setFetchedTasks((prev) => {
       const base = currentPage === 1 ? [] : prev;
@@ -145,7 +146,7 @@ export function TodoList({
 }
 
 function getViewMode(task: TodoListTask): TodoCartViewMode {
-  if (task.assignmentStatus === "ASSIGNED" || task.assignmentStatus === "FIXED") {
+  if (task.assignmentStatus === "ASSIGNED") {
     return "ARRANGED";
   }
   return "UNASSIGNED";
