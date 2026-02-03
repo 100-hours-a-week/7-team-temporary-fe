@@ -4,7 +4,7 @@ export interface PlannerScheduleResponse {
   status: "TODO" | "DONE";
   type: "FIXED" | "FLEX";
   assignedBy: "USER" | "AI";
-  assignmentStatus: "ASSIGNED" | "EXCLUDED" | "NOT_ASSIGNED";
+  assignmentStatus: "ASSIGNED" | "EXCLUDED" | "FIXED";
   startAt: string;
   endAt: string;
   estimatedTimeRange: string | null;

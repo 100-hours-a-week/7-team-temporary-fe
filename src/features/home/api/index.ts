@@ -10,5 +10,4 @@ export type {
   DayPlanScheduleDuration,
   DayPlanScheduleItemDto,
   DayPlanScheduleResponseDto,
-  UpdateDayPlanSchedulePatchRequestDto,
 } from "./types";
