@@ -25,6 +25,8 @@ interface ConfirmDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   contentClassName?: string;
+  overlayClassName?: string;
+  showOverlay?: boolean;
 }
 
 export function ConfirmDialog({
@@ -39,6 +41,8 @@ export function ConfirmDialog({
   open,
   onOpenChange,
   contentClassName,
+  overlayClassName,
+  showOverlay = false,
 }: ConfirmDialogProps) {
   return (
     <Dialog
@@ -54,7 +58,8 @@ export function ConfirmDialog({
           "rounded-3xl sm:rounded-3xl [&>button]:hidden",
           contentClassName,
         )}
-        overlayClassName="bg-black/40"
+        overlayClassName={cn("bg-black/40", overlayClassName)}
+        showOverlay={showOverlay}
       >
         <div className="px-6 pt-6 pb-6">
           <DialogTitle className="text-lg font-semibold text-neutral-900">{title}</DialogTitle>

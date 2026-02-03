@@ -5,6 +5,7 @@ import type {
   CreateDayPlanScheduleRequestDto,
   DayPlanScheduleItemDto,
   DayPlanScheduleResponseDto,
+  UpdateDayPlanSchedulePatchRequestDto,
 } from "./types";
 
 interface FetchDayPlanScheduleParams {
@@ -119,12 +120,17 @@ export async function createDayPlanSchedule(
 
 export async function updateDayPlanSchedule(
   scheduleId: number,
-  payload: CreateDayPlanScheduleRequestDto,
+  payload: UpdateDayPlanSchedulePatchRequestDto,
 ): Promise<void> {
+  const requestPayload: UpdateDayPlanSchedulePatchRequestDto = {
+    targetDayPlanId: payload.targetDayPlanId,
+    startAt: payload.startAt,
+    endAt: payload.endAt,
+  };
   return AuthService.refreshAndRetry(() =>
-    apiFetch<void, CreateDayPlanScheduleRequestDto>(Endpoint.SCHEDULE.BY_ID(scheduleId), {
-      method: "PUT",
-      body: payload,
+    apiFetch<void, UpdateDayPlanSchedulePatchRequestDto>(Endpoint.SCHEDULE.BY_ID(scheduleId), {
+      method: "PATCH",
+      body: requestPayload,
       authRequired: true,
     }),
   );
