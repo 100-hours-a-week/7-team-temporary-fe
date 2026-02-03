@@ -49,10 +49,11 @@ export function TaskBasketAddSheet({
   const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(true);
   const isEditMode = Boolean(editingTask);
-  const isAssignedAiEditing =
+  const isAssignedFlexEditing =
     Boolean(editingTask) &&
     editingTask?.assignmentStatus === "ASSIGNED" &&
-    editingTask?.assignedBy === "AI";
+    editingTask?.type === "FLEX";
+  const hasEditingTime = Boolean(editingTask?.startAt && editingTask?.endAt);
 
   const hasTimeConflict = (newStart: number, newEnd: number) =>
     tasks.some((task) => {
@@ -222,7 +223,7 @@ export function TaskBasketAddSheet({
       return;
     }
 
-    const shouldUseTime = values.isFixed || isAssignedAiEditing;
+    const shouldUseTime = values.isFixed || isAssignedFlexEditing || hasEditingTime;
     const startMinutes =
       shouldUseTime && values.startHour !== "" && values.startMinute !== ""
         ? Number(values.startHour) * 60 + Number(values.startMinute)
@@ -285,7 +286,7 @@ export function TaskBasketAddSheet({
   const isFixed = watch("isFixed");
   const duration = watch("duration");
   const immersion = watch("immersion");
-  const shouldShowTimeFields = isFixed || isAssignedAiEditing;
+  const shouldShowTimeFields = isFixed || isAssignedFlexEditing || hasEditingTime || isEditMode;
 
   const dayEndTime = useUserPreferencesStore((state) => state.dayEndTime);
   const dayEndLimitMinutes = useMemo(() => {
@@ -323,8 +324,17 @@ export function TaskBasketAddSheet({
   useEffect(() => {
     if (open) {
       if (editingTask) {
-        const [startHour = "", startMinute = ""] = editingTask.startAt?.split(":") ?? [];
-        const [endHour = "", endMinute = ""] = editingTask.endAt?.split(":") ?? [];
+        const normalizeTimePart = (value: string) => {
+          if (!value) return "";
+          const parsed = Number(value);
+          return Number.isNaN(parsed) ? "" : String(parsed);
+        };
+        const [startHourRaw = "", startMinuteRaw = ""] = editingTask.startAt?.split(":") ?? [];
+        const [endHourRaw = "", endMinuteRaw = ""] = editingTask.endAt?.split(":") ?? [];
+        const startHour = normalizeTimePart(startHourRaw);
+        const startMinute = normalizeTimePart(startMinuteRaw);
+        const endHour = normalizeTimePart(endHourRaw);
+        const endMinute = normalizeTimePart(endMinuteRaw);
         reset(
           {
             content: editingTask.title ?? "",
@@ -403,7 +413,7 @@ export function TaskBasketAddSheet({
                 고정 시간
               </label>
 
-              {!isFixed && !isAssignedAiEditing && (
+              {!isFixed && !isAssignedFlexEditing && (
                 <div className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-[var(--color-ink-300)]">
                   고정 시간이 지정되어있지 않을 경우, AI가 잘 맞는 시간대로 배치합니다!
                 </div>
@@ -411,7 +421,7 @@ export function TaskBasketAddSheet({
 
               {shouldShowTimeFields && (
                 <div className="flex flex-col gap-2">
-                  {isAssignedAiEditing && !isFixed ? (
+                  {(isAssignedFlexEditing || hasEditingTime) && !isFixed ? (
                     <div className="text-sm font-semibold text-neutral-900">배치 시간</div>
                   ) : null}
                   <div className="flex items-center justify-between gap-3 text-base font-semibold text-neutral-900">
