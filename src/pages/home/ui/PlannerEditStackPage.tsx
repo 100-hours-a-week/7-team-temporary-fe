@@ -428,7 +428,6 @@ export function PlannerEditStackPage() {
     });
   };
 
-
   const handleDeleteRequest = (scheduleId: number) => {
     setDeleteTargetId(scheduleId);
     setIsDeleteDialogOpen(true);
