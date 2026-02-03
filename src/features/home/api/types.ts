@@ -5,7 +5,7 @@ export interface DayPlanScheduleItemDto {
   status: "TODO" | "DONE";
   type: "FIXED" | "FLEX";
   assignedBy: "USER" | "AI";
-  assignmentStatus: "ASSIGNED" | "EXCLUDED" | "FIXED";
+  assignmentStatus: "ASSIGNED" | "EXCLUDED" | "NOT_ASSIGNED";
   startAt: string;
   endAt: string;
   estimatedTimeRange: string | null;
@@ -28,6 +28,12 @@ export interface CreateDayPlanScheduleRequestDto {
   estimatedTimeRange?: DayPlanScheduleDuration;
   focusLevel?: number;
   isUrgent?: boolean;
+}
+
+export interface UpdateDayPlanSchedulePatchRequestDto {
+  targetDayPlanId: number;
+  startAt: string;
+  endAt: string;
 }
 
 /**
