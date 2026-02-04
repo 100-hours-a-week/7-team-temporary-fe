@@ -22,6 +22,12 @@ import { BottomSheet, ConfirmDialog, Icon } from "@/shared/ui";
 import { useMutationErrorEffect } from "@/shared/query";
 import { apiFetch, Endpoint } from "@/shared/api";
 import { registerFcmToken } from "@/shared/firebase";
+import {
+  getBirthError,
+  getDayEndTimeError,
+  getGenderError,
+  getNicknameError,
+} from "@/shared/validation";
 
 const focusTimeOptions = [
   { value: "MORNING", label: "오전" },
@@ -79,6 +85,7 @@ export function MyInfoStackPage() {
       dayEndTime: "",
       nickname: "",
     },
+    mode: "onChange",
   });
 
   const inputClassName = BASE_INPUT_CLASS_NAME;
@@ -100,8 +107,8 @@ export function MyInfoStackPage() {
     });
   }, [form, myProfile]);
 
+  const { errors, isDirty, isValid } = form.formState;
   const isSaving = updateMutation.isPending || form.formState.isSubmitting;
-  const isDirty = form.formState.isDirty;
   const termsSignQuery = useQuery({
     queryKey: ["terms-sign"],
     queryFn: ({ signal }) =>
@@ -217,9 +224,12 @@ export function MyInfoStackPage() {
                   label="성별"
                   className="flex-1"
                   labelClassName="text-lg font-semibold text-neutral-900"
+                  error={errors.gender?.message?.toString()}
                 >
                   <select
-                    {...form.register("gender")}
+                    {...form.register("gender", {
+                      validate: (value) => getGenderError(value) ?? true,
+                    })}
                     className={selectClassName}
                   >
                     <option value="MALE">남</option>
@@ -230,12 +240,15 @@ export function MyInfoStackPage() {
                   label="생년월일"
                   className="w-full max-w-[187px]"
                   labelClassName="text-base font-semibold text-neutral-900"
+                  error={errors.birth?.message?.toString()}
                 >
                   <input
                     type="text"
                     placeholder="YYYY.MM.DD"
                     className={inputClassName}
-                    {...form.register("birth")}
+                    {...form.register("birth", {
+                      validate: (value) => getBirthError(value) ?? true,
+                    })}
                   />
                 </FormField>
               </div>
@@ -244,11 +257,14 @@ export function MyInfoStackPage() {
                   label="닉네임"
                   className="flex-1 flex-col items-start gap-3"
                   labelClassName="text-base font-semibold text-neutral-900"
+                  error={errors.nickname?.message?.toString()}
                 >
                   <input
                     type="text"
                     className={inputClassName}
-                    {...form.register("nickname")}
+                    {...form.register("nickname", {
+                      validate: (value) => getNicknameError(value) ?? true,
+                    })}
                   />
                 </FormField>
               </div>
@@ -286,11 +302,14 @@ export function MyInfoStackPage() {
                 label="하루 마무리 시간"
                 className="flex-col items-start gap-3"
                 labelClassName="text-lg font-semibold text-neutral-900"
+                error={errors.dayEndTime?.message?.toString()}
               >
                 <input
                   type="time"
                   className={inputClassName}
-                  {...form.register("dayEndTime")}
+                  {...form.register("dayEndTime", {
+                    validate: (value) => getDayEndTimeError(value) ?? true,
+                  })}
                 />
               </FormField>
             </div>
@@ -338,7 +357,7 @@ export function MyInfoStackPage() {
           <PrimaryButton
             type="submit"
             className="w-full"
-            disabled={isSaving || !isDirty}
+            disabled={isSaving || !isDirty || !isValid}
           >
             {isSaving ? "저장 중..." : "저장"}
           </PrimaryButton>
