@@ -1,0 +1,16 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 1
+      arrivalCount: 1
+      name: "single-user"
+  maxVusers: 1
+  engines:
+    playwright:
+      launchOptions:
+        headless: false
+  processor: "./ui.flow.js"
+scenarios:
+  - name: "home-flow"
+    engine: playwright
+    testFunction: "homeFlow"
