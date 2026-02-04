@@ -829,6 +829,7 @@ function DraggableExcludedTaskItem({ task }: { task: EditableTaskItemModel }) {
       style={style}
       {...listeners}
       {...attributes}
+      data-testid={`excluded-task-${task.scheduleId}`}
     >
       <ExcludedTaskItem
         task={task}

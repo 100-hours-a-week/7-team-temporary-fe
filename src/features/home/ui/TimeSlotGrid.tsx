@@ -218,6 +218,7 @@ function TimeSlotDropTarget({
   return (
     <div
       ref={setNodeRef}
+      data-testid={`planner-slot-${hour}-${minute}`}
       className={cn("pointer-events-none absolute right-0 left-0", isOver && "bg-primary-100/40")}
       style={{ top, height }}
       aria-hidden
