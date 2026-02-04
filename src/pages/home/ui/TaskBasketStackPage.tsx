@@ -214,12 +214,12 @@ export function TaskBasketStackPage() {
   useEffect(() => {
     if (flowStep !== "loading") return;
     if (scheduleQuery.isLoading) return;
-    if (shouldShowAiStep) {
-      setFlowStep("ai");
-      return;
-    }
     if (shouldShowTaskSplitStep) {
       setFlowStep("taskSplit");
+      return;
+    }
+    if (shouldShowAiStep) {
+      setFlowStep("ai");
       return;
     }
     setFlowStep("idle");
@@ -349,12 +349,12 @@ export function TaskBasketStackPage() {
       setFlowStep("loading");
       return;
     }
-    if (shouldShowAiStep) {
-      setFlowStep("ai");
-      return;
-    }
     if (shouldShowTaskSplitStep) {
       setFlowStep("taskSplit");
+      return;
+    }
+    if (shouldShowAiStep) {
+      setFlowStep("ai");
       return;
     }
     setFlowStep("loading");
