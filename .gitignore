@@ -48,3 +48,7 @@ next-env.d.ts
 .npmrc
 *storybook.log
 storybook-static
+
+# test results
+test-results/
+playwright-report/
