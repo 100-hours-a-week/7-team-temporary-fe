@@ -14,6 +14,7 @@ import type {
   CreateDayPlanScheduleRequestDto,
   DayPlanScheduleDuration,
   DayPlanScheduleItemDto,
+  DayPlanScheduleStatus,
 } from "@/features/home/api";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation, useMutationErrorEffect } from "@/shared/query";
@@ -23,7 +24,7 @@ import { PrimaryButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { useUserPreferencesStore } from "@/entities/user";
 
-type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
+type TodoTask = TodoCartTaskItemModel & { status?: DayPlanScheduleStatus };
 
 interface TaskBasketAddSheetProps {
   open: boolean;
