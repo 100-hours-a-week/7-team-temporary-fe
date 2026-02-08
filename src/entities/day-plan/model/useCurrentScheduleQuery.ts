@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchCurrentSchedule } from "../api";
-import { homeQueryKeys } from "./queryKeys";
+import { dayPlanQueryKeys } from "./queryKeys";
 
 interface UseCurrentScheduleQueryOptions {
   enabled?: boolean;
@@ -21,7 +21,7 @@ export function useCurrentScheduleQuery(options: UseCurrentScheduleQueryOptions 
   } = options;
 
   return useQuery({
-    queryKey: homeQueryKeys.currentSchedule(),
+    queryKey: dayPlanQueryKeys.currentSchedule(),
     queryFn: ({ signal }) => fetchCurrentSchedule({ signal }),
     enabled,
     staleTime,

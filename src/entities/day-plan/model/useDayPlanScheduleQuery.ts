@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchDayPlanSchedule } from "../api";
-import { homeQueryKeys } from "./queryKeys";
+import { dayPlanQueryKeys } from "./queryKeys";
 
 interface UseDayPlanScheduleQueryOptions {
   date: string;
@@ -32,7 +32,7 @@ export function useDayPlanScheduleQuery({
   refetchOnWindowFocus = false,
 }: UseDayPlanScheduleQueryOptions) {
   return useQuery({
-    queryKey: homeQueryKeys.dayPlanSchedule(date, page, size),
+    queryKey: dayPlanQueryKeys.dayPlanSchedule(date, page, size),
     queryFn: ({ signal }) => fetchDayPlanSchedule({ date, page, size, signal }),
     enabled,
     staleTime,

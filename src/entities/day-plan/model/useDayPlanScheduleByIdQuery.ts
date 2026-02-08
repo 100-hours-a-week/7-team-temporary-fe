@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchDayPlanScheduleById } from "../api";
-import { homeQueryKeys } from "./queryKeys";
+import { dayPlanQueryKeys } from "./queryKeys";
 
 interface UseDayPlanScheduleByIdQueryOptions {
   dayPlanId: number;
@@ -21,7 +21,7 @@ export function useDayPlanScheduleByIdQuery({
   gcTime,
 }: UseDayPlanScheduleByIdQueryOptions) {
   return useQuery({
-    queryKey: homeQueryKeys.dayPlanScheduleById(dayPlanId, page, size),
+    queryKey: dayPlanQueryKeys.dayPlanScheduleById(dayPlanId, page, size),
     queryFn: ({ signal }) => fetchDayPlanScheduleById({ dayPlanId, page, size, signal }),
     enabled,
     staleTime,
