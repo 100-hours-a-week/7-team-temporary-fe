@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import type { AuthState } from "@/shared/auth";
+import type { AuthState } from "@/entities/user";
 import { useAuthStore } from "@/entities";
 import { useMutationErrorEffect } from "@/shared/query";
 

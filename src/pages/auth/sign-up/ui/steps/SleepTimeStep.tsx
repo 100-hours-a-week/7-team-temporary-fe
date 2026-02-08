@@ -5,10 +5,10 @@ import { useFormContext } from "react-hook-form";
 
 import { SplitText } from "@/shared/ui";
 
-import type { SignUpFormModel } from "@/features/auth/sign-up/model";
-import { SleepTimePicker } from "@/features/auth/sign-up/ui";
+import type { SignUpFormModel } from "@/features/auth";
+import { SleepTimePicker } from "@/features/auth";
 import { FormField } from "@/shared/form/ui";
-import { OnboardingQuestionLayout } from "@/widgets/auth/onboarding/ui";
+import { OnboardingQuestionLayout } from "@/widgets/auth";
 
 type SleepTimeValue = {
   hour: number;

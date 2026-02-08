@@ -16,7 +16,7 @@ import {
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { BASE_INPUT_CLASS_NAME, FormField } from "@/shared/form/ui";
 import { useToast } from "@/shared/ui/toast";
-import { PasswordChangeSheet } from "@/features/profile/password-change";
+import { PasswordChangeSheet } from "@/features/profile";
 import { AuthService } from "@/shared/auth";
 import { BottomSheet, ConfirmDialog, Icon } from "@/shared/ui";
 import { useMutationErrorEffect } from "@/shared/query";

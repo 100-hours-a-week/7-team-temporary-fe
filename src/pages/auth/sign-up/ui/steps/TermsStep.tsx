@@ -7,9 +7,9 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { Endpoint } from "@/shared/api";
 import { useApiQuery } from "@/shared/query";
 
-import type { SignUpFormModel } from "@/features/auth/sign-up/model";
+import type { SignUpFormModel } from "@/features/auth";
 import { Icon, SplitText } from "@/shared/ui";
-import { OnboardingQuestionLayout } from "@/widgets/auth/onboarding/ui";
+import { OnboardingQuestionLayout } from "@/widgets/auth";
 
 const TERMS = [
   {

@@ -2,16 +2,13 @@
 
 import { useEffect } from "react";
 
-import type { SignUpFlowStep } from "@/pages/auth/sign-up/model";
-import { useSignUpSteps } from "@/pages/auth/sign-up/model";
-import {
-  SignUpFormContainer,
-  useSignUpFormContext,
-} from "@/pages/auth/sign-up/ui/SignUpFormContainer";
+import type { SignUpFlowStep } from "./model";
+import { useSignUpSteps } from "./model";
+import { SignUpFormContainer, useSignUpFormContext } from "./ui/SignUpFormContainer";
 import { FocusTimeStep, ProfileStep, SleepTimeStep, StartStep, TermsStep } from "./ui/steps/index";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
-import { OnboardingStepBar } from "@/widgets/auth/onboarding/ui";
-import type { AuthState } from "@/shared/auth";
+import { OnboardingStepBar } from "@/widgets/auth";
+import type { AuthState } from "@/entities/user";
 import { useAuthStore } from "@/entities";
 import { useStackPage } from "@/widgets/stack";
 import { SignUpSuccessPage } from "./SignUpSuccessPage";
