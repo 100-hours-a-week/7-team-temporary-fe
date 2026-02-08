@@ -8,9 +8,7 @@ import { Icon } from "@/shared/ui/icon";
 
 import { useHomePlanner } from "../model/useHomePlanner";
 import { HomeTaskItem } from "./HomeTaskItem";
-import { WeekDateSelector } from "./WeekDateSelector";
-import { WeekHeader } from "./WeekHeader";
-import { WeekdayLabels } from "./WeekdayLabels";
+import { HomeWeekSelector } from "./HomeWeekSelector";
 
 export function HomePlanner() {
   const handlePlannerProfileRender = useCallback<ProfilerOnRenderCallback>(
@@ -49,19 +47,14 @@ export function HomePlanner() {
       onRender={handlePlannerProfileRender}
     >
       <div className="scrollbar-hide mx-0 h-full overflow-y-auto px-5 py-5">
-        <WeekHeader
+        <HomeWeekSelector
           monthIndex={headerMonthIndex}
-          onPrev={() => handleMoveWeek(-7)}
-          onNext={() => handleMoveWeek(7)}
-        />
-
-        <WeekdayLabels />
-
-        <WeekDateSelector
           weekDays={weekDays}
           selectedDate={selectedDate}
           today={today}
-          onSelect={setSelectedDate}
+          onSelectDate={setSelectedDate}
+          onPrevWeek={() => handleMoveWeek(-7)}
+          onNextWeek={() => handleMoveWeek(7)}
           hasPlan={hasPlan}
         />
         <div className="mt-6 flex flex-col gap-3">

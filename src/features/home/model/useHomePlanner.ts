@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { useQueries } from "@tanstack/react-query";
 
-import { addDays, DAYS_IN_WEEK, getRepresentativeMonthIndex, toStartOfWeek } from "./calendar";
 import { fetchDayPlanSchedule } from "../api";
 import { homeQueryKeys } from "./queryKeys";
 import { toTaskItemModelFromHomeTask } from "./taskMappers";
 import type { TaskItemModel } from "./taskModels";
 import { useHomePlanStore } from "./homePlan.store";
+import { useHomePlannerCalendar } from "./useHomePlannerCalendar";
 import { useDayPlanScheduleQuery } from "./useDayPlanScheduleQuery";
 import { useCurrentScheduleQuery } from "./useCurrentScheduleQuery";
 
@@ -89,9 +89,8 @@ interface UseHomePlannerResult {
 }
 
 export function useHomePlanner(): UseHomePlannerResult {
-  const today = useMemo(() => new Date(), []);
-  const [weekStart, setWeekStart] = useState(() => toStartOfWeek(today));
-  const [selectedDate, setSelectedDate] = useState<Date | null>(today);
+  const { today, weekDays, headerMonthIndex, selectedDate, setSelectedDate, handleMoveWeek } =
+    useHomePlannerCalendar();
   const [completionOverrides, setCompletionOverrides] = useState<Map<number, boolean>>(
     () => new Map(),
   );
@@ -99,14 +98,6 @@ export function useHomePlanner(): UseHomePlannerResult {
   const [fetchedTasks, setFetchedTasks] = useState<TaskItemModel[]>([]);
   const [totalPages, setTotalPages] = useState<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-
-  const weekDays = useMemo(
-    () => Array.from({ length: DAYS_IN_WEEK }, (_, index) => addDays(weekStart, index)),
-    [weekStart],
-  );
-  const headerMonthIndex = selectedDate
-    ? selectedDate.getMonth()
-    : getRepresentativeMonthIndex(weekDays);
 
   const queryDate = useMemo(() => formatDateParam(selectedDate ?? today), [selectedDate, today]);
   const prefetchAnchor = selectedDate ?? today;
@@ -222,11 +213,6 @@ export function useHomePlanner(): UseHomePlannerResult {
     () => formatScheduleLabel(selectedDate ?? today),
     [selectedDate, today],
   );
-
-  const handleMoveWeek = useCallback((offset: number) => {
-    setWeekStart((prev) => addDays(prev, offset));
-    setSelectedDate((prev) => (prev ? addDays(prev, offset) : null));
-  }, []);
 
   useEffect(() => {
     if (data?.dayPlanId) {
