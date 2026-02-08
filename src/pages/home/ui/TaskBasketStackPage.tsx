@@ -7,10 +7,8 @@ import {
   TaskBasketAddSheet,
   TaskSplitSheetContent,
   TodoList,
-  homeQueryKeys,
-  useDayPlanScheduleByIdQuery,
-  useHomePlanStore,
 } from "@/features/home";
+import { dayPlanQueryKeys, useDayPlanScheduleByIdQuery, useHomePlanStore } from "@/entities/day-plan";
 import { ApiError, Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
 import { BottomSheet, ConfirmDialog } from "@/shared/ui";
@@ -90,7 +88,7 @@ export function TaskBasketStackPage() {
   }, [dayPlanDate, today]);
   const invalidateScheduleKeys = useMemo(
     () =>
-      homeQueryKeys.dayPlanScheduleCacheKeys({
+      dayPlanQueryKeys.dayPlanScheduleCacheKeys({
         dayPlanId,
         dayPlanDate,
         page: 1,

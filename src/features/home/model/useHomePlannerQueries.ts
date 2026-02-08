@@ -1,10 +1,12 @@
 import { useMemo } from "react";
 import { useQueries } from "@tanstack/react-query";
 
-import { fetchDayPlanSchedule } from "../api";
-import { homeQueryKeys } from "./queryKeys";
-import { useDayPlanScheduleQuery } from "./useDayPlanScheduleQuery";
-import { useCurrentScheduleQuery } from "./useCurrentScheduleQuery";
+import { fetchDayPlanSchedule } from "@/entities/day-plan";
+import {
+  dayPlanQueryKeys,
+  useCurrentScheduleQuery,
+  useDayPlanScheduleQuery,
+} from "@/entities/day-plan";
 
 const PREFETCH_RANGE_DAYS = 2;
 
@@ -60,7 +62,7 @@ export function useHomePlannerQueries({
       const date = formatDateParam(day);
       const shouldPrefetch = isWithinPrefetchRange(day, prefetchAnchor, PREFETCH_RANGE_DAYS);
       return {
-        queryKey: homeQueryKeys.dayPlanSchedule(date, 1, 1),
+        queryKey: dayPlanQueryKeys.dayPlanSchedule(date, 1, 1),
         queryFn: ({ signal }) => fetchDayPlanSchedule({ date, page: 1, size: 1, signal }),
         enabled: date !== queryDate && shouldPrefetch,
         staleTime: 1000 * 60,

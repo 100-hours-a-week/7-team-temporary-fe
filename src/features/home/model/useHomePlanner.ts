@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { toTaskItemModelFromHomeTask } from "./taskMappers";
 import type { TaskItemModel } from "./taskModels";
-import { useHomePlanStore } from "./homePlan.store";
+import { useHomePlanStore } from "@/entities/day-plan";
 import { useHomePlannerCalendar } from "./useHomePlannerCalendar";
 import { useHomePlannerQueries } from "./useHomePlannerQueries";
 import { useMergedTasks } from "./useMergedTasks";

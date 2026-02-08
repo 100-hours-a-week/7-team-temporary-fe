@@ -15,7 +15,7 @@ import type {
   DayPlanScheduleDuration,
   DayPlanScheduleItemDto,
   DayPlanScheduleStatus,
-} from "@/features/home/api";
+} from "@/entities/day-plan";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation, useMutationErrorEffect } from "@/shared/query";
 import { BottomSheet } from "@/shared/ui";

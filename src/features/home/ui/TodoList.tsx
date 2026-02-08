@@ -3,9 +3,9 @@ import styled from "@emotion/styled";
 import type { RefObject } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { DayPlanScheduleStatus } from "../api/types";
+import type { DayPlanScheduleStatus } from "@/entities/day-plan";
 import type { TodoCartTaskItemModel } from "../model/taskModels";
-import { useDayPlanScheduleByIdQuery } from "../model/useDayPlanScheduleByIdQuery";
+import { useDayPlanScheduleByIdQuery } from "@/entities/day-plan";
 import { TodoCartTaskItem } from "./TodoCartTaskItem";
 import type { TodoCartViewMode } from "./TodoCartTaskItem";
 
