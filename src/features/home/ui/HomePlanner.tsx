@@ -13,6 +13,21 @@ import { HomeWeekSelector } from "./HomeWeekSelector";
 export function HomePlanner() {
   const handlePlannerProfileRender = useCallback<ProfilerOnRenderCallback>(
     (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
+      if (typeof window !== "undefined" && (window as any).__MOLIP_PROFILE_CAPTURE__) {
+        const currentEntries = Array.isArray((window as any).__MOLIP_PROFILE_ENTRIES__)
+          ? (window as any).__MOLIP_PROFILE_ENTRIES__
+          : [];
+        currentEntries.push({
+          id,
+          phase,
+          actualDuration,
+          baseDuration,
+          startTime,
+          commitTime,
+        });
+        (window as any).__MOLIP_PROFILE_ENTRIES__ = currentEntries;
+      }
+
       if (process.env.NODE_ENV !== "development") return;
       console.log(
         `[Profiler:${id}] phase=${phase} actual=${actualDuration.toFixed(2)}ms base=${baseDuration.toFixed(2)}ms start=${startTime.toFixed(2)} commit=${commitTime.toFixed(2)}`,
