@@ -88,16 +88,16 @@ export function TaskBasketStackPage() {
     const parsed = new Date(dayPlanDate);
     return Number.isNaN(parsed.getTime()) ? today : parsed;
   }, [dayPlanDate, today]);
-  const invalidateScheduleKeys = useMemo(() => {
-    const keys: Array<readonly unknown[]> = [];
-    if (dayPlanId) {
-      keys.push(homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10));
-    }
-    if (dayPlanDate) {
-      keys.push(homeQueryKeys.dayPlanSchedule(dayPlanDate, 1, 10));
-    }
-    return keys;
-  }, [dayPlanDate, dayPlanId]);
+  const invalidateScheduleKeys = useMemo(
+    () =>
+      homeQueryKeys.dayPlanScheduleCacheKeys({
+        dayPlanId,
+        dayPlanDate,
+        page: 1,
+        size: 10,
+      }),
+    [dayPlanDate, dayPlanId],
+  );
 
   const deleteScheduleMutation = useApiMutation<number, void, void>({
     url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),

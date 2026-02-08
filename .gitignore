@@ -58,3 +58,7 @@ docs/
 scripts/
 
 .agents/
+
+tmp/
+
+.github/issue

@@ -53,6 +53,7 @@ export function WeekDateSelector({
               <DateSwapText
                 value={dateValue}
                 delayMs={index * 90}
+                animateOnChange={isSelected}
                 className="[font-variant-numeric:tabular-nums]"
               />
             </span>
