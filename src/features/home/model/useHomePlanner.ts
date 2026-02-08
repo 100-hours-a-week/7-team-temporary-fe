@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 
 import { addDays, DAYS_IN_WEEK, getRepresentativeMonthIndex, toStartOfWeek } from "./calendar";
 import { fetchDayPlanSchedule } from "../api";
@@ -12,6 +12,7 @@ import { useDayPlanScheduleQuery } from "./useDayPlanScheduleQuery";
 import { useCurrentScheduleQuery } from "./useCurrentScheduleQuery";
 
 const PAGE_SIZE = 10;
+const PREFETCH_RANGE_DAYS = 2;
 
 const formatDateParam = (date: Date) => {
   const year = date.getFullYear();
@@ -27,6 +28,15 @@ function formatScheduleLabel(date: Date) {
   const labels = ["일", "월", "화", "수", "목", "금", "토"];
   const weekday = labels[date.getDay()] ?? "";
   return `${month}.${day} (${weekday}) 일정`;
+}
+
+function getDayStartTime(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function isWithinPrefetchRange(day: Date, anchor: Date, rangeDays: number) {
+  const diff = Math.abs(getDayStartTime(day) - getDayStartTime(anchor));
+  return diff <= rangeDays * 24 * 60 * 60 * 1000;
 }
 
 function getScrollParent(element: HTMLElement | null) {
@@ -51,10 +61,6 @@ function getScrollParent(element: HTMLElement | null) {
     current = current.parentElement;
   }
   return null;
-}
-
-interface UseHomePlannerOptions {
-  refreshKey?: number;
 }
 
 interface PlannerStatusMessage {
@@ -82,8 +88,7 @@ interface UseHomePlannerResult {
   loadMoreRef: RefObject<HTMLDivElement | null>;
 }
 
-export function useHomePlanner({ refreshKey }: UseHomePlannerOptions): UseHomePlannerResult {
-  const queryClient = useQueryClient();
+export function useHomePlanner(): UseHomePlannerResult {
   const today = useMemo(() => new Date(), []);
   const [weekStart, setWeekStart] = useState(() => toStartOfWeek(today));
   const [selectedDate, setSelectedDate] = useState<Date | null>(today);
@@ -104,6 +109,7 @@ export function useHomePlanner({ refreshKey }: UseHomePlannerOptions): UseHomePl
     : getRepresentativeMonthIndex(weekDays);
 
   const queryDate = useMemo(() => formatDateParam(selectedDate ?? today), [selectedDate, today]);
+  const prefetchAnchor = selectedDate ?? today;
   const { data, isLoading, isError } = useDayPlanScheduleQuery({
     date: queryDate,
     page: currentPage,
@@ -112,10 +118,11 @@ export function useHomePlanner({ refreshKey }: UseHomePlannerOptions): UseHomePl
   const weekPlanQueries = useQueries({
     queries: weekDays.map((day) => {
       const date = formatDateParam(day);
+      const shouldPrefetch = isWithinPrefetchRange(day, prefetchAnchor, PREFETCH_RANGE_DAYS);
       return {
         queryKey: homeQueryKeys.dayPlanSchedule(date, 1, 1),
         queryFn: ({ signal }) => fetchDayPlanSchedule({ date, page: 1, size: 1, signal }),
-        enabled: date !== queryDate,
+        enabled: date !== queryDate && shouldPrefetch,
         staleTime: 1000 * 60,
       };
     }),
@@ -220,12 +227,6 @@ export function useHomePlanner({ refreshKey }: UseHomePlannerOptions): UseHomePl
     setWeekStart((prev) => addDays(prev, offset));
     setSelectedDate((prev) => (prev ? addDays(prev, offset) : null));
   }, []);
-
-  useEffect(() => {
-    if (!refreshKey) return;
-    queryClient.invalidateQueries({ queryKey: homeQueryKeys.all });
-    refetchCurrentSchedule();
-  }, [queryClient, refreshKey, refetchCurrentSchedule]);
 
   useEffect(() => {
     if (data?.dayPlanId) {
