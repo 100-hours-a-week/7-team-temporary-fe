@@ -1,19 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { useQueries } from "@tanstack/react-query";
-
-import { fetchDayPlanSchedule } from "../api";
-import { homeQueryKeys } from "./queryKeys";
 import { toTaskItemModelFromHomeTask } from "./taskMappers";
 import type { TaskItemModel } from "./taskModels";
 import { useHomePlanStore } from "./homePlan.store";
 import { useHomePlannerCalendar } from "./useHomePlannerCalendar";
-import { useDayPlanScheduleQuery } from "./useDayPlanScheduleQuery";
-import { useCurrentScheduleQuery } from "./useCurrentScheduleQuery";
+import { useHomePlannerQueries } from "./useHomePlannerQueries";
 
 const PAGE_SIZE = 10;
-const PREFETCH_RANGE_DAYS = 2;
-
 const formatDateParam = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -28,15 +21,6 @@ function formatScheduleLabel(date: Date) {
   const labels = ["일", "월", "화", "수", "목", "금", "토"];
   const weekday = labels[date.getDay()] ?? "";
   return `${month}.${day} (${weekday}) 일정`;
-}
-
-function getDayStartTime(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-}
-
-function isWithinPrefetchRange(day: Date, anchor: Date, rangeDays: number) {
-  const diff = Math.abs(getDayStartTime(day) - getDayStartTime(anchor));
-  return diff <= rangeDays * 24 * 60 * 60 * 1000;
 }
 
 function getScrollParent(element: HTMLElement | null) {
@@ -101,30 +85,23 @@ export function useHomePlanner(): UseHomePlannerResult {
 
   const queryDate = useMemo(() => formatDateParam(selectedDate ?? today), [selectedDate, today]);
   const prefetchAnchor = selectedDate ?? today;
-  const { data, isLoading, isError } = useDayPlanScheduleQuery({
-    date: queryDate,
-    page: currentPage,
-    size: PAGE_SIZE,
-  });
-  const weekPlanQueries = useQueries({
-    queries: weekDays.map((day) => {
-      const date = formatDateParam(day);
-      const shouldPrefetch = isWithinPrefetchRange(day, prefetchAnchor, PREFETCH_RANGE_DAYS);
-      return {
-        queryKey: homeQueryKeys.dayPlanSchedule(date, 1, 1),
-        queryFn: ({ signal }) => fetchDayPlanSchedule({ date, page: 1, size: 1, signal }),
-        enabled: date !== queryDate && shouldPrefetch,
-        staleTime: 1000 * 60,
-      };
-    }),
+  const {
+    data,
+    isLoading,
+    isError,
+    weekPlanQueries,
+    currentScheduleData,
+    isCurrentTaskLoading,
+    isCurrentTaskError,
+    refetchCurrentSchedule,
+  } = useHomePlannerQueries({
+    queryDate,
+    currentPage,
+    pageSize: PAGE_SIZE,
+    weekDays,
+    prefetchAnchor,
   });
   const setHomePlan = useHomePlanStore((state) => state.setHomePlan);
-  const {
-    data: currentScheduleData,
-    isLoading: isCurrentTaskLoading,
-    isError: isCurrentTaskError,
-    refetch: refetchCurrentSchedule,
-  } = useCurrentScheduleQuery();
 
   const baseTasks = useMemo(
     () => data?.content.map((task) => toTaskItemModelFromHomeTask(task)) ?? [],
