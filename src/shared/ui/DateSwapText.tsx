@@ -9,6 +9,7 @@ interface DateSwapTextProps {
   delayMs?: number;
   durationMs?: number;
   className?: string;
+  animateOnChange?: boolean;
 }
 
 export function DateSwapText({
@@ -16,6 +17,7 @@ export function DateSwapText({
   delayMs = 0,
   durationMs = 420,
   className,
+  animateOnChange = true,
 }: DateSwapTextProps) {
   const prevRef = useRef(value);
   const [prevValue, setPrevValue] = useState<string | null>(null);
@@ -23,21 +25,29 @@ export function DateSwapText({
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
+    if (!animateOnChange) {
+      prevRef.current = value;
+      setPrevValue(null);
+      setNextValue(value);
+      setIsAnimating(false);
+      return;
+    }
     if (prevRef.current === value) return;
     setPrevValue(prevRef.current);
     setNextValue(value);
     prevRef.current = value;
     setIsAnimating(true);
-  }, [value]);
+  }, [animateOnChange, value]);
 
   useEffect(() => {
+    if (!animateOnChange) return;
     if (!isAnimating) return;
     const timeout = window.setTimeout(() => {
       setPrevValue(null);
       setIsAnimating(false);
     }, durationMs + delayMs);
     return () => window.clearTimeout(timeout);
-  }, [delayMs, durationMs, isAnimating]);
+  }, [animateOnChange, delayMs, durationMs, isAnimating]);
 
   return (
     <span className={cn("date-swap", className)}>
