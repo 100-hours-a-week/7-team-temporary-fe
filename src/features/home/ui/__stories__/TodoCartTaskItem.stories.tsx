@@ -1,8 +1,8 @@
 "use client";
 
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { TodoCartTaskItem } from "./TodoCartTaskItem";
-import type { TodoCartTaskItemModel } from "../model/taskModels";
+import { TodoCartTaskItem } from "../TodoCartTaskItem";
+import type { TodoCartTaskItemModel } from "@/entities/day-plan";
 
 const meta: Meta<typeof TodoCartTaskItem> = {
   title: "features/home/TodoCartTaskItem",
