@@ -57,6 +57,7 @@
     "@storybook/nextjs": "^10.2.1",
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4.1.18",
+    "@tanstack/react-query-devtools": "^5.91.3",
     "@types/node": "^22.19.7",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
