@@ -113,16 +113,17 @@ export function PlannerEditStackPage() {
     enabled: Boolean(dayPlanId) && isSheetOpen,
   });
   const { data: myProfile } = useMyProfileQuery();
-  const invalidateScheduleKeys = useMemo(() => {
-    const keys: Array<readonly unknown[]> = [];
-    if (dayPlanId) {
-      keys.push(homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10));
-    }
-    if (dayPlanDate) {
-      keys.push(homeQueryKeys.dayPlanSchedule(dayPlanDate, 1, 10));
-    }
-    return keys;
-  }, [dayPlanDate, dayPlanId]);
+  const scheduleKeys = useMemo(
+    () =>
+      homeQueryKeys.dayPlanScheduleCacheKeys({
+        dayPlanId,
+        dayPlanDate,
+        page: 1,
+        size: 10,
+      }),
+    [dayPlanDate, dayPlanId],
+  );
+  const invalidateScheduleKeys = scheduleKeys;
 
   const dayEndMinutes = useMemo(
     () => getDayEndLimitMinutes(myProfile?.dayEndTime),
@@ -231,12 +232,12 @@ export function PlannerEditStackPage() {
     const nextDepth = stack.length;
     prevDepthRef.current = nextDepth;
 
-    if (prevDepth > nextDepth && isTop && dayPlanId) {
-      queryClient.invalidateQueries({
-        queryKey: homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
+    if (prevDepth > nextDepth && isTop && scheduleKeys.length > 0) {
+      scheduleKeys.forEach((queryKey) => {
+        queryClient.invalidateQueries({ queryKey });
       });
     }
-  }, [dayPlanId, isTop, queryClient, stack.length]);
+  }, [isTop, queryClient, scheduleKeys, stack.length]);
 
   const captureScrollPosition = () => {
     if (!scrollParentRef.current) {
@@ -267,21 +268,25 @@ export function PlannerEditStackPage() {
     }) => updateDayPlanSchedule(variables.scheduleId, variables.payload),
     onMutate: async (variables) => {
       captureScrollPosition();
-      if (!dayPlanId) return undefined;
-      const scheduleKey = homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10);
+      if (!dayPlanId || scheduleKeys.length === 0) return undefined;
       const excludedKey = homeQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
-      const prevSchedules = queryClient.getQueryData<DayPlanScheduleResponseDto>(scheduleKey);
+      const prevSchedules = scheduleKeys.map((key) => [
+        key,
+        queryClient.getQueryData<DayPlanScheduleResponseDto>(key),
+      ]) as Array<readonly [readonly unknown[], DayPlanScheduleResponseDto | undefined]>;
       const prevExcluded = queryClient.getQueryData<DayPlanScheduleResponseDto>(excludedKey);
 
-      queryClient.setQueryData(scheduleKey, (prev: DayPlanScheduleResponseDto | undefined) =>
-        updateScheduleCache(
-          prev,
-          variables.scheduleId,
-          variables.payload.startAt,
-          variables.payload.endAt,
-          variables.task,
-        ),
-      );
+      scheduleKeys.forEach((key) => {
+        queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
+          updateScheduleCache(
+            prev,
+            variables.scheduleId,
+            variables.payload.startAt,
+            variables.payload.endAt,
+            variables.task,
+          ),
+        );
+      });
       queryClient.setQueryData(excludedKey, (prev: DayPlanScheduleResponseDto | undefined) =>
         removeScheduleCache(prev, variables.scheduleId),
       );
@@ -294,10 +299,11 @@ export function PlannerEditStackPage() {
     },
     onError: (_error, _variables, context) => {
       if (!dayPlanId || !context) return;
-      const scheduleKey = homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10);
       const excludedKey = homeQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
       if (context.prevSchedules) {
-        queryClient.setQueryData(scheduleKey, context.prevSchedules);
+        context.prevSchedules.forEach(([key, prev]) => {
+          queryClient.setQueryData(key, prev);
+        });
       }
       if (context.prevExcluded) {
         queryClient.setQueryData(excludedKey, context.prevExcluded);
@@ -369,10 +375,9 @@ export function PlannerEditStackPage() {
       map.set(resolvedTask.scheduleId, resolvedTask);
       return Array.from(map.values());
     });
-    if (!dayPlanId) return;
-    queryClient.setQueryData(
-      homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
-      (prev: DayPlanScheduleResponseDto | undefined) =>
+    if (!dayPlanId || scheduleKeys.length === 0) return;
+    scheduleKeys.forEach((key) => {
+      queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
         updateScheduleCache(
           prev,
           resolvedTask.scheduleId,
@@ -380,7 +385,8 @@ export function PlannerEditStackPage() {
           resolvedTask.endAt,
           resolvedTask,
         ),
-    );
+      );
+    });
   };
 
   const handleResizePreview = (scheduleId: number, endAt: string) => {
@@ -438,12 +444,12 @@ export function PlannerEditStackPage() {
     deleteScheduleMutation.mutate(deleteTargetId, {
       onSuccess: () => {
         setDroppedTasks((prev) => prev.filter((task) => task.scheduleId !== deleteTargetId));
-        if (dayPlanId) {
-          queryClient.setQueryData(
-            homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
-            (prev: DayPlanScheduleResponseDto | undefined) =>
+        if (dayPlanId && scheduleKeys.length > 0) {
+          scheduleKeys.forEach((key) => {
+            queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
               removeScheduleCache(prev, deleteTargetId),
-          );
+            );
+          });
         }
         setIsDeleteDialogOpen(false);
         setDeleteTargetId(null);
