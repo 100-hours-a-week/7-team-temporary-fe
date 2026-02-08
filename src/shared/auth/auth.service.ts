@@ -1,5 +1,5 @@
 import { ApiError, apiFetch, Endpoint } from "@/shared/api";
-import { useAuthStore } from "./auth.store";
+import { clearAuth, setAuthenticated } from "./auth.handlers";
 
 export const AuthService = {
   async refresh() {
@@ -9,12 +9,12 @@ export const AuthService = {
         method: "PUT",
       });
 
-      useAuthStore.getState().setAuthenticated(res.accessToken);
+      setAuthenticated(res.accessToken);
       console.log("[AuthService] refresh success");
       return res.accessToken;
     } catch (e) {
       console.warn("[AuthService] refresh failed", e);
-      useAuthStore.getState().clearAuth();
+      clearAuth();
       throw e;
     }
   },
@@ -49,7 +49,7 @@ export const AuthService = {
     } catch (error) {
       console.warn("[AuthService] logout failed", error);
     } finally {
-      useAuthStore.getState().clearAuth();
+      clearAuth();
     }
   },
 };
