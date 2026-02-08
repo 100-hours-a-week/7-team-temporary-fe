@@ -12,11 +12,7 @@ import { WeekDateSelector } from "./WeekDateSelector";
 import { WeekHeader } from "./WeekHeader";
 import { WeekdayLabels } from "./WeekdayLabels";
 
-interface HomePlannerProps {
-  refreshKey?: number;
-}
-
-export function HomePlanner({ refreshKey }: HomePlannerProps) {
+export function HomePlanner() {
   const handlePlannerProfileRender = useCallback<ProfilerOnRenderCallback>(
     (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
       if (process.env.NODE_ENV !== "development") return;
@@ -45,7 +41,7 @@ export function HomePlanner({ refreshKey }: HomePlannerProps) {
     isLoading,
     loadMoreRef,
     isCurrentTaskLoading,
-  } = useHomePlanner({ refreshKey });
+  } = useHomePlanner();
 
   return (
     <Profiler
