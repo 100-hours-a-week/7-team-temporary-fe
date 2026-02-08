@@ -3,12 +3,13 @@ import styled from "@emotion/styled";
 import type { RefObject } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import type { DayPlanScheduleStatus } from "../api/types";
 import type { TodoCartTaskItemModel } from "../model/taskModels";
 import { useDayPlanScheduleByIdQuery } from "../model/useDayPlanScheduleByIdQuery";
 import { TodoCartTaskItem } from "./TodoCartTaskItem";
 import type { TodoCartViewMode } from "./TodoCartTaskItem";
 
-type TodoListTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
+type TodoListTask = TodoCartTaskItemModel & { status?: DayPlanScheduleStatus };
 
 interface TodoListProps {
   tasks: TodoListTask[];

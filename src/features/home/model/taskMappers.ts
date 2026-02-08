@@ -1,16 +1,17 @@
 import type {
-  HomeTaskItemModel,
+  PlannerScheduleResponse,
   TaskItemModel,
   TaskTimeType,
   TodoCartTaskItemModel,
 } from "./taskModels";
+import type { DayPlanScheduleType } from "../api/types";
 
 const DEFAULT_ASSIGNED_BY: TaskItemModel["assignedBy"] = "USER";
 
 /**
  * 서버 응답 기반 TaskItemModel 공통 매핑 유틸.
  */
-export function toTaskItemModelFromHomeTask(task: HomeTaskItemModel): TaskItemModel {
+export function toTaskItemModelFromHomeTask(task: PlannerScheduleResponse): TaskItemModel {
   const assignedBy = task.assignedBy ?? DEFAULT_ASSIGNED_BY;
 
   return {
@@ -50,7 +51,7 @@ export function getTaskTimeType({
   type,
 }: {
   assignedBy: TaskItemModel["assignedBy"];
-  type: "FIXED" | "FLEX";
+  type: DayPlanScheduleType;
 }): TaskTimeType {
   if (assignedBy === "AI") return "ARRANGED";
   return type === "FIXED" ? "FIXED" : "ESTIMATED";

@@ -23,10 +23,7 @@ export function HomePage() {
 
   return (
     <div className="relative h-full pb-20">
-      <HomePlanner
-        onOpenPlannerEdit={handleOpenPlannerEdit}
-        refreshKey={refreshKey}
-      />
+      <HomePlanner refreshKey={refreshKey} />
       <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
         <button
           type="button"

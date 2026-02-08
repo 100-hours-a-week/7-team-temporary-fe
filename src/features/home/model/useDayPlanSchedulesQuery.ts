@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchDayPlanSchedules } from "../api";
+import type { DayPlanScheduleFilterStatus } from "../api/types";
 import { homeQueryKeys } from "./queryKeys";
 
 interface UseDayPlanSchedulesQueryOptions {
   dayPlanId: number;
-  status?: "EXCLUDED" | "ASSIGNED" | "FIXED";
+  status?: DayPlanScheduleFilterStatus;
   page?: number;
   size?: number;
   enabled?: boolean;

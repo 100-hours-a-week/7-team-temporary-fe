@@ -3,10 +3,26 @@ import { AuthService } from "@/shared/auth";
 
 import type {
   CreateDayPlanScheduleRequestDto,
+  DayPlanScheduleFilterStatus,
   DayPlanScheduleItemDto,
   DayPlanScheduleResponseDto,
   UpdateDayPlanSchedulePatchRequestDto,
 } from "./types";
+
+interface FetchCurrentScheduleParams {
+  signal?: AbortSignal;
+}
+
+export async function fetchCurrentSchedule({
+  signal,
+}: FetchCurrentScheduleParams = {}): Promise<DayPlanScheduleItemDto | null> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<DayPlanScheduleItemDto | null>(Endpoint.SCHEDULE.BASE, {
+      signal,
+      authRequired: true,
+    }),
+  );
+}
 
 interface FetchDayPlanScheduleParams {
   date: string;
@@ -69,7 +85,7 @@ export async function fetchDayPlanScheduleById({
 
 interface FetchDayPlanSchedulesParams {
   dayPlanId: number;
-  status?: "EXCLUDED" | "ASSIGNED" | "FIXED";
+  status?: DayPlanScheduleFilterStatus;
   page?: number;
   size?: number;
   signal?: AbortSignal;

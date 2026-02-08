@@ -21,7 +21,6 @@ export type {
   PlannerScheduleResponse,
   TaskItemModel,
   TaskTimeType,
-  HomeTaskItemModel,
   EditableTaskItemModel,
   ExcludedTaskItemModel,
   TodoCartTaskItemModel,
