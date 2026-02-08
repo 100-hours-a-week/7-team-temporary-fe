@@ -24,4 +24,7 @@ export {
   toMyProfileModel,
   toUpdateMyProfileRequestDto,
   toUpdatePasswordRequestDto,
+  useAuthStore,
 } from "./model";
+
+export type { AuthState } from "./model";

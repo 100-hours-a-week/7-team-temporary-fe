@@ -2,15 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { TaskSplitGroup, TaskSplitItem, TodoCartTaskItemModel } from "@/features/home";
+import type { TaskSplitGroup, TaskSplitItem } from "@/features/home";
+import type { TodoCartTaskItemModel } from "@/entities/day-plan";
+import { TaskBasketAddSheet, TaskSplitSheetContent, TodoList } from "@/features/home";
 import {
-  TaskBasketAddSheet,
-  TaskSplitSheetContent,
-  TodoList,
-  homeQueryKeys,
+  dayPlanQueryKeys,
   useDayPlanScheduleByIdQuery,
   useHomePlanStore,
-} from "@/features/home";
+} from "@/entities/day-plan";
 import { ApiError, Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
 import { BottomSheet, ConfirmDialog } from "@/shared/ui";
@@ -90,7 +89,7 @@ export function TaskBasketStackPage() {
   }, [dayPlanDate, today]);
   const invalidateScheduleKeys = useMemo(
     () =>
-      homeQueryKeys.dayPlanScheduleCacheKeys({
+      dayPlanQueryKeys.dayPlanScheduleCacheKeys({
         dayPlanId,
         dayPlanDate,
         page: 1,

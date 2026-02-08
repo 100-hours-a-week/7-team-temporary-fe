@@ -23,19 +23,19 @@ import {
   START_HOUR,
   TaskBasketAddSheet,
   TaskBasketButton,
+  TimeSlotGrid,
+} from "@/features/home";
+import {
+  dayPlanQueryKeys,
   type EditableTaskItemModel,
   type TodoCartTaskItemModel,
-  homeQueryKeys,
+  updateDayPlanSchedule,
   useDayPlanScheduleByIdQuery,
-  TimeSlotGrid,
   useDayPlanSchedulesQuery,
   useHomePlanStore,
-} from "@/features/home";
-import type {
-  DayPlanScheduleResponseDto,
-  UpdateDayPlanSchedulePatchRequestDto,
-} from "@/features/home/api";
-import { updateDayPlanSchedule } from "@/features/home/api";
+  type DayPlanScheduleResponseDto,
+  type UpdateDayPlanSchedulePatchRequestDto,
+} from "@/entities/day-plan";
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
 import { Icon } from "@/shared/ui/icon";
 import { Endpoint } from "@/shared/api";
@@ -115,7 +115,7 @@ export function PlannerEditStackPage() {
   const { data: myProfile } = useMyProfileQuery();
   const scheduleKeys = useMemo(
     () =>
-      homeQueryKeys.dayPlanScheduleCacheKeys({
+      dayPlanQueryKeys.dayPlanScheduleCacheKeys({
         dayPlanId,
         dayPlanDate,
         page: 1,
@@ -269,7 +269,7 @@ export function PlannerEditStackPage() {
     onMutate: async (variables) => {
       captureScrollPosition();
       if (!dayPlanId || scheduleKeys.length === 0) return undefined;
-      const excludedKey = homeQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
+      const excludedKey = dayPlanQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
       const prevSchedules = scheduleKeys.map((key) => [
         key,
         queryClient.getQueryData<DayPlanScheduleResponseDto>(key),
@@ -299,7 +299,7 @@ export function PlannerEditStackPage() {
     },
     onError: (_error, _variables, context) => {
       if (!dayPlanId || !context) return;
-      const excludedKey = homeQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
+      const excludedKey = dayPlanQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
       if (context.prevSchedules) {
         context.prevSchedules.forEach(([key, prev]) => {
           queryClient.setQueryData(key, prev);

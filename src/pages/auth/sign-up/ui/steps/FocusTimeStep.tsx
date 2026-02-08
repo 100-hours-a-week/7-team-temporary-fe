@@ -3,9 +3,9 @@
 import { useFormContext } from "react-hook-form";
 import { SplitText } from "@/shared/ui";
 
-import type { SignUpFormModel } from "@/features/auth/sign-up/model";
+import type { SignUpFormModel } from "@/features/auth";
 import { FocusTimeZoneSelect, FormField } from "@/shared/form/ui";
-import { OnboardingQuestionLayout } from "@/widgets/auth/onboarding/ui";
+import { OnboardingQuestionLayout } from "@/widgets/auth";
 
 export function FocusTimeStep() {
   const titleText = "하루 중 가장 집중이 잘되는 시간대가 언제인가요?";

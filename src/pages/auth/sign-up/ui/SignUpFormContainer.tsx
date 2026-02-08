@@ -6,10 +6,10 @@ import { createContext, useContext, useEffect } from "react";
 
 import { FormProvider } from "react-hook-form";
 
-import type { SignUpResult } from "@/features/auth/sign-up/model";
-import { useSignUpForm, useSignUpMutation } from "@/features/auth/sign-up/model";
+import type { SignUpResult } from "@/features/auth";
+import { useSignUpForm, useSignUpMutation } from "@/features/auth";
 import { useMutationErrorEffect } from "@/shared/query";
-import { useSignUpErrorEffect } from "@/pages/auth/sign-up/ui/useSignUpErrorEffect";
+import { useSignUpErrorEffect } from "./useSignUpErrorEffect";
 
 type SignUpFormContextValue = ReturnType<typeof useSignUpForm>;
 // useSignUpForm 훅이 반환하는 객체의 타입을 Context 값 타입으로 정의

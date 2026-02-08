@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { SignUpFormModel } from "@/features/auth/sign-up/model";
-import { useProfileImagePresign } from "@/features/image/model";
+import type { SignUpFormModel } from "@/features/auth";
+import { useProfileImagePresign } from "@/features/image";
 import {
   BirthDateInput,
   EmailInput,
@@ -18,7 +18,7 @@ import {
 import { apiFetch, Endpoint } from "@/shared/api";
 import { useToast } from "@/shared/ui/toast";
 import { SplitText } from "@/shared/ui";
-import { OnboardingQuestionLayout } from "@/widgets/auth/onboarding/ui";
+import { OnboardingQuestionLayout } from "@/widgets/auth";
 
 type EmailCheckStatus = "idle" | "loading" | "success" | "error";
 type ProfileImageDraft = { imageKey: string; previewUrl?: string | null };

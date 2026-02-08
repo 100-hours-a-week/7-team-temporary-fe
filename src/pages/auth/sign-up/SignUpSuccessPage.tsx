@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import type { AuthState } from "@/shared/auth";
+import type { AuthState } from "@/entities/user";
 import { useAuthStore } from "@/entities";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { AnimatedStar } from "./ui/steps/AnimatedStar";

@@ -68,6 +68,17 @@
           }
         ]
       }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          "@/entities/*/*",
+          "@/features/*/*",
+          "@/widgets/*/*",
+          "@/pages/*/*"
+        ]
+      }
     ]
   }
 }

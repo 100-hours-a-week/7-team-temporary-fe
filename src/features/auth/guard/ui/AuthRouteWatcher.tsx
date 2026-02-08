@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-import { useAuthStore } from "@/shared/auth";
+import { useAuthStore } from "@/entities/user";
 
 const PUBLIC_PATHS = ["/login", "/sign-up"];
 const DEFAULT_PUBLIC_REDIRECT = "/home";

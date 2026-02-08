@@ -7,7 +7,7 @@ import { cn } from "@/shared/lib";
 
 import { Icon } from "@/shared/ui/icon";
 
-import type { TaskItemModel } from "../model/taskModels";
+import type { TaskItemModel } from "@/entities/day-plan";
 
 interface HomeTaskItemProps {
   task: TaskItemModel;

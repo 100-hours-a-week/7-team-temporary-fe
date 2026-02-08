@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 
-import { LoginFormContainer } from "@/features/auth/login/ui";
-import { SignUpIntroPage } from "@/pages/auth/sign-up";
+import { LoginFormContainer } from "@/features/auth";
+import { SignUpIntroPage } from "@/pages/auth";
 import { Icon, useStackPage } from "@/shared/ui";
 
 export function LoginPage() {

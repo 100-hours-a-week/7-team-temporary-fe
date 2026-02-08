@@ -1,4 +1,4 @@
-export { useAuthStore } from "../shared/auth";
+export { useAuthStore } from "./user";
 export type {
   UserEntity,
   UserEmail,

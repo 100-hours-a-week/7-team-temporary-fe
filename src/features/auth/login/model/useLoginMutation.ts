@@ -3,7 +3,7 @@ import { useApiMutation } from "@/shared/query";
 
 import type { LoginFormModel, LoginRequestDto, LoginResponse } from "./types";
 import { toLoginRequestDto } from "./dto";
-import { mapAuthError } from "@/features/auth/api";
+import { mapAuthError } from "../../api";
 
 interface UseLoginMutationOptions {
   onSuccess?: (data: LoginResponse) => void;

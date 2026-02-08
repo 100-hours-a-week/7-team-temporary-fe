@@ -8,13 +8,26 @@ import { Icon } from "@/shared/ui/icon";
 
 import { useHomePlanner } from "../model/useHomePlanner";
 import { HomeTaskItem } from "./HomeTaskItem";
-import { WeekDateSelector } from "./WeekDateSelector";
-import { WeekHeader } from "./WeekHeader";
-import { WeekdayLabels } from "./WeekdayLabels";
+import { HomeWeekSelector } from "./HomeWeekSelector";
 
 export function HomePlanner() {
   const handlePlannerProfileRender = useCallback<ProfilerOnRenderCallback>(
     (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
+      if (typeof window !== "undefined" && (window as any).__MOLIP_PROFILE_CAPTURE__) {
+        const currentEntries = Array.isArray((window as any).__MOLIP_PROFILE_ENTRIES__)
+          ? (window as any).__MOLIP_PROFILE_ENTRIES__
+          : [];
+        currentEntries.push({
+          id,
+          phase,
+          actualDuration,
+          baseDuration,
+          startTime,
+          commitTime,
+        });
+        (window as any).__MOLIP_PROFILE_ENTRIES__ = currentEntries;
+      }
+
       if (process.env.NODE_ENV !== "development") return;
       console.log(
         `[Profiler:${id}] phase=${phase} actual=${actualDuration.toFixed(2)}ms base=${baseDuration.toFixed(2)}ms start=${startTime.toFixed(2)} commit=${commitTime.toFixed(2)}`,
@@ -49,19 +62,14 @@ export function HomePlanner() {
       onRender={handlePlannerProfileRender}
     >
       <div className="scrollbar-hide mx-0 h-full overflow-y-auto px-5 py-5">
-        <WeekHeader
+        <HomeWeekSelector
           monthIndex={headerMonthIndex}
-          onPrev={() => handleMoveWeek(-7)}
-          onNext={() => handleMoveWeek(7)}
-        />
-
-        <WeekdayLabels />
-
-        <WeekDateSelector
           weekDays={weekDays}
           selectedDate={selectedDate}
           today={today}
-          onSelect={setSelectedDate}
+          onSelectDate={setSelectedDate}
+          onPrevWeek={() => handleMoveWeek(-7)}
+          onNextWeek={() => handleMoveWeek(7)}
           hasPlan={hasPlan}
         />
         <div className="mt-6 flex flex-col gap-3">

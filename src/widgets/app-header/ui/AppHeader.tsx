@@ -1,6 +1,6 @@
 import { IconButton } from "@/shared/ui/button";
 
-import { HeaderFrame } from "@/widgets/app-header/ui/HeaderFrame";
+import { HeaderFrame } from "./HeaderFrame";
 
 interface AppHeaderProps {
   title: string;

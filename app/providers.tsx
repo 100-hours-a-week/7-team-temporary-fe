@@ -4,12 +4,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useEffect, useRef, useState } from "react";
 import { ToastProvider } from "@/shared/ui/toast";
-import { AuthRouteWatcher } from "@/shared/auth/ui/AuthRouteWatcher";
-import { useAuthStore } from "@/shared/auth";
+import { AuthRouteWatcher } from "@/features/auth";
+import { configureAuthHandlers } from "@/shared/auth";
+import { useAuthStore } from "@/entities/user";
 import { registerFcmToken } from "@/shared/firebase/registerFcmToken";
 import { registerServiceWorker } from "@/shared/pwa/registerServiceWorker";
 import { FcmForegroundListener } from "@/shared/firebase/FcmForegroundListener";
-import { useHomePlanStore, useAiArrangeNoticeStore } from "@/features/home";
+import { useAiArrangeNoticeStore } from "@/features/home";
+import { useHomePlanStore } from "@/entities/day-plan";
 import { useUserPreferencesStore } from "@/entities/user";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -24,6 +26,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
         },
       }),
   );
+
+  useEffect(() => {
+    configureAuthHandlers({
+      getAccessToken: () => useAuthStore.getState().accessToken,
+      setAuthenticated: (token) => useAuthStore.getState().setAuthenticated(token),
+      clearAuth: () => useAuthStore.getState().clearAuth(),
+    });
+  }, []);
 
   const accessToken = useAuthStore((state) => state.accessToken);
   const prevAccessTokenRef = useRef<string | undefined>(accessToken);

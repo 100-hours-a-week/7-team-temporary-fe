@@ -2,7 +2,7 @@
  * DayPlan(하루 계획) 내의 단일 일정/작업 아이템 DTO.
  *
  * 백엔드 응답 그대로를 담는 타입이며, 화면에서 쓰기 좋은 형태로는
- * `src/features/home/model/taskModels.ts` / `taskMappers.ts`에서 ViewModel로 변환해 사용한다.
+ * `src/entities/day-plan/model/taskModels.ts` / `taskMappers.ts`에서 ViewModel로 변환해 사용한다.
  */
 export interface DayPlanScheduleItemDto {
   scheduleId: number;

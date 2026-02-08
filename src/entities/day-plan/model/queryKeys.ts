@@ -2,7 +2,7 @@ import { queryKeyFactory } from "@/shared/query";
 
 const baseKeys = queryKeyFactory("home");
 
-export const homeQueryKeys = {
+export const dayPlanQueryKeys = {
   ...baseKeys,
   currentSchedule: () => baseKeys.by("current-schedule"),
   dayPlanSchedule: (date: string, page: number, size: number) =>

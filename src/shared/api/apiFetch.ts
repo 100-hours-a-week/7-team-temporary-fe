@@ -1,5 +1,5 @@
 import { ApiError } from "./error";
-import { useAuthStore } from "@/shared/auth";
+import { clearAuth, getAccessToken } from "@/shared/auth";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -39,7 +39,7 @@ export async function apiFetch<TResponse, TBody = unknown>(
 
   //AToken 존재 시 Authorization 헤더 추가
   if (authRequired) {
-    const accessToken = useAuthStore.getState().accessToken;
+    const accessToken = getAccessToken();
     if (accessToken && !("Authorization" in (mergedHeaders as Record<string, string>))) {
       (mergedHeaders as Record<string, string>).Authorization = `Bearer ${accessToken}`;
     }
@@ -78,7 +78,7 @@ export async function apiFetch<TResponse, TBody = unknown>(
   // HTTP 실패
   if (!res.ok) {
     if (res.status === 401) {
-      useAuthStore.getState().clearAuth();
+      clearAuth();
       const shouldRedirectOnUnauthorized = process.env.NODE_ENV !== "development";
       if (shouldRedirectOnUnauthorized && typeof window !== "undefined") {
         const { pathname } = window.location;

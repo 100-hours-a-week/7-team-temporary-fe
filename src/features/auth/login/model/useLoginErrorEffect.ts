@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { UseFormReturn } from "react-hook-form";
 
-import { AUTH_ERROR_CODE, AuthError } from "@/features/auth/api";
+import { AUTH_ERROR_CODE, AuthError } from "../../api";
 
 import type { LoginFormModel, LoginResponse } from "./types";
 

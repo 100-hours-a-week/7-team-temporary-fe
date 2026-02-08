@@ -25,3 +25,5 @@ export { useUpdateMyProfileImageMutation } from "./useUpdateMyProfileImageMutati
 export { useUpdatePasswordMutation } from "./useUpdatePasswordMutation";
 export { useDeleteMyProfileMutation } from "./useDeleteMyProfileMutation";
 export { useUserPreferencesStore } from "./userPreferences.store";
+export { useAuthStore } from "./auth.store";
+export type { AuthState } from "./auth.store";
