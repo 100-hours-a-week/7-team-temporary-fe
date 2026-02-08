@@ -2,13 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { TodoCartTaskItemModel } from "@/features/home/model/taskModels";
+import type { TodoCartTaskItemModel } from "@/entities/day-plan";
 import type { TaskDurationOption } from "@/shared/validation";
-import {
-  TASK_BASKET_FORM_DEFAULTS,
-  useTaskBasketForm,
-  type TaskBasketFormModel,
-} from "@/features/home/task-basket/model";
+import { TASK_BASKET_FORM_DEFAULTS, useTaskBasketForm, type TaskBasketFormModel } from "../model";
 import { TASK_DURATION_OPTIONS } from "@/shared/validation";
 import type {
   CreateDayPlanScheduleRequestDto,

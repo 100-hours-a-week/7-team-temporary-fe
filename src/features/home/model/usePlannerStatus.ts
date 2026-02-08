@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { TaskItemModel } from "./taskModels";
+import type { TaskItemModel } from "@/entities/day-plan";
 
 interface PlannerStatusMessage {
   text: string;

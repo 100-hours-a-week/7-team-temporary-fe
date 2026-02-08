@@ -3,7 +3,7 @@ import type {
   DayPlanScheduleAssignmentStatus,
   DayPlanScheduleStatus,
   DayPlanScheduleType,
-} from "@/entities/day-plan";
+} from "../api";
 
 /*
  * Home/Planner에서 사용하는 스케줄 응답 타입.

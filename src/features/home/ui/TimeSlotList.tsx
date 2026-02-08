@@ -1,4 +1,4 @@
-import type { TaskItemModel } from "../model/taskModels";
+import type { TaskItemModel } from "@/entities/day-plan";
 import { HomeTaskItem } from "./HomeTaskItem";
 
 interface TimeSlotListProps {

@@ -4,7 +4,7 @@ import type {
   TaskTimeType,
   TodoCartTaskItemModel,
 } from "./taskModels";
-import type { DayPlanScheduleType } from "@/entities/day-plan";
+import type { DayPlanScheduleType } from "../api";
 
 const DEFAULT_ASSIGNED_BY: TaskItemModel["assignedBy"] = "USER";
 

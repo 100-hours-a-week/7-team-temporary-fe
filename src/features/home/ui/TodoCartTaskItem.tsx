@@ -2,8 +2,8 @@ import styled from "@emotion/styled";
 
 import { TaskItemActionRow } from "./TaskItemActionRow";
 
-import type { TaskItemModel, TodoCartTaskItemModel } from "../model/taskModels";
-import { toTaskItemModelFromTodoCart } from "../model/taskMappers";
+import type { TaskItemModel, TodoCartTaskItemModel } from "@/entities/day-plan";
+import { toTaskItemModelFromTodoCart } from "@/entities/day-plan";
 
 export type TodoCartViewMode = "UNASSIGNED" | "ARRANGED";
 
