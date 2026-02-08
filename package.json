@@ -15,7 +15,8 @@
     "build-storybook": "storybook build",
     "test:e2e": "playwright test",
     "test:load:http": "artillery run tests/load/http.yml",
-    "test:load:ui": "artillery run tests/load/ui.yml"
+    "test:load:ui": "artillery run tests/load/ui.yml",
+    "profile:collect": "node scripts/profile-capture-har-profiler.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
