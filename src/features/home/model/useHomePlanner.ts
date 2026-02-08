@@ -5,6 +5,8 @@ import type { TaskItemModel } from "./taskModels";
 import { useHomePlanStore } from "./homePlan.store";
 import { useHomePlannerCalendar } from "./useHomePlannerCalendar";
 import { useHomePlannerQueries } from "./useHomePlannerQueries";
+import { useMergedTasks } from "./useMergedTasks";
+import { usePlannerStatus } from "./usePlannerStatus";
 
 const PAGE_SIZE = 10;
 const formatDateParam = (date: Date) => {
@@ -13,15 +15,6 @@ const formatDateParam = (date: Date) => {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
-
-function formatScheduleLabel(date: Date) {
-  if (Number.isNaN(date.getTime())) return "";
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const labels = ["일", "월", "화", "수", "목", "금", "토"];
-  const weekday = labels[date.getDay()] ?? "";
-  return `${month}.${day} (${weekday}) 일정`;
-}
 
 function getScrollParent(element: HTMLElement | null) {
   if (!element || typeof window === "undefined") return null;
@@ -47,11 +40,6 @@ function getScrollParent(element: HTMLElement | null) {
   return null;
 }
 
-interface PlannerStatusMessage {
-  text: string;
-  className: string;
-}
-
 interface UseHomePlannerResult {
   today: Date;
   weekDays: Date[];
@@ -60,9 +48,9 @@ interface UseHomePlannerResult {
   setSelectedDate: (date: Date | null) => void;
   todayScheduleLabel: string;
   tasks: TaskItemModel[];
-  statusMessage: PlannerStatusMessage | null;
+  statusMessage: ReturnType<typeof usePlannerStatus>["statusMessage"];
   currentTask: TaskItemModel | null;
-  currentTaskStatus: PlannerStatusMessage | null;
+  currentTaskStatus: ReturnType<typeof usePlannerStatus>["currentTaskStatus"];
   isCurrentTaskLoading: boolean;
   handleToggleComplete: (taskId: number) => void;
   handleMoveWeek: (offset: number) => void;
@@ -79,8 +67,6 @@ export function useHomePlanner(): UseHomePlannerResult {
     () => new Map(),
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const [fetchedTasks, setFetchedTasks] = useState<TaskItemModel[]>([]);
-  const [totalPages, setTotalPages] = useState<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const queryDate = useMemo(() => formatDateParam(selectedDate ?? today), [selectedDate, today]);
@@ -103,36 +89,17 @@ export function useHomePlanner(): UseHomePlannerResult {
   });
   const setHomePlan = useHomePlanStore((state) => state.setHomePlan);
 
-  const baseTasks = useMemo(
-    () => data?.content.map((task) => toTaskItemModelFromHomeTask(task)) ?? [],
-    [data],
-  );
-
   useEffect(() => {
     setCurrentPage(1);
-    setFetchedTasks([]);
-    setTotalPages(null);
   }, [queryDate]);
 
-  useEffect(() => {
-    if (!data) return;
-    setTotalPages(data.totalPages);
-    setFetchedTasks((prev) => {
-      const base = currentPage === 1 ? [] : prev;
-      const map = new Map(base.map((task) => [task.taskId, task]));
-      baseTasks.forEach((task) => map.set(task.taskId, task));
-      return Array.from(map.values());
-    });
-  }, [baseTasks, currentPage, data]);
-
-  const tasks = useMemo(
-    () =>
-      fetchedTasks.map((task) => ({
-        ...task,
-        isCompleted: completionOverrides.get(task.taskId) ?? task.isCompleted,
-      })),
-    [completionOverrides, fetchedTasks],
-  );
+  const { baseTasks, tasks, baseCompletionById, hasMore } = useMergedTasks({
+    data,
+    currentPage,
+    pageSize: PAGE_SIZE,
+    overrides: completionOverrides,
+    resetKey: queryDate,
+  });
   const planPresenceByDate = useMemo(() => {
     const map = new Map<string, boolean>();
     weekDays.forEach((day, index) => {
@@ -149,16 +116,6 @@ export function useHomePlanner(): UseHomePlannerResult {
   const hasPlan = useCallback(
     (day: Date) => planPresenceByDate.get(formatDateParam(day)) ?? false,
     [planPresenceByDate],
-  );
-  const statusMessage = isError
-    ? { text: "일정을 불러오지 못했습니다.", className: "text-red-500" }
-    : !isLoading && tasks.length === 0
-      ? { text: "등록된 일정이 없습니다.", className: "text-neutral-500" }
-      : null;
-
-  const baseCompletionById = useMemo(
-    () => new Map(baseTasks.map((task) => [task.taskId, task.isCompleted])),
-    [baseTasks],
   );
   const handleToggleComplete = useCallback(
     (taskId: number) => {
@@ -180,24 +137,22 @@ export function useHomePlanner(): UseHomePlannerResult {
       isCompleted: completionOverrides.get(baseTask.taskId) ?? baseTask.isCompleted,
     };
   }, [completionOverrides, currentScheduleData]);
-  const currentTaskStatus = isCurrentTaskError
-    ? { text: "지금 할 일을 불러오지 못했습니다.", className: "text-red-500" }
-    : !isCurrentTaskLoading && !currentTask
-      ? { text: "지금 할 일이 없습니다.", className: "text-neutral-500" }
-      : null;
-
-  const todayScheduleLabel = useMemo(
-    () => formatScheduleLabel(selectedDate ?? today),
-    [selectedDate, today],
-  );
+  const { statusMessage, currentTaskStatus, todayScheduleLabel } = usePlannerStatus({
+    isError,
+    isLoading,
+    tasks,
+    currentTask,
+    isCurrentTaskLoading,
+    isCurrentTaskError,
+    selectedDate: selectedDate ?? today,
+  });
+  // 상태 메시지/표시 텍스트는 usePlannerStatus에서 파생
 
   useEffect(() => {
     if (data?.dayPlanId) {
       setHomePlan(data.dayPlanId, queryDate);
     }
   }, [data?.dayPlanId, queryDate, setHomePlan]);
-
-  const hasMore = totalPages === null ? baseTasks.length === PAGE_SIZE : currentPage < totalPages;
 
   useEffect(() => {
     if (!loadMoreRef.current) return;
