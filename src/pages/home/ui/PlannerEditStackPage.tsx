@@ -5,7 +5,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
   DragOverlay,
-  useDraggable,
   PointerSensor,
   TouchSensor,
   useSensor,
@@ -14,7 +13,6 @@ import {
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 
 import {
   END_HOUR,
@@ -30,7 +28,6 @@ import {
   type TodoCartTaskItemModel,
   updateDayPlanSchedule,
   useDayPlanScheduleByIdQuery,
-  useDayPlanSchedulesQuery,
   useHomePlanStore,
   type DayPlanScheduleResponseDto,
   type UpdateDayPlanSchedulePatchRequestDto,
@@ -41,10 +38,13 @@ import { Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
 import { ConfirmDialog } from "@/shared/ui";
 import { useToast } from "@/shared/ui/toast";
-import { ExcludedListBottomSheet } from "./ExcludedListBottomSheet";
 import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
 import { TaskBasketStackPage } from "./TaskBasketStackPage";
-import { resetDragState } from "@/widgets/planner-edit";
+import {
+  ExcludedTasksSheet,
+  resetDragState,
+  useExcludedTasksSheetState,
+} from "@/widgets/planner-edit";
 
 type DraggedTask = {
   type: "excluded" | "task";
@@ -97,20 +97,18 @@ export function PlannerEditStackPage() {
       activationConstraint: { delay: 200, tolerance: 5 },
     }),
   );
-  const [isSheetOpen, setIsSheetOpen] = useState(true);
-  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const {
+    isExcludedSheetOpen,
+    setIsExcludedSheetOpen,
+    isExcludedSheetExpanded,
+    setIsExcludedSheetExpanded,
+    openExcludedTasksSheet,
+  } = useExcludedTasksSheetState();
   const scheduleQuery = useDayPlanScheduleByIdQuery({
     dayPlanId: dayPlanId ?? 0,
     page: 1,
     size: 10,
     enabled: Boolean(dayPlanId),
-  });
-  const schedulesQuery = useDayPlanSchedulesQuery({
-    dayPlanId: dayPlanId ?? 0,
-    status: "EXCLUDED",
-    page: 1,
-    size: 10,
-    enabled: Boolean(dayPlanId) && isSheetOpen,
   });
   const { data: myProfile } = useMyProfileQuery();
   const scheduleKeys = useMemo(
@@ -209,23 +207,11 @@ export function PlannerEditStackPage() {
     push(<TaskBasketStackPage />);
   };
 
-  const handleOpenExcludedList = () => {
-    setIsSheetOpen(true);
-    setIsSheetExpanded(false);
-  };
-
-  const excludedTasks = schedulesQuery.data?.content ?? [];
   const isTop = useMemo(() => {
     const topKey = stack[stack.length - 1]?.key ?? null;
     if (!entry?.entryKey) return stack.length === 0;
     return topKey === entry.entryKey;
   }, [entry?.entryKey, stack]);
-
-  useEffect(() => {
-    if (isTop && isSheetOpen) {
-      schedulesQuery.refetch();
-    }
-  }, [isTop, isSheetOpen, schedulesQuery]);
 
   useEffect(() => {
     const prevDepth = prevDepthRef.current;
@@ -641,7 +627,7 @@ export function PlannerEditStackPage() {
             <button
               type="button"
               className="text-ink-900 rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold"
-              onClick={handleOpenExcludedList}
+              onClick={openExcludedTasksSheet}
             >
               제외리스트
             </button>
@@ -714,32 +700,14 @@ export function PlannerEditStackPage() {
           </button>
         </div>
 
-        <ExcludedListBottomSheet
-          open={isSheetOpen}
-          onOpenChange={setIsSheetOpen}
-          expanded={isSheetExpanded}
-          onExpandedChange={setIsSheetExpanded}
-        >
-          {schedulesQuery.isLoading ? (
-            <div className="py-6 text-center text-sm text-neutral-400">
-              제외된 작업을 불러오는 중...
-            </div>
-          ) : null}
-          {schedulesQuery.isError ? (
-            <div className="py-6 text-center text-sm text-neutral-400">
-              제외된 작업을 불러오지 못했습니다.
-            </div>
-          ) : null}
-          {!schedulesQuery.isLoading && !schedulesQuery.isError && excludedTasks.length === 0 ? (
-            <div className="py-6 text-center text-sm text-neutral-400">제외된 작업이 없습니다.</div>
-          ) : null}
-          {excludedTasks.map((task) => (
-            <DraggableExcludedTaskItem
-              key={task.scheduleId}
-              task={task as EditableTaskItemModel}
-            />
-          ))}
-        </ExcludedListBottomSheet>
+        <ExcludedTasksSheet
+          dayPlanId={dayPlanId}
+          isTop={isTop}
+          open={isExcludedSheetOpen}
+          onOpenChange={setIsExcludedSheetOpen}
+          expanded={isExcludedSheetExpanded}
+          onExpandedChange={setIsExcludedSheetExpanded}
+        />
         <DragOverlay>
           {activeDrag ? (
             <div className="w-[240px]">
@@ -792,38 +760,6 @@ export function PlannerEditStackPage() {
         />
       </>
     </DndContext>
-  );
-}
-
-function DraggableExcludedTaskItem({ task }: { task: EditableTaskItemModel }) {
-  const id = `excluded-${task.scheduleId}`;
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id,
-    data: { id, task, type: "excluded" },
-  });
-  const baseTransform = CSS.Translate.toString(transform);
-  const style = {
-    transform: isDragging
-      ? `${baseTransform ? `${baseTransform} ` : ""}scale(1.03)`
-      : baseTransform,
-    opacity: isDragging ? 0.5 : 1,
-    boxShadow: isDragging ? "0 18px 36px rgba(15, 23, 42, 0.28)" : "none",
-    touchAction: "none",
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
-      data-testid={`excluded-task-${task.scheduleId}`}
-    >
-      <ExcludedTaskItem
-        task={task}
-        onRestore={() => undefined}
-      />
-    </div>
   );
 }
 
