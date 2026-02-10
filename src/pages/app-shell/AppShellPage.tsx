@@ -8,6 +8,7 @@ import { StackPageRoot, StackPageScope, useStackPage } from "@/widgets/stack";
 import { HomePage } from "@/pages/home";
 import { ProfilePage } from "@/pages/profile";
 import { NotificationStackPage } from "@/pages/notification";
+import { RetroPage } from "@/pages/retro";
 
 interface AppShellHeaderProps {
   onReportClick?: () => void;
@@ -25,6 +26,16 @@ function AppShellHeader({ onReportClick }: AppShellHeaderProps) {
     return (
       <AppHeader
         title="홈"
+        onNotificationClick={handleNotificationClick}
+        onReportClick={onReportClick}
+      />
+    );
+  }
+
+  if (activeTab === "retro") {
+    return (
+      <AppHeader
+        title="회고"
         onNotificationClick={handleNotificationClick}
         onReportClick={onReportClick}
       />
@@ -65,6 +76,12 @@ export function AppShellPage() {
                 className="h-full"
               >
                 <HomePage />
+              </TabScope>
+              <TabScope
+                tab="retro"
+                className="h-full"
+              >
+                <RetroPage />
               </TabScope>
               <TabScope
                 tab="profile"
