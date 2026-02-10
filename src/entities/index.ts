@@ -10,3 +10,4 @@ export type {
   UserProfileImageKey,
 } from "./user";
 export * from "./issue";
+export * from "./retro";
