@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 
 import {
@@ -16,11 +16,9 @@ import {
   dayPlanQueryKeys,
   type EditableTaskItemModel,
   type TodoCartTaskItemModel,
-  updateDayPlanSchedule,
   useDayPlanScheduleByIdQuery,
   useHomePlanStore,
   type DayPlanScheduleResponseDto,
-  type UpdateDayPlanSchedulePatchRequestDto,
 } from "@/entities/day-plan";
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
 import { Icon } from "@/shared/ui/icon";
@@ -33,10 +31,15 @@ import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
 import { TaskBasketStackPage } from "./TaskBasketStackPage";
 import {
   ExcludedTasksSheet,
+  capturePlannerEditScrollPosition,
+  removeScheduleCache,
+  restorePlannerEditScrollPosition,
   type PlannerEditInsertPreview,
   type PlannerEditPreviewSlot,
   usePlannerEditDnD,
   useExcludedTasksSheetState,
+  usePlannerEditOptimisticUpdate,
+  updateScheduleCache,
 } from "@/widgets/planner-edit";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
@@ -140,10 +143,6 @@ export function PlannerEditStackPage() {
   }, [setHeaderContent]);
 
   useEffect(() => {
-    scrollParentRef.current = getScrollParent(pageRef.current);
-  }, []);
-
-  useEffect(() => {
     if (!dayPlanId) return;
     if (scheduleQuery.isFetching) {
       console.log("[PlannerEditStackPage] 일정 조회 요청", {
@@ -187,83 +186,25 @@ export function PlannerEditStackPage() {
   }, [isTop, queryClient, scheduleKeys, stack.length]);
 
   const captureScrollPosition = useCallback(() => {
-    if (!scrollParentRef.current) {
-      scrollParentRef.current = getScrollParent(pageRef.current);
-    }
-    const element = scrollParentRef.current;
-    if (!element) return;
-    lastScrollTopRef.current = element.scrollTop;
-  }, []);
-
-  const restoreScrollPosition = useCallback(() => {
-    if (!scrollParentRef.current) {
-      scrollParentRef.current = getScrollParent(pageRef.current);
-    }
-    const element = scrollParentRef.current;
-    if (!element) return;
-    const scrollTop = lastScrollTopRef.current;
-    requestAnimationFrame(() => {
-      element.scrollTop = scrollTop;
+    capturePlannerEditScrollPosition({
+      pageRef,
+      scrollParentRef,
+      lastScrollTopRef,
     });
   }, []);
 
-  const updateScheduleMutation = useMutation({
-    mutationFn: async (variables: {
-      scheduleId: number;
-      payload: UpdateDayPlanSchedulePatchRequestDto;
-      task: EditableTaskItemModel;
-    }) => updateDayPlanSchedule(variables.scheduleId, variables.payload),
-    onMutate: async (variables) => {
-      captureScrollPosition();
-      if (!dayPlanId || scheduleKeys.length === 0) return undefined;
-      const excludedKey = dayPlanQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
-      const prevSchedules = scheduleKeys.map((key) => [
-        key,
-        queryClient.getQueryData<DayPlanScheduleResponseDto>(key),
-      ]) as Array<readonly [readonly unknown[], DayPlanScheduleResponseDto | undefined]>;
-      const prevExcluded = queryClient.getQueryData<DayPlanScheduleResponseDto>(excludedKey);
-
-      scheduleKeys.forEach((key) => {
-        queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
-          updateScheduleCache(
-            prev,
-            variables.scheduleId,
-            variables.payload.startAt,
-            variables.payload.endAt,
-            variables.task,
-          ),
-        );
-      });
-      queryClient.setQueryData(excludedKey, (prev: DayPlanScheduleResponseDto | undefined) =>
-        removeScheduleCache(prev, variables.scheduleId),
-      );
-
-      requestAnimationFrame(() => {
-        restoreScrollPosition();
-      });
-
-      return { prevSchedules, prevExcluded };
-    },
-    onError: (_error, _variables, context) => {
-      if (!dayPlanId || !context) return;
-      const excludedKey = dayPlanQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
-      if (context.prevSchedules) {
-        context.prevSchedules.forEach(([key, prev]) => {
-          queryClient.setQueryData(key, prev);
-        });
-      }
-      if (context.prevExcluded) {
-        queryClient.setQueryData(excludedKey, context.prevExcluded);
-      }
-      requestAnimationFrame(() => {
-        restoreScrollPosition();
-      });
-    },
-    onSuccess: () => {
-      requestAnimationFrame(() => {
-        restoreScrollPosition();
-      });
-    },
+  const restoreScrollPosition = useCallback(() => {
+    restorePlannerEditScrollPosition({
+      pageRef,
+      scrollParentRef,
+      lastScrollTopRef,
+    });
+  }, []);
+  const updateScheduleMutation = usePlannerEditOptimisticUpdate({
+    dayPlanId,
+    scheduleKeys,
+    captureScrollPosition,
+    restoreScrollPosition,
   });
 
   const hasResizeConflict = useCallback(
@@ -647,82 +588,6 @@ function formatFocusTimeLabel(focusTimeZone?: UserFocusTimeZone | null) {
     default:
       return null;
   }
-}
-
-function updateScheduleCache(
-  prev: DayPlanScheduleResponseDto | undefined,
-  scheduleId: number,
-  startAt: string,
-  endAt: string,
-  task: EditableTaskItemModel,
-) {
-  if (!prev) return prev;
-  const exists = prev.content.some((item) => item.scheduleId === scheduleId);
-  const nextContent = exists
-    ? prev.content.map((item) =>
-        item.scheduleId === scheduleId
-          ? {
-              ...item,
-              title: task.title,
-              type: task.type ?? item.type,
-              startAt,
-              endAt,
-              estimatedTimeRange: task.estimatedTimeRange ?? item.estimatedTimeRange,
-              focusLevel: task.focusLevel ?? item.focusLevel,
-              isUrgent: task.isUrgent ?? item.isUrgent,
-              assignedBy: task.assignedBy ?? item.assignedBy,
-              status: task.status ?? item.status,
-              assignmentStatus: task.assignmentStatus ?? item.assignmentStatus,
-            }
-          : item,
-      )
-    : [
-        ...prev.content,
-        {
-          scheduleId,
-          parentTitle: null,
-          title: task.title,
-          status: task.status,
-          type: task.type,
-          assignedBy: task.assignedBy,
-          assignmentStatus: task.assignmentStatus,
-          startAt,
-          endAt,
-          estimatedTimeRange: task.estimatedTimeRange ?? null,
-          focusLevel: task.focusLevel ?? null,
-          isUrgent: task.isUrgent ?? false,
-        },
-      ];
-  return {
-    ...prev,
-    content: nextContent,
-  };
-}
-
-function removeScheduleCache(prev: DayPlanScheduleResponseDto | undefined, scheduleId: number) {
-  if (!prev) return prev;
-  return {
-    ...prev,
-    content: prev.content.filter((item) => item.scheduleId !== scheduleId),
-  };
-}
-
-function getScrollParent(element: HTMLElement | null) {
-  if (!element || typeof window === "undefined") return null;
-  let current: HTMLElement | null = element.parentElement;
-  while (current) {
-    const styles = window.getComputedStyle(current);
-    if (
-      styles.overflowY === "auto" ||
-      styles.overflowY === "scroll" ||
-      styles.overflow === "auto" ||
-      styles.overflow === "scroll"
-    ) {
-      return current;
-    }
-    current = current.parentElement;
-  }
-  return null;
 }
 
 function getPreviewTimeRange(
