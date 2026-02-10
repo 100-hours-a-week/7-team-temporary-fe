@@ -29,6 +29,8 @@ import User_outline from "./assets/User-outline-icon.svg";
 import Todo_Check from "./assets/todo-check-icon.svg";
 import Todo_Unchecked from "./assets/todo-unCheck-icon.svg";
 import FireIcon from "./assets/Fire-icon.svg";
+import Retro from "./assets/Retro.svg";
+import Retro_filled from "./assets/Retro-fill.svg";
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -62,6 +64,8 @@ export const IconMap = {
   todo_check: Todo_Check,
   todo_unchecked: Todo_Unchecked,
   fireIcon: FireIcon,
+  retro: Retro,
+  retro_filled: Retro_filled,
 } as const satisfies Record<string, SvgComponent>;
 
 export type IconName = keyof typeof IconMap;

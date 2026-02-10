@@ -1,1 +1,1 @@
-export type AppTab = "home" | "profile";
+export type AppTab = "home" | "retro" | "profile";
