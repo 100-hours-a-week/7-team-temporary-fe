@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 
 import { RETRO_VISIBILITY, RETRO_VISIBILITY_LABEL, type RetroVisibility } from "@/entities/retro";
+import { uploadImageAndResolveViewUrl } from "@/shared/api";
 import { ActionButton, FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { HorizontalImageAlbum } from "@/shared/ui/image";
 import { useToast } from "@/shared/ui/toast";
@@ -17,7 +18,7 @@ interface RetroWriteFormProps {
 export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
   const { showToast } = useToast();
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const objectUrlsRef = useRef<string[]>([]);
+  const [isImageUploading, setIsImageUploading] = useState(false);
   const createRetroMutation = useRetroCreateMutation({
     onSuccess: () => {
       showToast("회고가 생성되었습니다.", "success");
@@ -39,24 +40,39 @@ export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
   const hasPayload =
     content.trim().length > 0 || reflectionImageIds.length > 0 || previewUrls.length > 0;
 
-  useEffect(() => {
-    return () => {
-      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
-      objectUrlsRef.current = [];
-    };
-  }, []);
-
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     if (files.length === 0) return;
 
-    const nextPreviewUrls = files.map((file) => URL.createObjectURL(file));
-    objectUrlsRef.current.push(...nextPreviewUrls);
-    setPreviewUrls((prev) => [...prev, ...nextPreviewUrls]);
+    setIsImageUploading(true);
 
-    // TODO: 이미지 업로드 API 연동 시 업로드 완료된 imageId 목록을 setValue로 반영
-    setValue("reflectionImageIds", [], { shouldValidate: true, shouldDirty: true });
-    event.target.value = "";
+    try {
+      const uploadResults = await Promise.allSettled(
+        files.map((file) => uploadImageAndResolveViewUrl(file, "REFLECTIONS")),
+      );
+
+      const uploaded = uploadResults
+        .filter(
+          (result): result is PromiseFulfilledResult<{ imageKey: string; viewUrl: string }> =>
+            result.status === "fulfilled",
+        )
+        .map((result) => result.value);
+
+      if (uploaded.length > 0) {
+        setPreviewUrls((prev) => [...prev, ...uploaded.map((item) => item.viewUrl)]);
+      }
+
+      // TODO: 이미지 업로드 응답 스펙 확정 후 imageKey -> reflectionImageId 매핑 반영
+      setValue("reflectionImageIds", [], { shouldValidate: true, shouldDirty: true });
+
+      const failedCount = uploadResults.length - uploaded.length;
+      if (failedCount > 0) {
+        showToast(`이미지 ${failedCount}개 업로드에 실패했습니다.`, "error");
+      }
+    } finally {
+      setIsImageUploading(false);
+      event.target.value = "";
+    }
   };
 
   return (
@@ -79,11 +95,12 @@ export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
               type="file"
               accept="image/*"
               multiple
+              disabled={isImageUploading}
               className="sr-only"
               onChange={handleImageChange}
             />
             <span className="absolute inset-0 flex items-center justify-center font-semibold text-black">
-              사진 추가
+              {isImageUploading ? "업로드 중..." : "사진 추가"}
             </span>
           </label>
         </div>
@@ -120,7 +137,7 @@ export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
         <PrimaryButton
           type="button"
           onClick={() => void submitForm()}
-          disabled={!hasPayload || !canSubmit || createRetroMutation.isPending}
+          disabled={!hasPayload || !canSubmit || isImageUploading || createRetroMutation.isPending}
         >
           {createRetroMutation.isPending ? "업로드 중..." : "업로드"}
         </PrimaryButton>
