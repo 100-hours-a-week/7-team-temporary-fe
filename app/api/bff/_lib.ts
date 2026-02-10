@@ -26,7 +26,72 @@ const RESPONSE_HOP_BY_HOP_HEADERS = new Set([
 
 type HeadersWithGetSetCookie = Headers & {
   getSetCookie?: () => string[];
+  raw?: () => Record<string, string[]>;
 };
+
+function getHostFromUrl(url: string) {
+  try {
+    return new URL(url).host;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeSetCookieForClient(cookie: string, req: NextRequest) {
+  let normalized = cookie;
+  const upstreamBase = process.env.API_PROXY_TARGET?.trim();
+  const upstreamHost = upstreamBase ? getHostFromUrl(upstreamBase) : null;
+  const clientHost = req.nextUrl.host;
+
+  // Upstream 도메인과 클라이언트 도메인이 다르면 Domain 속성은 브라우저에서 거부될 수 있다.
+  if (upstreamHost && upstreamHost !== clientHost) {
+    normalized = normalized.replace(/;\s*Domain=[^;]*/gi, "");
+  }
+
+  // localhost(http) 개발환경에서는 Secure + SameSite=None 쿠키가 저장 거부될 수 있어 보정한다.
+  const isLocalHttp =
+    req.nextUrl.protocol === "http:" &&
+    (req.nextUrl.hostname === "localhost" || req.nextUrl.hostname === "127.0.0.1");
+
+  if (isLocalHttp) {
+    normalized = normalized.replace(/;\s*Secure/gi, "");
+    normalized = normalized.replace(/;\s*SameSite=None/gi, "; SameSite=Lax");
+  }
+
+  return normalized;
+}
+
+function splitCombinedSetCookieHeader(headerValue: string) {
+  const cookies: string[] = [];
+  let tokenStart = 0;
+  let inExpires = false;
+
+  for (let i = 0; i < headerValue.length; i += 1) {
+    const remaining = headerValue.slice(i).toLowerCase();
+
+    if (!inExpires && remaining.startsWith("expires=")) {
+      inExpires = true;
+      continue;
+    }
+
+    const ch = headerValue[i];
+
+    if (inExpires && ch === ";") {
+      inExpires = false;
+      continue;
+    }
+
+    if (!inExpires && ch === ",") {
+      const part = headerValue.slice(tokenStart, i).trim();
+      if (part) cookies.push(part);
+      tokenStart = i + 1;
+    }
+  }
+
+  const tail = headerValue.slice(tokenStart).trim();
+  if (tail) cookies.push(tail);
+  return cookies;
+}
 
 function ensureTrailingSlash(url: string) {
   return url.endsWith("/") ? url : `${url}/`;
@@ -72,7 +137,7 @@ export function buildUpstreamRequestHeaders(source: Headers) {
  * hop-by-hop 헤더는 제거하고, Set-Cookie는 단일/복수 케이스를 분기해 append 하여
  * 리프레시 토큰 쿠키가 손실되지 않도록 보존한다.
  */
-export function buildClientResponseHeaders(source: Headers) {
+export function buildClientResponseHeaders(source: Headers, req: NextRequest) {
   const headers = new Headers();
   const sourceHeaders = source as HeadersWithGetSetCookie;
 
@@ -84,17 +149,28 @@ export function buildClientResponseHeaders(source: Headers) {
     headers.set(key, value);
   });
 
-  const setCookies =
+  const setCookiesFromGetter =
     typeof sourceHeaders.getSetCookie === "function" ? sourceHeaders.getSetCookie() : [];
 
+  const setCookiesFromRaw =
+    setCookiesFromGetter.length === 0 && typeof sourceHeaders.raw === "function"
+      ? (sourceHeaders.raw()?.["set-cookie"] ?? [])
+      : [];
+
+  const setCookies = setCookiesFromGetter.length > 0 ? setCookiesFromGetter : setCookiesFromRaw;
+
   if (setCookies.length > 0) {
-    setCookies.forEach((cookie) => headers.append("set-cookie", cookie));
+    setCookies.forEach((cookie) =>
+      headers.append("set-cookie", normalizeSetCookieForClient(cookie, req)),
+    );
     return headers;
   }
 
   const singleCookie = source.get("set-cookie");
   if (singleCookie) {
-    headers.append("set-cookie", singleCookie);
+    splitCombinedSetCookieHeader(singleCookie).forEach((cookie) =>
+      headers.append("set-cookie", normalizeSetCookieForClient(cookie, req)),
+    );
   }
 
   return headers;
