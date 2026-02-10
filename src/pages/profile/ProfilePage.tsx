@@ -2,7 +2,6 @@
 
 import type { UseFormRegisterReturn } from "react-hook-form";
 import { useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 
 import { FormField, ProfileImageKeyInput } from "@/shared/form/ui";
 import { useStackPage } from "@/widgets/stack";
@@ -11,13 +10,11 @@ import { useProfileImagePresign } from "@/features/image";
 import { ActionButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { AuthService } from "@/shared/auth";
-import { ApiError } from "@/shared/api";
 
 import { MyInfoStackPage } from "./MyInfoStackPage";
 
 export function ProfilePage() {
   const { push } = useStackPage();
-  const router = useRouter();
   const { data: myProfile, isLoading: isProfileLoading } = useMyProfileQuery();
   const { handleFileSelect, previewUrl, imageKey, isUploading, loadImageViewUrl } =
     useProfileImagePresign();
@@ -76,7 +73,6 @@ export function ProfilePage() {
 
   const handleLogout = async () => {
     await AuthService.logout();
-    // router.replace("/login");
   };
 
   const resolvedPreviewUrl = previewUrl ?? myProfile?.profileImageUrl ?? null;
