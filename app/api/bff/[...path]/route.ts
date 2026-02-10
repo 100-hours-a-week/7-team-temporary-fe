@@ -11,8 +11,36 @@ type RouteContext = {
   }>;
 };
 
+type HeadersWithSetCookieIntrospection = Headers & {
+  getSetCookie?: () => string[];
+  raw?: () => Record<string, string[]>;
+};
+
 function canHaveBody(method: string) {
   return method !== "GET" && method !== "HEAD";
+}
+
+function getSetCookieValues(headers: Headers) {
+  const introspectable = headers as HeadersWithSetCookieIntrospection;
+
+  if (typeof introspectable.getSetCookie === "function") {
+    return introspectable.getSetCookie();
+  }
+
+  if (typeof introspectable.raw === "function") {
+    return introspectable.raw()?.["set-cookie"] ?? [];
+  }
+
+  const single = headers.get("set-cookie");
+  return single ? [single] : [];
+}
+
+function getCookieName(cookie: string) {
+  return cookie.split("=")[0]?.trim();
+}
+
+function isRefreshTokenRoute(path: string[], method: string) {
+  return method === "PUT" && path.join("/") === "token";
 }
 
 async function proxy(req: NextRequest, path: string[]) {
@@ -28,9 +56,27 @@ async function proxy(req: NextRequest, path: string[]) {
       signal: req.signal,
     });
 
+    const clientHeaders = buildClientResponseHeaders(upstreamResponse.headers, req);
+
+    if (isRefreshTokenRoute(path, req.method)) {
+      const responseSetCookies = getSetCookieValues(clientHeaders);
+      const responseCookieNames = [
+        ...new Set(responseSetCookies.map(getCookieName).filter(Boolean)),
+      ];
+
+      console.info("[bff] refresh exchange", {
+        status: upstreamResponse.status,
+        requestHasRefreshToken: (req.headers.get("cookie") ?? "").includes("refreshToken="),
+        responseSetCookieCount: responseSetCookies.length,
+        responseSetCookieNames: responseCookieNames,
+        upstreamSetCookiePresent: Boolean(upstreamResponse.headers.get("set-cookie")),
+        upstreamUrl,
+      });
+    }
+
     return new NextResponse(upstreamResponse.body, {
       status: upstreamResponse.status,
-      headers: buildClientResponseHeaders(upstreamResponse.headers),
+      headers: clientHeaders,
     });
   } catch (error) {
     console.error("[bff] upstream request failed", {

@@ -1,5 +1,5 @@
 import { ApiError, apiFetch, Endpoint } from "@/shared/api";
-import { clearAuth, getAccessToken, setAuthenticated } from "./auth.handlers";
+import { clearAuth, setAuthenticated } from "./auth.handlers";
 
 let refreshPromise: Promise<string> | null = null;
 
@@ -12,37 +12,39 @@ function isUnauthorizedError(error: unknown) {
 }
 
 export const AuthService = {
-  async refresh(accessTokenSnapshot?: string) {
-    try {
-      console.log("[AuthService] refresh start");
-      const accessToken = accessTokenSnapshot ?? getAccessToken();
-      const res = await apiFetch<{ accessToken: string }>(Endpoint.TOKEN.REFRESH, {
-        method: "PUT",
-        credentials: "include",
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      });
-
-      setAuthenticated(res.accessToken);
-      console.log("[AuthService] refresh success");
-      return res.accessToken;
-    } catch (e) {
-      console.warn("[AuthService] refresh failed", e);
-      clearAuth();
-      throw e;
-    }
-  },
-
-  async ensureRefreshed(accessTokenSnapshot?: string) {
+  async refresh() {
     if (!refreshPromise) {
-      refreshPromise = AuthService.refresh(accessTokenSnapshot).finally(() => {
-        refreshPromise = null;
-      });
+      refreshPromise = (async () => {
+        try {
+          console.log("[AuthService] refresh start");
+          const res = await apiFetch<{ accessToken: string }>(Endpoint.TOKEN.REFRESH, {
+            method: "PUT",
+            credentials: "include",
+          });
+
+          setAuthenticated(res.accessToken);
+          console.log("[AuthService] refresh success");
+          return res.accessToken;
+        } catch (e) {
+          console.warn("[AuthService] refresh failed", e);
+          clearAuth();
+          throw e;
+        } finally {
+          refreshPromise = null;
+        }
+      })();
+    } else {
+      console.log("[AuthService] refresh join in-flight request");
     }
+
     return refreshPromise;
   },
 
+  async ensureRefreshed() {
+    return AuthService.refresh();
+  },
+
   async refreshAndRetry<T>(request: () => Promise<T>) {
-    const accessTokenSnapshot = getAccessToken();
     try {
       return await request();
     } catch (error) {
@@ -51,7 +53,7 @@ export const AuthService = {
       }
 
       console.log("[AuthService] 401 detected, try refresh");
-      await AuthService.ensureRefreshed(accessTokenSnapshot);
+      await AuthService.ensureRefreshed();
 
       try {
         console.log("[AuthService] retry after refresh");

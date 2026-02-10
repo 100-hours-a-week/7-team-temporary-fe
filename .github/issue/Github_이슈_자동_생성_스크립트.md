@@ -144,3 +144,18 @@ scripts/create-issue.sh \
 
 - 기본 assignee는 `happy7yong`입니다. (`--assignee`로 덮어쓰기 가능)
 - 기본 required label은 `FE`입니다. (`--required-label`로 덮어쓰기 가능)
+
+## 이슈 Close DoD 정책
+
+- 원칙: 구현/문서 산출물이 포함된 PR이 `develop`(또는 `main`/`release/*`)에 머지된 뒤 이슈를 닫는다.
+- close 코멘트에는 최소 아래를 포함한다.
+  - 머지된 PR 링크
+  - 증빙 위키/문서 링크
+  - 잔여 리스크 또는 후속 액션(있으면)
+
+### Epic close 기준
+
+- 하위 Epic/Task 이슈가 모두 `CLOSED` 상태다.
+- Epic DoD 체크리스트가 모두 완료(`- [x]`)되었다.
+- Epic 범위 산출물이 연결된 PR이 `develop`(또는 배포 브랜치)에 머지되었다.
+- 최종 증빙 링크(아키텍처/운영/이슈 매핑)가 Epic 본문 또는 코멘트에 정리되었다.
