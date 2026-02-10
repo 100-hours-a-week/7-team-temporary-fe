@@ -2,7 +2,7 @@
 
 ## 개요
 
-`scripts/create-issues.sh`는 템플릿(md) 파일을 읽어 에픽/서브이슈를 대량 생성하고, 라벨/이슈 타입/마일스톤/담당자/Projects v2까지 한 번에 설정하는 도구입니다. 템플릿은 `.github/issue/` 아래에 두며, 실행 후 템플릿은 `.github/issue/done/`으로 이동합니다.
+`scripts/create-issue.sh`는 템플릿(md) 파일을 읽어 에픽/서브이슈를 대량 생성하고, 라벨/이슈 타입/마일스톤/담당자/Projects v2까지 한 번에 설정하는 도구입니다. 템플릿은 `.github/issue/` 아래에 두며, 실행 후 템플릿은 `.github/issue/done/`으로 이동합니다.
 
 ## 템플릿 작성 규칙
 
@@ -12,10 +12,10 @@
 - 파일 구조 예시
 
   ```md
-  # [BE] 어드민 페이지 로그/모니터링 개선 # 첫 줄: 제목
+  # [FE] Thin BFF 쿠키/헤더 전달 규칙 구현 # 첫 줄: 제목
 
   IssueType: TASK # 옵션: BUG | FEATURE | TASK (대소문자 무관)
-  Labels: BE, 가시성, 안정성 # 옵션, 쉼표 구분
+  Labels: track:thin-bff, area:cookie-forwarding # 최대 2개(track + area)
 
   ## 배경
 
@@ -26,6 +26,17 @@
   - 참고용 기본 양식: `.github/issue/_templates/BUG.md`, `.github/issue/_templates/FEATURE.md`, `.github/issue/_templates/TASK.md`
 
 - 본문에서 `IssueType:`/`Labels:` 줄은 스크립트가 메타로만 쓰고 본문에는 넣지 않습니다.
+
+## 라벨 기본 규칙 (기본값)
+
+- `FE` 라벨은 모든 이슈에 자동으로 추가됩니다.
+- 라벨은 **최대 3개**만 사용합니다.
+- 라벨 축은 `FE + track + area`를 권장합니다.
+  - `track:*` : 프로젝트/스트림 구분 (예: `track:thin-bff`)
+  - `area:*` : 기능/영역 구분 (예: `area:auth-proxy`)
+- `type` 정보(`Epic`, `Task`, `Bug`)는 라벨이 아닌 `IssueType`으로 관리합니다.
+- 템플릿의 `Labels:`가 라벨 기본값의 단일 소스입니다.
+  - 예: `Labels: track:thin-bff, area:cookie-forwarding` (`FE`는 자동 추가)
 
 ## 실행 전에 준비
 
@@ -38,7 +49,7 @@
 ## 주요 옵션
 
 ```bash
-scripts/create-issues.sh [options]
+scripts/create-issue.sh [options]
 ```
 
 ### 옵션(필드) 상세 설명
@@ -51,20 +62,22 @@ scripts/create-issues.sh [options]
   - 업데이트 대상: 본문(`body`), 라벨(추가), 마일스톤, 담당자(추가), Issue Type(가능할 때), Projects v2 필드(가능할 때).
   - 주의: 라벨은 기본적으로 “추가”만 합니다(기존 라벨을 제거하지 않음).
 - `--assignee LOGIN`
-  - 이슈 담당자를 지정합니다. 예: `--assignee ImGdevel`
-  - 미지정이면 할당 동작을 하지 않습니다(기본값 강제 없음).
+  - 이슈 담당자를 지정합니다. 예: `--assignee happy7yong`
+  - 미지정 시 기본값은 `happy7yong`입니다.
+- `--required-label LABEL`
+  - 모든 이슈에 강제 추가할 라벨입니다.
+  - 미지정 시 기본값은 `FE`입니다.
 
-#### 라벨 관련
+#### 라벨 관련 (선택)
 
 - `--epic-label LABEL`
-  - 에픽 이슈에 공통으로 추가할 라벨 1개입니다. 예: `EPIC`
-  - 템플릿의 `Labels:`와 함께 합쳐져 적용됩니다.
+  - 에픽 이슈에 공통으로 추가할 라벨 1개입니다. 기본 운영에서는 비권장입니다.
 - `--task-label LABEL`
-  - 서브이슈(태스크)에 공통으로 추가할 라벨 1개입니다. 예: `TASK`
-  - 템플릿의 `Labels:`와 함께 합쳐져 적용됩니다.
+  - 서브이슈(태스크)에 공통으로 추가할 라벨 1개입니다. 기본 운영에서는 비권장입니다.
 - `--area-label LABEL`
-  - 모든 이슈(에픽/태스크)에 공통으로 추가할 “영역(Area) 라벨” 1개입니다. 예: `BE`, `FE`
-  - 템플릿에 매번 `Labels: BE`를 적지 않고도 일괄 적용하고 싶을 때 사용합니다.
+  - 모든 이슈에 공통 라벨을 추가합니다. 기본 운영에서는 비권장입니다.
+
+> 권장: 공통 라벨 옵션을 쓰지 말고, 템플릿의 `Labels:`에 `track + area`를 명시하세요.
 
 #### 마일스톤 관련
 
@@ -115,10 +128,7 @@ scripts/create-issues.sh [options]
 ## 예시 실행
 
 ```bash
-scripts/create-issues.sh \
-  --area-label BE \
-  --task-label TASK \
-  --epic-label EPIC \
+scripts/create-issue.sh \
   --milestone V2 \
   --project-url https://github.com/orgs/100-hours-a-week/projects/304 \
   --update-existing
@@ -132,4 +142,5 @@ scripts/create-issues.sh \
 
 ## 기본값 정책
 
-- 스크립트는 기본값을 강제하지 않습니다. (프로젝트/마일스톤/라벨/담당자/필드는 템플릿 메타 또는 CLI 옵션으로 지정)
+- 기본 assignee는 `happy7yong`입니다. (`--assignee`로 덮어쓰기 가능)
+- 기본 required label은 `FE`입니다. (`--required-label`로 덮어쓰기 가능)
