@@ -4,8 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useEffect, useRef, useState } from "react";
 import { ToastProvider } from "@/shared/ui/toast";
+import { ApiError } from "@/shared/api";
 import { AuthRouteWatcher } from "@/features/auth";
-import { configureAuthHandlers } from "@/shared/auth";
+import { AuthService, configureAuthHandlers } from "@/shared/auth";
 import { useAuthStore } from "@/entities/user";
 import { registerFcmToken } from "@/shared/firebase/registerFcmToken";
 import { registerServiceWorker } from "@/shared/pwa/registerServiceWorker";
@@ -36,11 +37,36 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   const accessToken = useAuthStore((state) => state.accessToken);
+  const setAuthChecking = useAuthStore((state) => state.setAuthChecking);
   const prevAccessTokenRef = useRef<string | undefined>(accessToken);
 
   useEffect(() => {
     registerServiceWorker();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrapAuth = async () => {
+      try {
+        await AuthService.refresh();
+      } catch (error) {
+        if (!(error instanceof ApiError && error.httpStatus === 401)) {
+          console.warn("[AuthBootstrap] refresh skipped or failed", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthChecking(false);
+        }
+      }
+    };
+
+    void bootstrapAuth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setAuthChecking]);
 
   useEffect(() => {
     const prevAccessToken = prevAccessTokenRef.current;

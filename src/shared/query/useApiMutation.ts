@@ -1,7 +1,7 @@
-import { ApiError } from "@/shared/api";
 import { apiFetch } from "@/shared/api";
 import { AuthService } from "@/shared/auth";
 import { mapCommonError } from "@/shared/api/error/common";
+import type { ApiError } from "@/shared/api";
 
 interface UseApiMutationProps<TForm, TDto, TResult = void> {
   url: string | ((form: TForm) => string);
@@ -30,14 +30,15 @@ export function useApiMutation<TForm, TDto, TResult = void>({
   method,
   dtoFn,
   authRequired = false,
-  refreshOnUnauthorized = false,
+  refreshOnUnauthorized,
   onSuccess,
-  onError: handleError,
+  onError: _onError,
   invalidateKeys = [],
   errorMapper,
   credentials,
 }: UseApiMutationProps<TForm, TDto, TResult>) {
   const queryClient = useQueryClient();
+  const shouldRefreshOnUnauthorized = refreshOnUnauthorized ?? authRequired;
 
   return useMutation({
     mutationFn: async (form: TForm) => {
@@ -51,7 +52,7 @@ export function useApiMutation<TForm, TDto, TResult = void>({
             credentials,
             authRequired,
           });
-        if (refreshOnUnauthorized) {
+        if (shouldRefreshOnUnauthorized) {
           return await AuthService.refreshAndRetry(execute);
         }
         return await execute();

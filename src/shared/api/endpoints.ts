@@ -1,4 +1,7 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+const API_BASE_URL = (
+  configuredApiBaseUrl && configuredApiBaseUrl.length > 0 ? configuredApiBaseUrl : "/api/bff"
+).replace(/\/$/, "");
 
 /**
  * base url + endpoint path 결합 유틸

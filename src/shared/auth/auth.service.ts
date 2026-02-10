@@ -1,12 +1,25 @@
 import { ApiError, apiFetch, Endpoint } from "@/shared/api";
-import { clearAuth, setAuthenticated } from "./auth.handlers";
+import { clearAuth, getAccessToken, setAuthenticated } from "./auth.handlers";
+
+let refreshPromise: Promise<string> | null = null;
+
+function isUnauthorizedError(error: unknown) {
+  if (error instanceof ApiError) return error.httpStatus === 401;
+  if (typeof error === "object" && error !== null && "httpStatus" in error) {
+    return (error as ApiError).httpStatus === 401;
+  }
+  return false;
+}
 
 export const AuthService = {
-  async refresh() {
+  async refresh(accessTokenSnapshot?: string) {
     try {
       console.log("[AuthService] refresh start");
+      const accessToken = accessTokenSnapshot ?? getAccessToken();
       const res = await apiFetch<{ accessToken: string }>(Endpoint.TOKEN.REFRESH, {
         method: "PUT",
+        credentials: "include",
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
 
       setAuthenticated(res.accessToken);
@@ -19,27 +32,36 @@ export const AuthService = {
     }
   },
 
+  async ensureRefreshed(accessTokenSnapshot?: string) {
+    if (!refreshPromise) {
+      refreshPromise = AuthService.refresh(accessTokenSnapshot).finally(() => {
+        refreshPromise = null;
+      });
+    }
+    return refreshPromise;
+  },
+
   async refreshAndRetry<T>(request: () => Promise<T>) {
+    const accessTokenSnapshot = getAccessToken();
     try {
       return await request();
-    } catch (e) {
-      const isUnauthorized =
-        e instanceof ApiError
-          ? e.httpStatus === 401
-          : typeof e === "object" &&
-            e !== null &&
-            "httpStatus" in e &&
-            (e as ApiError).httpStatus === 401;
-
-      if (isUnauthorized) {
-        console.log("[AuthService] 401 detected, try refresh");
-        const refreshed = await AuthService.refresh();
-        if (refreshed) {
-          console.log("[AuthService] retry after refresh");
-          return await request();
-        }
+    } catch (error) {
+      if (!isUnauthorizedError(error)) {
+        throw error;
       }
-      throw e;
+
+      console.log("[AuthService] 401 detected, try refresh");
+      await AuthService.ensureRefreshed(accessTokenSnapshot);
+
+      try {
+        console.log("[AuthService] retry after refresh");
+        return await request();
+      } catch (retryError) {
+        if (isUnauthorizedError(retryError)) {
+          clearAuth();
+        }
+        throw retryError;
+      }
     }
   },
 
