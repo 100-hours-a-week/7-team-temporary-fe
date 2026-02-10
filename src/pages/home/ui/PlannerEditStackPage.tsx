@@ -22,7 +22,6 @@ import {
   ExcludedTaskItem,
   START_HOUR,
   TaskBasketAddSheet,
-  TaskBasketButton,
   TimeSlotGrid,
 } from "@/features/home";
 import {
@@ -45,6 +44,7 @@ import { useToast } from "@/shared/ui/toast";
 import { ExcludedListBottomSheet } from "./ExcludedListBottomSheet";
 import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
 import { TaskBasketStackPage } from "./TaskBasketStackPage";
+import { resetDragState } from "@/widgets/planner-edit";
 
 type DraggedTask = {
   type: "excluded" | "task";
@@ -239,16 +239,16 @@ export function PlannerEditStackPage() {
     }
   }, [isTop, queryClient, scheduleKeys, stack.length]);
 
-  const captureScrollPosition = () => {
+  const captureScrollPosition = useCallback(() => {
     if (!scrollParentRef.current) {
       scrollParentRef.current = getScrollParent(pageRef.current);
     }
     const element = scrollParentRef.current;
     if (!element) return;
     lastScrollTopRef.current = element.scrollTop;
-  };
+  }, []);
 
-  const restoreScrollPosition = () => {
+  const restoreScrollPosition = useCallback(() => {
     if (!scrollParentRef.current) {
       scrollParentRef.current = getScrollParent(pageRef.current);
     }
@@ -258,7 +258,21 @@ export function PlannerEditStackPage() {
     requestAnimationFrame(() => {
       element.scrollTop = scrollTop;
     });
-  };
+  }, []);
+
+  const resetPlannerDragState = useCallback(() => {
+    resetDragState({
+      setActiveDrag,
+      setDraggingType,
+      setPreviewSlot,
+      setInsertPreview,
+      previewKeyRef,
+      insertKeyRef,
+      dragDurationRef,
+      defaultDurationMinutes: DEFAULT_DROP_DURATION_MINUTES,
+      restoreScrollPosition,
+    });
+  }, [restoreScrollPosition]);
 
   const updateScheduleMutation = useMutation({
     mutationFn: async (variables: {
@@ -463,14 +477,7 @@ export function PlannerEditStackPage() {
       | { type?: string; hour?: number; minute?: number }
       | undefined;
     if (!payload) {
-      setActiveDrag(null);
-      setDraggingType(null);
-      setPreviewSlot(null);
-      previewKeyRef.current = null;
-      setInsertPreview(null);
-      insertKeyRef.current = null;
-      dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
-      restoreScrollPosition();
+      resetPlannerDragState();
       return;
     }
     let startAt: string | null = null;
@@ -491,25 +498,13 @@ export function PlannerEditStackPage() {
     }
 
     if (!startAt || !endAt) {
-      setActiveDrag(null);
-      setPreviewSlot(null);
-      previewKeyRef.current = null;
-      setInsertPreview(null);
-      insertKeyRef.current = null;
-      dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
-      restoreScrollPosition();
+      resetPlannerDragState();
       return;
     }
 
     if (isAfterDayEnd(startAt, endAt, dayEndMinutes)) {
       showToast("하루 마무리 시간 이후에는 배정할 수 없습니다.", "error");
-      setActiveDrag(null);
-      setPreviewSlot(null);
-      previewKeyRef.current = null;
-      setInsertPreview(null);
-      insertKeyRef.current = null;
-      dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
-      restoreScrollPosition();
+      resetPlannerDragState();
       return;
     }
 
@@ -523,7 +518,10 @@ export function PlannerEditStackPage() {
       map.set(nextTask.scheduleId, nextTask);
       return Array.from(map.values());
     });
-    if (!dayPlanId) return;
+    if (!dayPlanId) {
+      resetPlannerDragState();
+      return;
+    }
     updateScheduleMutation.mutate({
       scheduleId: payload.task.scheduleId,
       payload: {
@@ -533,14 +531,7 @@ export function PlannerEditStackPage() {
       },
       task: nextTask,
     });
-    setActiveDrag(null);
-    setDraggingType(null);
-    setPreviewSlot(null);
-    previewKeyRef.current = null;
-    setInsertPreview(null);
-    insertKeyRef.current = null;
-    dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
-    restoreScrollPosition();
+    resetPlannerDragState();
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -635,16 +626,7 @@ export function PlannerEditStackPage() {
       }}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
-      onDragCancel={() => {
-        setActiveDrag(null);
-        setDraggingType(null);
-        setPreviewSlot(null);
-        previewKeyRef.current = null;
-        setInsertPreview(null);
-        insertKeyRef.current = null;
-        dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
-        restoreScrollPosition();
-      }}
+      onDragCancel={resetPlannerDragState}
     >
       <>
         <div
