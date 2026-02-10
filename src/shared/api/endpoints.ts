@@ -54,4 +54,7 @@ export const Endpoint = {
   ISSUE: {
     BASE: path("/issue"),
   },
+  RETRO: {
+    BASE: path("/reflections"),
+  },
 } as const;

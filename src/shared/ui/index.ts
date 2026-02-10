@@ -2,6 +2,7 @@ export * from "./shadcn";
 export * from "@/widgets/stack";
 export * from "./icon";
 export * from "./button";
+export * from "./image";
 export * from "./bottom-sheet";
 export * from "./dialog";
 export * from "./dialogs/ConfirmDialog";
