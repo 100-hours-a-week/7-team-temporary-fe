@@ -27,6 +27,7 @@
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-dialog": "^1.1.15",
+    "@sentry/nextjs": "^10",
     "@tanstack/react-query": "^5.90.20",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
