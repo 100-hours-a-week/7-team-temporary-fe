@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { BaseSyntheticEvent } from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 
@@ -61,6 +62,12 @@ export function LoginForm({
       )}
       <LoginButton isLoading={isSubmitting} />
       <GoToSignUpButton onClick={onGoToSignUp} />
+      <Link
+        className="text-center text-sm text-gray-600 underline"
+        href="/retro/public"
+      >
+        공개 회고 둘러보기
+      </Link>
     </form>
   );
 }
