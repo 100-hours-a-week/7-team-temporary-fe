@@ -9,6 +9,7 @@ import More from "./assets/More-icon.svg";
 import Share from "./assets/Share-icon.svg";
 import StarGreen from "./assets/Star-Green.svg";
 import StarYellow from "./assets/Star-Yellow.svg";
+import Liked from "./assets/Liked-icon.svg";
 import Unliked from "./assets/UnLiked-icon.svg";
 import Prev from "./assets/Prev-icon.svg";
 import Next from "./assets/Next-icon.svg";
@@ -44,6 +45,7 @@ export const IconMap = {
   share: Share,
   starGreen: StarGreen,
   starYellow: StarYellow,
+  liked: Liked,
   unliked: Unliked,
   prev: Prev,
   next: Next,
