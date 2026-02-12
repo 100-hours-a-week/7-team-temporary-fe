@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/shared/lib/utils";
 
 type BottomSheetProps = {
   open: boolean;
   onOpenChange?: (open: boolean) => void;
+  zIndex?: number;
   peekHeight?: number;
   expandHeight?: number;
   heightUnit?: "vh" | "px";
@@ -26,6 +28,7 @@ type BottomSheetProps = {
 export function BottomSheet({
   open,
   onOpenChange,
+  zIndex = 9999,
   peekHeight = 30,
   expandHeight = 80,
   heightUnit = "vh",
@@ -50,6 +53,7 @@ export function BottomSheet({
   const [isDragging, setIsDragging] = useState(false);
   const [isPresented, setIsPresented] = useState(false);
   const [isVisible, setIsVisible] = useState(open);
+  const [isMounted, setIsMounted] = useState(false);
   const dragStartRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const closeTimeoutRef = useRef<number | null>(null);
   const presentFrameRef = useRef<number | null>(null);
@@ -116,6 +120,10 @@ export function BottomSheet({
     },
     [],
   );
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -187,15 +195,18 @@ export function BottomSheet({
     dragStartRef.current = null;
   };
 
-  return (
-    <div className={cn("pointer-events-none fixed inset-x-0 bottom-0 z-40", className)}>
+  const sheetNode = (
+    <div
+      className={cn("pointer-events-none fixed inset-x-0 bottom-0", className)}
+      style={{ zIndex }}
+    >
       {showOverlay && (
         <div
           className={cn(
             "pointer-events-auto fixed inset-0 bg-black transition-opacity duration-300",
             isDragging && "transition-none",
           )}
-          style={{ opacity: overlayOpacity }}
+          style={{ opacity: overlayOpacity, zIndex }}
           onClick={() => {
             if (!closeOnOverlayClick) return;
             setExpanded(false);
@@ -206,7 +217,7 @@ export function BottomSheet({
       <div
         className={cn(
           "mx-auto w-full max-w-[420px] rounded-t-2xl bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)]",
-          "relative z-40",
+          "relative",
           "pointer-events-auto transition-[height,transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
           isDragging && "transition-none",
           fitContent && "overflow-y-auto",
@@ -217,6 +228,7 @@ export function BottomSheet({
           maxHeight: fitContent ? `${expandHeight}${heightUnit}` : undefined,
           transform: sheetTransform,
           opacity: sheetOpacity,
+          zIndex: zIndex + 1,
         }}
       >
         {enableDragHandle && (
@@ -239,4 +251,7 @@ export function BottomSheet({
       </div>
     </div>
   );
+
+  if (!isMounted) return null;
+  return createPortal(sheetNode, document.body);
 }
