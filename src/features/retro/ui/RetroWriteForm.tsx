@@ -2,10 +2,11 @@
 
 import { useState, type ChangeEvent } from "react";
 
-import { RETRO_VISIBILITY, RETRO_VISIBILITY_LABEL, type RetroVisibility } from "@/entities/retro";
+import { RETRO_VISIBILITY, type RetroVisibility } from "@/entities/retro";
 import { uploadImageAndResolveViewUrl } from "@/shared/api";
-import { ActionButton, FixedActionBar, PrimaryButton } from "@/shared/ui/button";
+import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { HorizontalImageAlbum } from "@/shared/ui/image";
+import { RetroContentField, RetroVisibilityToggle } from "@/shared/ui/retro";
 import { useToast } from "@/shared/ui/toast";
 import { useMutationErrorEffect } from "@/shared/query";
 
@@ -77,14 +78,14 @@ export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
 
   return (
     <>
-      <section className="px-6 pt-4 pb-28 text-[18px]">
+      <section className="px-7 pt-4 pb-28 text-[18px]">
         <h2 className="text-[18px] font-semibold text-black">{dateLabel} 회고</h2>
 
         <div className="scrollbar-hide mt-6 flex w-full gap-3 overflow-x-auto pb-1">
           {previewUrls.length > 0 ? (
             <HorizontalImageAlbum
               imageUrls={previewUrls}
-              tileSize={160}
+              tileSize={140}
               imageAltPrefix="회고 업로드 이미지 미리보기"
               className="shrink-0"
             />
@@ -105,30 +106,21 @@ export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
           </label>
         </div>
 
-        <textarea
+        <RetroContentField
           placeholder="(선택) 내용을 입력하세요."
-          className="mt-6 h-[178px] w-full resize-none rounded-2xl border border-[#d8d8d8] bg-[#f7f7f7] px-4 py-4 text-[16px] text-black outline-none placeholder:text-[16px] placeholder:text-[#bdbdbd]"
+          className="mt-6"
           {...register("content")}
         />
 
         <div className="mt-5 flex items-center">
-          <ActionButton
-            buttonText={RETRO_VISIBILITY_LABEL[visibility]}
-            aria-pressed={isPublic}
-            onClick={() =>
-              setValue(
-                "visibility",
-                visibility === RETRO_VISIBILITY.PUBLIC
-                  ? RETRO_VISIBILITY.PRIVATE
-                  : RETRO_VISIBILITY.PUBLIC,
-                { shouldValidate: true, shouldDirty: true },
-              )
+          <RetroVisibilityToggle
+            checked={isPublic}
+            onCheckedChange={(next) =>
+              setValue("visibility", next ? RETRO_VISIBILITY.PUBLIC : RETRO_VISIBILITY.PRIVATE, {
+                shouldValidate: true,
+                shouldDirty: true,
+              })
             }
-            className={`my-0 h-8 w-[80px] items-center px-0 py-0 text-[18px] leading-none font-semibold whitespace-nowrap transition-colors ${
-              isPublic
-                ? "border-primary-700 text-primary-700 bg-[#fff5f5]"
-                : "border-[#dbdbdb] bg-[#dddddd] text-[#9a9a9a]"
-            }`}
           />
         </div>
       </section>
