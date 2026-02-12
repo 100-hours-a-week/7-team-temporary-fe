@@ -7,7 +7,7 @@ interface RetroContentTextProps {
   className?: string;
 }
 
-const BASE_CLASS_NAME = "w-full rounded-2xl bg-[#f7f7f7] text-sm text-black";
+const BASE_CLASS_NAME = "w-full rounded-2xl text-sm text-black";
 
 export function RetroContentText({ value, className }: RetroContentTextProps) {
   return (

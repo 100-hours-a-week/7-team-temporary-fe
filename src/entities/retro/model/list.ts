@@ -5,7 +5,7 @@ export const RETRO_SECTION = {
 
 export type RetroSection = (typeof RETRO_SECTION)[keyof typeof RETRO_SECTION];
 
-export interface RetroListItem {
+export interface RetroCoreItem {
   id: number;
   dateLabel: string;
   timeLabel: string;
@@ -13,5 +13,15 @@ export interface RetroListItem {
   content: string;
   likeCount: number;
   defaultLiked?: boolean;
+  isMine: boolean;
+}
+
+export interface MyRetroCardVM extends RetroCoreItem {
   visibilityText: string;
 }
+
+export interface PublicRetroCardVM extends RetroCoreItem {
+  authorNickname: string;
+}
+
+export type RetroListItem = MyRetroCardVM | PublicRetroCardVM;

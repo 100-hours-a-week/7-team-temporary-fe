@@ -17,7 +17,7 @@ export function RetroFeed() {
       <ul>
         {retros.map((retro) => (
           <li key={retro.id}>
-            <RetroListItemCard {...retro} />
+            <RetroListItemCard vm={retro} />
           </li>
         ))}
       </ul>

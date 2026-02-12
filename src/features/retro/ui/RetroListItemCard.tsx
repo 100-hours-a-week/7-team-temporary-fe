@@ -2,42 +2,38 @@
 
 import { useEffect, useState } from "react";
 
-import { RetroCardView, type RetroListItem } from "@/entities/retro";
+import { RetroCardView, type MyRetroCardVM, type PublicRetroCardVM } from "@/entities/retro";
 import { MoreActionSheet } from "@/shared/ui/bottom-sheet";
 
-interface RetroListItemCardProps extends RetroListItem {
+type RetroListItemCardProps = {
+  vm: MyRetroCardVM | PublicRetroCardVM;
   onLikeClick?: (isLiked?: boolean) => void;
   onMoreClick?: () => void;
   onEditClick?: () => void;
   onDeleteClick?: () => void;
   onShareClick?: () => void;
-}
+};
 
 export function RetroListItemCard({
-  dateLabel,
-  timeLabel,
-  imageUrls,
-  content,
-  likeCount,
-  defaultLiked = false,
-  visibilityText,
+  vm,
   onLikeClick,
   onMoreClick,
   onEditClick,
   onDeleteClick,
   onShareClick,
 }: RetroListItemCardProps) {
-  const [isLiked, setIsLiked] = useState(defaultLiked);
-  const [displayLikeCount, setDisplayLikeCount] = useState(likeCount);
+  const isMine = vm.isMine;
+  const [isLiked, setIsLiked] = useState(vm.defaultLiked ?? false);
+  const [displayLikeCount, setDisplayLikeCount] = useState(vm.likeCount);
   const [isActionSheetOpen, setIsActionSheetOpen] = useState(false);
 
   useEffect(() => {
-    setDisplayLikeCount(likeCount);
-  }, [likeCount]);
+    setDisplayLikeCount(vm.likeCount);
+  }, [vm.likeCount]);
 
   useEffect(() => {
-    setIsLiked(defaultLiked);
-  }, [defaultLiked]);
+    setIsLiked(vm.defaultLiked ?? false);
+  }, [vm.defaultLiked]);
 
   const handleLikeClick = () => {
     setIsLiked((prev) => {
@@ -63,18 +59,18 @@ export function RetroListItemCard({
     onDeleteClick?.();
   };
 
+  const handleShareClick = () => {
+    setIsActionSheetOpen(false);
+    onShareClick?.();
+  };
+
   return (
     <RetroCardView
-      dateLabel={dateLabel}
-      timeLabel={timeLabel}
-      imageUrls={imageUrls}
-      content={content}
-      visibilityText={visibilityText}
+      vm={vm}
       isLiked={isLiked}
       likeCount={displayLikeCount}
       onLikeClick={handleLikeClick}
       onMoreClick={handleMoreClick}
-      onShareClick={onShareClick}
       actionSheet={
         isActionSheetOpen ? (
           <MoreActionSheet
@@ -83,18 +79,29 @@ export function RetroListItemCard({
           >
             <button
               type="button"
-              onClick={handleEditClick}
+              onClick={handleShareClick}
               className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
             >
-              수정
+              공유하기
             </button>
-            <button
-              type="button"
-              onClick={handleDeleteClick}
-              className="h-12 w-full rounded-xl bg-[#541e0f] text-[16px] font-semibold text-white"
-            >
-              삭제
-            </button>
+            {isMine ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleEditClick}
+                  className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
+                >
+                  수정
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteClick}
+                  className="h-12 w-full rounded-xl bg-[#541e0f] text-[16px] font-semibold text-white"
+                >
+                  삭제
+                </button>
+              </>
+            ) : null}
           </MoreActionSheet>
         ) : null
       }
