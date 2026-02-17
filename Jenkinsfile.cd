@@ -1,0 +1,254 @@
+pipeline {
+  agent any
+
+  options {
+    skipDefaultCheckout(true)
+    disableConcurrentBuilds()
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: "30"))
+  }
+
+  environment {
+    PNPM_VERSION = "9.15.1"
+  }
+
+  stages {
+    stage("Checkout") {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage("Prepare pnpm") {
+      steps {
+        sh """
+          set -euo pipefail
+          command -v node >/dev/null 2>&1 || { echo "Node.js is required on Jenkins agent"; exit 1; }
+          command -v corepack >/dev/null 2>&1 || { echo "corepack is required on Jenkins agent"; exit 1; }
+          corepack enable
+          corepack prepare pnpm@${PNPM_VERSION} --activate
+          node --version
+          pnpm --version
+        """
+      }
+    }
+
+    stage("Install dependencies") {
+      steps {
+        sh """
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+        """
+      }
+    }
+
+    stage("Build (Next.js)") {
+      steps {
+        script {
+          def apiBaseCredential = (env.BRANCH_NAME ?: "").startsWith("release/")
+            ? "next-public-api-base-url-staging"
+            : "next-public-api-base-url-production"
+
+          withCredentials([
+            string(credentialsId: apiBaseCredential, variable: "NEXT_PUBLIC_API_BASE_URL"),
+            string(credentialsId: "next-public-enable-sw", variable: "NEXT_PUBLIC_ENABLE_SW"),
+            string(credentialsId: "next-public-firebase-api-key", variable: "NEXT_PUBLIC_FIREBASE_API_KEY"),
+            string(credentialsId: "next-public-firebase-auth-domain", variable: "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"),
+            string(credentialsId: "next-public-firebase-project-id", variable: "NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
+            string(credentialsId: "next-public-firebase-storage-bucket", variable: "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"),
+            string(credentialsId: "next-public-firebase-messaging-sender-id", variable: "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
+            string(credentialsId: "next-public-firebase-app-id", variable: "NEXT_PUBLIC_FIREBASE_APP_ID"),
+            string(credentialsId: "next-public-firebase-vapid-key", variable: "NEXT_PUBLIC_FIREBASE_VAPID_KEY")
+          ]) {
+            sh "pnpm run build"
+          }
+        }
+      }
+    }
+
+    stage("Package artifact") {
+      steps {
+        sh """
+          set -euo pipefail
+          if [ ! -d ".next" ]; then
+            echo "Build output (.next) not found"
+            exit 1
+          fi
+
+          mkdir -p release_bundle
+          cp -r .next release_bundle/
+          for path in public package.json pnpm-lock.yaml next.config.ts; do
+            if [ -e "\$path" ]; then
+              cp -r "\$path" release_bundle/
+            fi
+          done
+
+          tar -czf app.tar.gz -C release_bundle .
+        """
+
+        archiveArtifacts artifacts: "app.tar.gz", fingerprint: true
+      }
+    }
+
+    stage("Deploy to AWS (release/*)") {
+      when {
+        expression {
+          return (env.BRANCH_NAME ?: "").startsWith("release/")
+        }
+      }
+      steps {
+        withCredentials([
+          sshUserPrivateKey(credentialsId: "ssh-key-staging", keyFileVariable: "SSH_KEY", usernameVariable: "SSH_USER"),
+          string(credentialsId: "host-staging", variable: "AWS_HOST"),
+          string(credentialsId: "app-dir-aws", variable: "AWS_TARGET_DIR"),
+          string(credentialsId: "pm2-name", variable: "AWS_SERVICE")
+        ]) {
+          sh '''
+            set -euo pipefail
+            mkdir -p ~/.ssh
+            chmod 700 ~/.ssh
+            ssh-keyscan -H "$AWS_HOST" >> ~/.ssh/known_hosts
+
+            scp -i "$SSH_KEY" app.tar.gz "${SSH_USER}@${AWS_HOST}:/tmp/app.tar.gz"
+
+            ssh -i "$SSH_KEY" "${SSH_USER}@${AWS_HOST}" "AWS_TARGET_DIR='${AWS_TARGET_DIR}' AWS_SERVICE='${AWS_SERVICE:-app}' bash -se" <<'EOSSH'
+              set -euo pipefail
+              TARGET_DIR="${AWS_TARGET_DIR:-}"
+              if [ -z "${TARGET_DIR}" ]; then
+                echo "AWS_TARGET_DIR is empty"
+                exit 1
+              fi
+
+              case "$TARGET_DIR" in
+                "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\\~}" ;;
+              esac
+
+              if ! command -v node >/dev/null 2>&1; then
+                echo "Node.js is required on target host"
+                exit 1
+              fi
+
+              if command -v corepack >/dev/null 2>&1; then
+                corepack enable
+                corepack prepare pnpm@9.15.1 --activate
+              fi
+
+              if ! command -v pm2 >/dev/null 2>&1; then
+                echo "pm2 is required on target host"
+                exit 1
+              fi
+
+              RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
+              CURRENT_LINK="${TARGET_DIR}/current"
+
+              mkdir -p "${RELEASE_DIR}"
+              tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
+              cd "${RELEASE_DIR}"
+              pnpm install --prod --frozen-lockfile
+
+              ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
+              cd "${TARGET_DIR}"
+              pm2 restart ecosystem.config.js --update-env || pm2 start ecosystem.config.js
+
+              ls -dt "${TARGET_DIR}"/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
+            EOSSH
+          '''
+        }
+      }
+    }
+
+    stage("Deploy to GCP (main)") {
+      when {
+        branch "main"
+      }
+      steps {
+        withCredentials([
+          file(credentialsId: "gcp-service-account-json", variable: "GCP_SA_KEY"),
+          string(credentialsId: "gcp-project-id", variable: "GCP_PROJECT"),
+          string(credentialsId: "gcp-zone", variable: "GCP_ZONE"),
+          string(credentialsId: "gce-instance-name", variable: "GCP_INSTANCE"),
+          string(credentialsId: "gce-user", variable: "GCP_USER"),
+          string(credentialsId: "app-dir-gcp", variable: "GCP_TARGET_DIR"),
+          string(credentialsId: "pm2-name", variable: "GCP_SERVICE")
+        ]) {
+          sh '''
+            set -euo pipefail
+            command -v gcloud >/dev/null 2>&1 || { echo "gcloud is required on Jenkins agent"; exit 1; }
+
+            gcloud auth activate-service-account --key-file="$GCP_SA_KEY"
+            gcloud config set project "$GCP_PROJECT"
+
+            gcloud compute scp app.tar.gz \
+              "${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz" \
+              --zone="${GCP_ZONE}" \
+              --project="${GCP_PROJECT}" \
+              --quiet
+
+            gcloud compute ssh "${GCP_USER}@${GCP_INSTANCE}" \
+              --zone "${GCP_ZONE}" \
+              --project "${GCP_PROJECT}" \
+              --quiet \
+              --command "GCP_TARGET_DIR='${GCP_TARGET_DIR}' GCP_SERVICE='${GCP_SERVICE:-app}' bash -se" <<'EOSSH'
+              set -euo pipefail
+              TARGET_DIR="${GCP_TARGET_DIR:-}"
+              if [ -z "${TARGET_DIR}" ]; then
+                echo "GCP_TARGET_DIR is empty"
+                exit 1
+              fi
+
+              case "$TARGET_DIR" in
+                "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\\~}" ;;
+              esac
+
+              if ! command -v node >/dev/null 2>&1; then
+                echo "Node.js is required on target host"
+                exit 1
+              fi
+
+              if command -v corepack >/dev/null 2>&1; then
+                corepack enable
+                corepack prepare pnpm@9.15.1 --activate
+              fi
+
+              if ! command -v pm2 >/dev/null 2>&1; then
+                echo "pm2 is required on target host"
+                exit 1
+              fi
+
+              RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
+              CURRENT_LINK="${TARGET_DIR}/current"
+
+              mkdir -p "${RELEASE_DIR}"
+              tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
+              cd "${RELEASE_DIR}"
+              pnpm install --prod --frozen-lockfile
+
+              ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
+              cd "${TARGET_DIR}"
+              pm2 restart ecosystem.config.js --update-env || pm2 start ecosystem.config.js
+
+              ls -dt "${TARGET_DIR}"/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
+            EOSSH
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      script {
+        def statusText = currentBuild.currentResult == "SUCCESS" ? "✅ CD 성공" : "🚨 CD 실패"
+        withCredentials([string(credentialsId: "discord-webhook-url", variable: "DISCORD_WEBHOOK_URL")]) {
+          sh """
+            set +e
+            SHORT_SHA=\$(git rev-parse --short HEAD || echo unknown)
+            curl -X POST "\$DISCORD_WEBHOOK_URL" \\
+              -H "Content-Type: application/json" \\
+              -d "{\\"content\\": \\"${statusText}\\\\nRepo: ${env.JOB_NAME}\\\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\\\nCommit: \$SHORT_SHA\\\\nRun: ${env.BUILD_URL}\\"}" || true
+          """
+        }
+      }
+    }
+  }
+}
