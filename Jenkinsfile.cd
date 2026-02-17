@@ -22,7 +22,7 @@ pipeline {
     stage("Prepare pnpm") {
       steps {
         sh """
-          set -euo pipefail
+          set -eu
           command -v node >/dev/null 2>&1 || { echo "Node.js is required on Jenkins agent"; exit 1; }
           command -v corepack >/dev/null 2>&1 || { echo "corepack is required on Jenkins agent"; exit 1; }
           corepack enable
@@ -36,7 +36,7 @@ pipeline {
     stage("Install dependencies") {
       steps {
         sh """
-          set -euo pipefail
+          set -eu
           pnpm install --frozen-lockfile
         """
       }
@@ -69,7 +69,7 @@ pipeline {
     stage("Package artifact") {
       steps {
         sh """
-          set -euo pipefail
+          set -eu
           if [ ! -d ".next" ]; then
             echo "Build output (.next) not found"
             exit 1
@@ -104,7 +104,7 @@ pipeline {
           string(credentialsId: "pm2-name", variable: "AWS_SERVICE")
         ]) {
           sh '''
-            set -euo pipefail
+            set -eu
             mkdir -p ~/.ssh
             chmod 700 ~/.ssh
             ssh-keyscan -H "$AWS_HOST" >> ~/.ssh/known_hosts
@@ -172,7 +172,7 @@ pipeline {
           string(credentialsId: "pm2-name", variable: "GCP_SERVICE")
         ]) {
           sh '''
-            set -euo pipefail
+            set -eu
             command -v gcloud >/dev/null 2>&1 || { echo "gcloud is required on Jenkins agent"; exit 1; }
 
             gcloud auth activate-service-account --key-file="$GCP_SA_KEY"
@@ -239,14 +239,18 @@ pipeline {
     always {
       script {
         def statusText = currentBuild.currentResult == "SUCCESS" ? "✅ CD 성공" : "🚨 CD 실패"
-        withCredentials([string(credentialsId: "discord-webhook-url", variable: "DISCORD_WEBHOOK_URL")]) {
-          sh """
-            set +e
-            SHORT_SHA=\$(git rev-parse --short HEAD || echo unknown)
-            curl -X POST "\$DISCORD_WEBHOOK_URL" \\
-              -H "Content-Type: application/json" \\
-              -d "{\\"content\\": \\"${statusText}\\\\nRepo: ${env.JOB_NAME}\\\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\\\nCommit: \$SHORT_SHA\\\\nRun: ${env.BUILD_URL}\\"}" || true
-          """
+        try {
+          withCredentials([string(credentialsId: "discord-webhook-url", variable: "DISCORD_WEBHOOK_URL")]) {
+            sh """
+              set +e
+              SHORT_SHA=\$(git rev-parse --short HEAD || echo unknown)
+              curl -X POST "\$DISCORD_WEBHOOK_URL" \\
+                -H "Content-Type: application/json" \\
+                -d "{\\"content\\": \\"${statusText}\\\\nRepo: ${env.JOB_NAME}\\\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\\\nCommit: \$SHORT_SHA\\\\nRun: ${env.BUILD_URL}\\"}" || true
+            """
+          }
+        } catch (err) {
+          echo "Skip Discord notification: ${err}"
         }
       }
     }

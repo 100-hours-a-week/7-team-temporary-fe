@@ -22,7 +22,7 @@ pipeline {
     stage("Prepare pnpm") {
       steps {
         sh """
-          set -euo pipefail
+          set -eu
           command -v node >/dev/null 2>&1 || { echo "Node.js is required on Jenkins agent"; exit 1; }
           command -v corepack >/dev/null 2>&1 || { echo "corepack is required on Jenkins agent"; exit 1; }
           corepack enable
@@ -36,7 +36,7 @@ pipeline {
     stage("Install dependencies") {
       steps {
         sh """
-          set -euo pipefail
+          set -eu
           pnpm install --frozen-lockfile
         """
       }
@@ -82,14 +82,18 @@ pipeline {
           context = "PR #${env.CHANGE_ID} (${env.CHANGE_BRANCH ?: "unknown"} -> ${env.CHANGE_TARGET ?: "unknown"})"
         }
 
-        withCredentials([string(credentialsId: "discord-webhook-url", variable: "DISCORD_WEBHOOK_URL")]) {
-          sh """
-            set +e
-            SHORT_SHA=\$(git rev-parse --short HEAD || echo unknown)
-            curl -X POST "\$DISCORD_WEBHOOK_URL" \\
-              -H "Content-Type: application/json" \\
-              -d "{\\"content\\": \\"${statusText}\\\\nRepo: ${env.JOB_NAME}\\\\n${context}\\\\nActor: ${env.CHANGE_AUTHOR ?: env.BUILD_USER_ID ?: "jenkins"}\\\\nCommit: \$SHORT_SHA\\\\nRun: ${env.BUILD_URL}\\"}" || true
-          """
+        try {
+          withCredentials([string(credentialsId: "discord-webhook-url", variable: "DISCORD_WEBHOOK_URL")]) {
+            sh """
+              set +e
+              SHORT_SHA=\$(git rev-parse --short HEAD || echo unknown)
+              curl -X POST "\$DISCORD_WEBHOOK_URL" \\
+                -H "Content-Type: application/json" \\
+                -d "{\\"content\\": \\"${statusText}\\\\nRepo: ${env.JOB_NAME}\\\\n${context}\\\\nActor: ${env.CHANGE_AUTHOR ?: env.BUILD_USER_ID ?: "jenkins"}\\\\nCommit: \$SHORT_SHA\\\\nRun: ${env.BUILD_URL}\\"}" || true
+            """
+          }
+        } catch (err) {
+          echo "Skip Discord notification: ${err}"
         }
       }
     }
