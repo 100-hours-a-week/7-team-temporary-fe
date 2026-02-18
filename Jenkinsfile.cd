@@ -8,10 +8,6 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: "30"))
   }
 
-  environment {
-    PNPM_VERSION = "9.15.1"
-  }
-
   stages {
     stage("Checkout") {
       steps {
@@ -19,74 +15,76 @@ pipeline {
       }
     }
 
-    stage("Prepare pnpm") {
+    stage("Resolve deploy metadata") {
       steps {
-        sh """
+        sh '''
           set -eu
-          command -v node >/dev/null 2>&1 || { echo "Node.js is required on Jenkins agent"; exit 1; }
-          command -v corepack >/dev/null 2>&1 || { echo "corepack is required on Jenkins agent"; exit 1; }
-          corepack enable
-          corepack prepare pnpm@${PNPM_VERSION} --activate
-          node --version
-          pnpm --version
-        """
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          BRANCH_RAW="${BRANCH_NAME:-detached}"
+          BRANCH_SLUG="$(echo "$BRANCH_RAW" | tr '/:' '--' | tr -cd '[:alnum:]._-')"
+          [ -n "$BRANCH_SLUG" ] || BRANCH_SLUG="detached"
+
+          cat > .cd-meta.env <<META
+SHORT_SHA=${SHORT_SHA}
+BRANCH_SLUG=${BRANCH_SLUG}
+META
+        '''
       }
     }
 
-    stage("Install dependencies") {
+    stage("Fetch image from ECR") {
       steps {
-        sh """
-          set -eu
-          pnpm install --frozen-lockfile
-        """
-      }
-    }
+        withCredentials([
+          string(credentialsId: "aws-access-key-id", variable: "AWS_ACCESS_KEY_ID"),
+          string(credentialsId: "aws-secret-access-key", variable: "AWS_SECRET_ACCESS_KEY"),
+          string(credentialsId: "aws-region", variable: "AWS_REGION"),
+          string(credentialsId: "aws-account-id", variable: "AWS_ACCOUNT_ID"),
+          string(credentialsId: "ecr-repo", variable: "ECR_REPO")
+        ]) {
+          sh '''
+            set -eu
+            command -v aws >/dev/null 2>&1 || { echo "aws cli is required on Jenkins agent"; exit 1; }
+            command -v docker >/dev/null 2>&1 || { echo "docker is required on Jenkins agent"; exit 1; }
 
-    stage("Build (Next.js)") {
-      steps {
-        script {
-          def apiBaseCredential = (env.BRANCH_NAME ?: "").startsWith("release/")
-            ? "next-public-api-base-url-staging"
-            : "next-public-api-base-url-production"
+            . ./.cd-meta.env
+            export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION="$AWS_REGION"
 
-          withCredentials([
-            string(credentialsId: apiBaseCredential, variable: "NEXT_PUBLIC_API_BASE_URL"),
-            string(credentialsId: "next-public-enable-sw", variable: "NEXT_PUBLIC_ENABLE_SW"),
-            string(credentialsId: "next-public-firebase-api-key", variable: "NEXT_PUBLIC_FIREBASE_API_KEY"),
-            string(credentialsId: "next-public-firebase-auth-domain", variable: "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"),
-            string(credentialsId: "next-public-firebase-project-id", variable: "NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
-            string(credentialsId: "next-public-firebase-storage-bucket", variable: "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"),
-            string(credentialsId: "next-public-firebase-messaging-sender-id", variable: "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
-            string(credentialsId: "next-public-firebase-app-id", variable: "NEXT_PUBLIC_FIREBASE_APP_ID"),
-            string(credentialsId: "next-public-firebase-vapid-key", variable: "NEXT_PUBLIC_FIREBASE_VAPID_KEY")
-          ]) {
-            sh "pnpm run build"
-          }
-        }
-      }
-    }
+            REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+            IMAGE_URI="$REGISTRY/$ECR_REPO:$SHORT_SHA"
+            IMAGE_ARCHIVE="app-image-${SHORT_SHA}.tar.gz"
 
-    stage("Package artifact") {
-      steps {
-        sh """
-          set -eu
-          if [ ! -d ".next" ]; then
-            echo "Build output (.next) not found"
-            exit 1
-          fi
+            FOUND=0
+            ATTEMPT=1
+            while [ "$ATTEMPT" -le 20 ]; do
+              if aws ecr describe-images \
+                --repository-name "$ECR_REPO" \
+                --image-ids imageTag="$SHORT_SHA" \
+                --region "$AWS_REGION" >/dev/null 2>&1; then
+                FOUND=1
+                break
+              fi
+              echo "Image not ready yet (attempt ${ATTEMPT}/20). wait 15s..."
+              ATTEMPT=$((ATTEMPT + 1))
+              sleep 15
+            done
 
-          mkdir -p release_bundle
-          cp -r .next release_bundle/
-          for path in public package.json pnpm-lock.yaml next.config.ts; do
-            if [ -e "\$path" ]; then
-              cp -r "\$path" release_bundle/
+            if [ "$FOUND" -ne 1 ]; then
+              echo "Image tag $SHORT_SHA not found in ECR repository $ECR_REPO"
+              exit 1
             fi
-          done
 
-          tar -czf app.tar.gz -C release_bundle .
-        """
+            aws ecr get-login-password --region "$AWS_REGION" | \
+              docker login --username AWS --password-stdin "$REGISTRY"
 
-        archiveArtifacts artifacts: "app.tar.gz", fingerprint: true
+            docker pull "$IMAGE_URI"
+            docker save "$IMAGE_URI" | gzip > "$IMAGE_ARCHIVE"
+
+            cat >> .cd-meta.env <<META
+IMAGE_URI=${IMAGE_URI}
+IMAGE_ARCHIVE=${IMAGE_ARCHIVE}
+META
+          '''
+        }
       }
     }
 
@@ -100,57 +98,37 @@ pipeline {
         withCredentials([
           sshUserPrivateKey(credentialsId: "ssh-key-staging", keyFileVariable: "SSH_KEY", usernameVariable: "SSH_USER"),
           string(credentialsId: "host-staging", variable: "AWS_HOST"),
-          string(credentialsId: "app-dir-aws", variable: "AWS_TARGET_DIR"),
           string(credentialsId: "pm2-name", variable: "AWS_SERVICE")
         ]) {
           sh '''
             set -eu
+            command -v scp >/dev/null 2>&1 || { echo "scp is required on Jenkins agent"; exit 1; }
+            command -v ssh >/dev/null 2>&1 || { echo "ssh is required on Jenkins agent"; exit 1; }
+
+            . ./.cd-meta.env
+            SERVICE_NAME="${AWS_SERVICE:-molip-fe}"
+
             mkdir -p ~/.ssh
             chmod 700 ~/.ssh
             ssh-keyscan -H "$AWS_HOST" >> ~/.ssh/known_hosts
 
-            scp -i "$SSH_KEY" app.tar.gz "${SSH_USER}@${AWS_HOST}:/tmp/app.tar.gz"
+            scp -i "$SSH_KEY" "$IMAGE_ARCHIVE" "${SSH_USER}@${AWS_HOST}:/tmp/${IMAGE_ARCHIVE}"
 
-            ssh -i "$SSH_KEY" "${SSH_USER}@${AWS_HOST}" "AWS_TARGET_DIR='${AWS_TARGET_DIR}' AWS_SERVICE='${AWS_SERVICE:-app}' bash -se" <<'EOSSH'
-              set -euo pipefail
-              TARGET_DIR="${AWS_TARGET_DIR:-}"
-              if [ -z "${TARGET_DIR}" ]; then
-                echo "AWS_TARGET_DIR is empty"
-                exit 1
+            ssh -i "$SSH_KEY" "${SSH_USER}@${AWS_HOST}" \
+              "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' SERVICE_NAME='${SERVICE_NAME}' bash -se" <<'EOSSH'
+              set -eu
+              command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
+
+              if command -v pm2 >/dev/null 2>&1; then
+                pm2 delete "$SERVICE_NAME" >/dev/null 2>&1 || true
               fi
 
-              case "$TARGET_DIR" in
-                "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\\~}" ;;
-              esac
+              gunzip -c "/tmp/${IMAGE_ARCHIVE}" | docker load
+              docker stop "$SERVICE_NAME" >/dev/null 2>&1 || true
+              docker rm "$SERVICE_NAME" >/dev/null 2>&1 || true
+              docker run -d --name "$SERVICE_NAME" --restart unless-stopped -p 3000:3000 "$IMAGE_URI"
 
-              if ! command -v node >/dev/null 2>&1; then
-                echo "Node.js is required on target host"
-                exit 1
-              fi
-
-              if command -v corepack >/dev/null 2>&1; then
-                corepack enable
-                corepack prepare pnpm@9.15.1 --activate
-              fi
-
-              if ! command -v pm2 >/dev/null 2>&1; then
-                echo "pm2 is required on target host"
-                exit 1
-              fi
-
-              RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
-              CURRENT_LINK="${TARGET_DIR}/current"
-
-              mkdir -p "${RELEASE_DIR}"
-              tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
-              cd "${RELEASE_DIR}"
-              pnpm install --prod --frozen-lockfile
-
-              ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
-              cd "${TARGET_DIR}"
-              pm2 restart ecosystem.config.js --update-env || pm2 start ecosystem.config.js
-
-              ls -dt "${TARGET_DIR}"/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
+              rm -f "/tmp/${IMAGE_ARCHIVE}" || true
             EOSSH
           '''
         }
@@ -168,66 +146,42 @@ pipeline {
           string(credentialsId: "gcp-zone", variable: "GCP_ZONE"),
           string(credentialsId: "gce-instance-name", variable: "GCP_INSTANCE"),
           string(credentialsId: "gce-user", variable: "GCP_USER"),
-          string(credentialsId: "app-dir-gcp", variable: "GCP_TARGET_DIR"),
           string(credentialsId: "pm2-name", variable: "GCP_SERVICE")
         ]) {
           sh '''
             set -eu
             command -v gcloud >/dev/null 2>&1 || { echo "gcloud is required on Jenkins agent"; exit 1; }
 
+            . ./.cd-meta.env
+            SERVICE_NAME="${GCP_SERVICE:-molip-fe}"
+
             gcloud auth activate-service-account --key-file="$GCP_SA_KEY"
             gcloud config set project "$GCP_PROJECT"
 
-            gcloud compute scp app.tar.gz \
-              "${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz" \
-              --zone="${GCP_ZONE}" \
-              --project="${GCP_PROJECT}" \
+            gcloud compute scp "$IMAGE_ARCHIVE" \
+              "${GCP_USER}@${GCP_INSTANCE}:/tmp/${IMAGE_ARCHIVE}" \
+              --zone "$GCP_ZONE" \
+              --project "$GCP_PROJECT" \
               --quiet
 
             gcloud compute ssh "${GCP_USER}@${GCP_INSTANCE}" \
-              --zone "${GCP_ZONE}" \
-              --project "${GCP_PROJECT}" \
+              --zone "$GCP_ZONE" \
+              --project "$GCP_PROJECT" \
               --quiet \
-              --command "GCP_TARGET_DIR='${GCP_TARGET_DIR}' GCP_SERVICE='${GCP_SERVICE:-app}' bash -se" <<'EOSSH'
-              set -euo pipefail
-              TARGET_DIR="${GCP_TARGET_DIR:-}"
-              if [ -z "${TARGET_DIR}" ]; then
-                echo "GCP_TARGET_DIR is empty"
-                exit 1
+              --command "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' SERVICE_NAME='${SERVICE_NAME}' bash -se" <<'EOSSH'
+              set -eu
+              command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
+
+              if command -v pm2 >/dev/null 2>&1; then
+                pm2 delete "$SERVICE_NAME" >/dev/null 2>&1 || true
               fi
 
-              case "$TARGET_DIR" in
-                "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\\~}" ;;
-              esac
+              gunzip -c "/tmp/${IMAGE_ARCHIVE}" | docker load
+              docker stop "$SERVICE_NAME" >/dev/null 2>&1 || true
+              docker rm "$SERVICE_NAME" >/dev/null 2>&1 || true
+              docker run -d --name "$SERVICE_NAME" --restart unless-stopped -p 3000:3000 "$IMAGE_URI"
 
-              if ! command -v node >/dev/null 2>&1; then
-                echo "Node.js is required on target host"
-                exit 1
-              fi
-
-              if command -v corepack >/dev/null 2>&1; then
-                corepack enable
-                corepack prepare pnpm@9.15.1 --activate
-              fi
-
-              if ! command -v pm2 >/dev/null 2>&1; then
-                echo "pm2 is required on target host"
-                exit 1
-              fi
-
-              RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
-              CURRENT_LINK="${TARGET_DIR}/current"
-
-              mkdir -p "${RELEASE_DIR}"
-              tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
-              cd "${RELEASE_DIR}"
-              pnpm install --prod --frozen-lockfile
-
-              ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
-              cd "${TARGET_DIR}"
-              pm2 restart ecosystem.config.js --update-env || pm2 start ecosystem.config.js
-
-              ls -dt "${TARGET_DIR}"/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
+              rm -f "/tmp/${IMAGE_ARCHIVE}" || true
             EOSSH
           '''
         }
@@ -237,6 +191,15 @@ pipeline {
 
   post {
     always {
+      sh '''
+        set +e
+        if [ -f .cd-meta.env ]; then
+          . ./.cd-meta.env
+          [ -n "${IMAGE_URI:-}" ] && docker image rm "$IMAGE_URI" >/dev/null 2>&1 || true
+          [ -n "${IMAGE_ARCHIVE:-}" ] && rm -f "$IMAGE_ARCHIVE" || true
+        fi
+      '''
+
       script {
         def statusText = currentBuild.currentResult == "SUCCESS" ? "✅ CD 성공" : "🚨 CD 실패"
         try {
@@ -246,7 +209,7 @@ pipeline {
               SHORT_SHA=\$(git rev-parse --short HEAD || echo unknown)
               curl -X POST "\$DISCORD_WEBHOOK_URL" \\
                 -H "Content-Type: application/json" \\
-                -d "{\\"content\\": \\"${statusText}\\\\nRepo: ${env.JOB_NAME}\\\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\\\nCommit: \$SHORT_SHA\\\\nRun: ${env.BUILD_URL}\\"}" || true
+                -d "{\\"content\\": \\\"${statusText}\\\\nRepo: ${env.JOB_NAME}\\\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\\\nCommit: \$SHORT_SHA\\\\nRun: ${env.BUILD_URL}\\\"}" || true
             """
           }
         } catch (err) {

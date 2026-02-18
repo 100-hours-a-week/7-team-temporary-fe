@@ -1,8 +1,18 @@
-# Jenkins Migration Guide (from GitHub Actions)
+# Jenkins Migration Guide (Docker Image CI/CD)
 
-이 문서는 `/Users/dokkang/Projects/KakaoTech/molip/fe/7-team-temporary-fe/.github/workflows/fe-bigbang-ci.yaml`과 `/Users/dokkang/Projects/KakaoTech/molip/fe/7-team-temporary-fe/.github/workflows/fe-bigbang-cd.yaml`를 Jenkins로 옮기는 최소 절차입니다.
+이 문서는 `/Users/dokkang/Projects/KakaoTech/molip/fe/7-team-temporary-fe/.github/workflows/fe-bigbang-ci.yaml`과 `/Users/dokkang/Projects/KakaoTech/molip/fe/7-team-temporary-fe/.github/workflows/fe-bigbang-cd.yaml`를 Jenkins로 옮기면서, 배포 방식을 `build once, deploy many`로 전환한 가이드입니다.
 
-## 1) Jenkins 플러그인
+## 1) 파이프라인 파일
+
+- CI: `/Users/dokkang/Projects/KakaoTech/molip/fe/7-team-temporary-fe/Jenkinsfile.ci`
+- CD: `/Users/dokkang/Projects/KakaoTech/molip/fe/7-team-temporary-fe/Jenkinsfile.cd`
+
+동작 요약:
+
+- `CI`: Docker 이미지 빌드 -> 컨테이너 스모크 테스트 -> ECR 푸시(main/release)
+- `CD`: 같은 커밋 태그 이미지를 ECR에서 가져와서 서버에 배포(재빌드 없음)
+
+## 2) Jenkins 플러그인
 
 아래 플러그인을 설치하세요.
 
@@ -10,27 +20,27 @@
 - Git
 - GitHub Branch Source
 - Credentials Binding
-- (선택) NodeJS
 - (선택) ANSI Color
 
-## 2) Jenkins 실행 노드 준비
+## 3) Jenkins 에이전트 준비
 
-현재 `Jenkinsfile`은 NodeJS plugin 없이도 동작합니다. 대신 Jenkins agent(실행 노드)에 아래 명령이 있어야 합니다.
+CI/CD를 실행하는 Jenkins agent에 아래 명령이 있어야 합니다.
 
-- `node` (권장: v22)
-- `corepack`
+- `docker`
+- `aws` (AWS CLI)
+- `gcloud` (main 배포 시)
+- `ssh`, `scp`
+- `git`
 
-NodeJS plugin을 쓰고 싶다면 설치 후 Global Tool로 Node 22를 추가해도 됩니다.
-
-## 3) Credentials 추가 (ID는 아래와 동일하게)
+## 4) Credentials 추가 (ID 정확히 일치)
 
 `Manage Jenkins` -> `Credentials` -> `(global)`에 추가하세요.
 
-공통:
+공통(선택):
 
 - Secret text: `discord-webhook-url`
 
-CD Build 환경:
+Next.js 빌드 변수(CI에서 main/release 이미지 빌드 시 사용):
 
 - Secret text: `next-public-api-base-url-staging`
 - Secret text: `next-public-api-base-url-production`
@@ -43,62 +53,54 @@ CD Build 환경:
 - Secret text: `next-public-firebase-app-id`
 - Secret text: `next-public-firebase-vapid-key`
 
-CD Deploy (AWS):
+ECR 푸시/풀:
+
+- Secret text: `aws-access-key-id`
+- Secret text: `aws-secret-access-key`
+- Secret text: `aws-region`
+- Secret text: `aws-account-id`
+- Secret text: `ecr-repo` (예: `molip/fe`)
+
+Release 배포(AWS):
 
 - SSH Username with private key: `ssh-key-staging`
 - Secret text: `host-staging`
-- Secret text: `app-dir-aws`
-- Secret text: `pm2-name`
+- Secret text: `pm2-name` (이제 컨테이너 이름으로 사용)
 
-CD Deploy (GCP):
+Main 배포(GCP):
 
 - Secret file (Service Account JSON): `gcp-service-account-json`
 - Secret text: `gcp-project-id`
 - Secret text: `gcp-zone`
 - Secret text: `gce-instance-name`
 - Secret text: `gce-user`
-- Secret text: `app-dir-gcp`
+- Secret text: `pm2-name` (컨테이너 이름)
 
-## 4) Job 생성
+## 5) Job 생성
 
-권장: `Multibranch Pipeline` Job 2개를 만드세요.
+권장: `Multibranch Pipeline` Job 2개
 
 - Job A: `fe-ci`
   - Script Path: `Jenkinsfile.ci`
 - Job B: `fe-cd`
   - Script Path: `Jenkinsfile.cd`
 
-각 Job의 Branch Source는 같은 GitHub 저장소를 바라보게 설정하세요.
+브랜치 필터:
 
-브랜치 필터를 다음처럼 맞추면 GitHub Actions와 거의 동일하게 동작합니다.
-
-- `fe-ci`: `develop`, `main`, `release/*`, PR
+- `fe-ci`: `develop`, `main`, `release/*`, `PR-*`
 - `fe-cd`: `main`, `release/*`
 
-## 5) Webhook
+## 6) Webhook
 
-GitHub 저장소 Settings -> Webhooks -> Add webhook
+GitHub 저장소 -> `Settings` -> `Webhooks` -> `Add webhook`
 
 - Payload URL: `http://<server_ip>:8080/github-webhook/`
 - Content type: `application/json`
-- Events: Push, Pull request
+- Events: `Push`, `Pull request`
 
-## 6) Jenkins 에이전트 사전 설치 항목
+## 7) 운영 주의사항
 
-`Jenkinsfile.cd`를 실행하는 에이전트에는 아래 명령이 필요합니다.
-
-- `ssh`, `scp`
-- `gcloud` (GCP 배포용)
-- `node`, `corepack` (또는 Jenkins NodeJS Tool로 제공)
-
-AWS 서버가 사설망이라면 Jenkins 에이전트 네트워크에서 SSH 접근이 가능해야 합니다. (기존 GitHub Actions의 Tailscale 단계 역할)
-
-## 7) 실행 흐름
-
-- `fe-ci`
-  - PR: install -> lint -> build
-  - push(main/release): install -> build -> audit
-- `fe-cd`
-  - push(release/*): build + 패키징 + AWS 배포
-  - push(main): build + 패키징 + GCP 배포
-  - 모든 결과는 Discord로 알림
+- CD는 이미지를 재빌드하지 않습니다. `CI`가 올린 커밋 태그 이미지를 기다렸다가 배포합니다.
+- 배포 대상 서버(AWS/GCP)에도 `docker`가 설치되어 있어야 합니다.
+- 기존 PM2 프로세스가 있으면 동일 이름(`pm2-name`)으로 정리 후 컨테이너를 실행합니다.
+- 현재 컨테이너 실행 포트는 `-p 3000:3000` 고정입니다.
