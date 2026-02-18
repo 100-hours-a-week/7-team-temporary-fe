@@ -45,12 +45,14 @@ Next.js 빌드 변수(CI에서 main/release 이미지 빌드 시 사용):
 - Secret text: `next-public-api-base-url-staging`
 - Secret text: `next-public-api-base-url-production`
 - Secret text: `next-public-enable-sw`
+- Secret text: `next-public-enable-middleware`
 - Secret text: `next-public-firebase-api-key`
 - Secret text: `next-public-firebase-auth-domain`
 - Secret text: `next-public-firebase-project-id`
 - Secret text: `next-public-firebase-storage-bucket`
 - Secret text: `next-public-firebase-messaging-sender-id`
 - Secret text: `next-public-firebase-app-id`
+- Secret text: `next-public-firebase-measurement-id`
 - Secret text: `next-public-firebase-vapid-key`
 
 ECR 푸시/풀:
