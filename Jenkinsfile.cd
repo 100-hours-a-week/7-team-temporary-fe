@@ -103,7 +103,7 @@ META
     stage("Deploy to AWS Staging (release/*)") {
       when {
         expression {
-          return (env.BRANCH_NAME ?: "").startsWith("feature/dockerfile")
+          return (env.BRANCH_NAME ?: "").startsWith("release")
         }
       }
       steps {
@@ -171,7 +171,7 @@ EOSSH
 
     stage("Deploy to AWS Production Blue/Green (main)") {
       when {
-        branch "main"
+        branch "feature/dockerfile"
       }
       steps {
         withCredentials([
