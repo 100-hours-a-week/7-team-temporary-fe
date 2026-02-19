@@ -67,7 +67,6 @@ Release 배포(AWS):
 
 - SSH Username with private key: `ssh-key-staging`
 - Secret text: `host-staging`
-- Secret text: `pm2-name` (이제 컨테이너 이름으로 사용)
 
 Main 배포(GCP):
 
@@ -76,7 +75,6 @@ Main 배포(GCP):
 - Secret text: `gcp-zone`
 - Secret text: `gce-instance-name`
 - Secret text: `gce-user`
-- Secret text: `pm2-name` (컨테이너 이름)
 
 ## 5) Job 생성
 
@@ -104,5 +102,6 @@ GitHub 저장소 -> `Settings` -> `Webhooks` -> `Add webhook`
 
 - CD는 이미지를 재빌드하지 않습니다. `CI`가 올린 커밋 태그 이미지를 기다렸다가 배포합니다.
 - 배포 대상 서버(AWS/GCP)에도 `docker`가 설치되어 있어야 합니다.
-- 기존 PM2 프로세스가 있으면 동일 이름(`pm2-name`)으로 정리 후 컨테이너를 실행합니다.
-- 현재 컨테이너 실행 포트는 `-p 3000:3000` 고정입니다.
+- PM2 의존성은 없습니다. 배포 시 기존 동일 컨테이너명을 stop/rm 후 재실행합니다.
+- 기본 컨테이너명은 `molip-fe`이며, 필요하면 Jenkins Job 환경변수 `DEPLOY_CONTAINER_NAME`으로 덮어쓸 수 있습니다.
+- 컨테이너 실행 포트는 `-p 3000:3000` 고정입니다.

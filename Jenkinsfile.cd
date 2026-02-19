@@ -8,6 +8,10 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: "30"))
   }
 
+  environment {
+    DEPLOY_CONTAINER_NAME = "molip-fe"
+  }
+
   stages {
     stage("Checkout") {
       steps {
@@ -91,14 +95,13 @@ META
     stage("Deploy to AWS (release/*)") {
       when {
         expression {
-          return (env.BRANCH_NAME ?: "").startsWith("release/")
+          return (env.BRANCH_NAME ?: "").startsWith("feature/dockerfile")
         }
       }
       steps {
         withCredentials([
           sshUserPrivateKey(credentialsId: "ssh-key-staging", keyFileVariable: "SSH_KEY", usernameVariable: "SSH_USER"),
-          string(credentialsId: "host-staging", variable: "AWS_HOST"),
-          string(credentialsId: "pm2-name", variable: "AWS_SERVICE")
+          string(credentialsId: "host-staging", variable: "AWS_HOST")
         ]) {
           sh '''
             set -eu
@@ -106,7 +109,7 @@ META
             command -v ssh >/dev/null 2>&1 || { echo "ssh is required on Jenkins agent"; exit 1; }
 
             . ./.cd-meta.env
-            SERVICE_NAME="${AWS_SERVICE:-molip-fe}"
+            SERVICE_NAME="${DEPLOY_CONTAINER_NAME:-molip-fe}"
 
             mkdir -p ~/.ssh
             chmod 700 ~/.ssh
@@ -118,10 +121,6 @@ META
               "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' SERVICE_NAME='${SERVICE_NAME}' bash -se" <<'EOSSH'
               set -eu
               command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
-
-              if command -v pm2 >/dev/null 2>&1; then
-                pm2 delete "$SERVICE_NAME" >/dev/null 2>&1 || true
-              fi
 
               gunzip -c "/tmp/${IMAGE_ARCHIVE}" | docker load
               docker stop "$SERVICE_NAME" >/dev/null 2>&1 || true
@@ -145,15 +144,14 @@ META
           string(credentialsId: "gcp-project-id", variable: "GCP_PROJECT"),
           string(credentialsId: "gcp-zone", variable: "GCP_ZONE"),
           string(credentialsId: "gce-instance-name", variable: "GCP_INSTANCE"),
-          string(credentialsId: "gce-user", variable: "GCP_USER"),
-          string(credentialsId: "pm2-name", variable: "GCP_SERVICE")
+          string(credentialsId: "gce-user", variable: "GCP_USER")
         ]) {
           sh '''
             set -eu
             command -v gcloud >/dev/null 2>&1 || { echo "gcloud is required on Jenkins agent"; exit 1; }
 
             . ./.cd-meta.env
-            SERVICE_NAME="${GCP_SERVICE:-molip-fe}"
+            SERVICE_NAME="${DEPLOY_CONTAINER_NAME:-molip-fe}"
 
             gcloud auth activate-service-account --key-file="$GCP_SA_KEY"
             gcloud config set project "$GCP_PROJECT"
@@ -171,10 +169,6 @@ META
               --command "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' SERVICE_NAME='${SERVICE_NAME}' bash -se" <<'EOSSH'
               set -eu
               command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
-
-              if command -v pm2 >/dev/null 2>&1; then
-                pm2 delete "$SERVICE_NAME" >/dev/null 2>&1 || true
-              fi
 
               gunzip -c "/tmp/${IMAGE_ARCHIVE}" | docker load
               docker stop "$SERVICE_NAME" >/dev/null 2>&1 || true
