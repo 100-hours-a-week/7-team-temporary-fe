@@ -9,7 +9,15 @@ pipeline {
   }
 
   environment {
-    DEPLOY_CONTAINER_NAME = "molip-fe"
+    STAGING_CONTAINER_NAME = "molip-fe-staging"
+    STAGING_HOST_PORT = "3000"
+
+    PROD_BLUE_NAME = "molip-fe-blue"
+    PROD_GREEN_NAME = "molip-fe-green"
+    PROD_BLUE_PORT = "3000"
+    PROD_GREEN_PORT = "3001"
+    PROD_HEALTH_PATH = "/api/example"
+    PROD_NGINX_UPSTREAM_CONF = "/etc/nginx/sites-available/molip"
   }
 
   stages {
@@ -92,7 +100,7 @@ META
       }
     }
 
-    stage("Deploy to AWS (release/*)") {
+    stage("Deploy to AWS Staging (release/*)") {
       when {
         expression {
           return (env.BRANCH_NAME ?: "").startsWith("feature/dockerfile")
@@ -109,7 +117,6 @@ META
             command -v ssh >/dev/null 2>&1 || { echo "ssh is required on Jenkins agent"; exit 1; }
 
             . ./.cd-meta.env
-            SERVICE_NAME="${DEPLOY_CONTAINER_NAME:-molip-fe}"
 
             mkdir -p ~/.ssh
             chmod 700 ~/.ssh
@@ -118,14 +125,42 @@ META
             scp -i "$SSH_KEY" "$IMAGE_ARCHIVE" "${SSH_USER}@${AWS_HOST}:/tmp/${IMAGE_ARCHIVE}"
 
             ssh -i "$SSH_KEY" "${SSH_USER}@${AWS_HOST}" \
-              "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' SERVICE_NAME='${SERVICE_NAME}' bash -se" <<'EOSSH'
+              "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' CONTAINER_NAME='${STAGING_CONTAINER_NAME}' HOST_PORT='${STAGING_HOST_PORT}' HEALTH_PATH='${PROD_HEALTH_PATH}' bash -se" <<'EOSSH'
               set -eu
               command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
+              command -v curl >/dev/null 2>&1 || { echo "curl is required on target host"; exit 1; }
+
+              wait_healthy() {
+                URL="$1"
+                RETRIES="${2:-30}"
+                I=1
+                while [ "$I" -le "$RETRIES" ]; do
+                  if curl -fsS "$URL" >/dev/null 2>&1; then
+                    return 0
+                  fi
+                  sleep 2
+                  I=$((I + 1))
+                done
+                return 1
+              }
 
               gunzip -c "/tmp/${IMAGE_ARCHIVE}" | docker load
-              docker stop "$SERVICE_NAME" >/dev/null 2>&1 || true
-              docker rm "$SERVICE_NAME" >/dev/null 2>&1 || true
-              docker run -d --name "$SERVICE_NAME" --restart unless-stopped -p 3000:3000 "$IMAGE_URI"
+
+              PORT_HOLDER_IDS="$(docker ps --filter "publish=${HOST_PORT}" --format '{{.ID}}' || true)"
+              if [ -n "$PORT_HOLDER_IDS" ]; then
+                echo "Stopping containers bound to host port ${HOST_PORT}: ${PORT_HOLDER_IDS}"
+                echo "$PORT_HOLDER_IDS" | xargs -r docker rm -f
+              fi
+
+              docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+              docker run -d --name "$CONTAINER_NAME" --restart unless-stopped -p "${HOST_PORT}:3000" "$IMAGE_URI"
+
+              STAGING_HEALTH_URL="http://127.0.0.1:${HOST_PORT}${HEALTH_PATH}"
+              wait_healthy "$STAGING_HEALTH_URL" 30 || {
+                echo "FAIL: staging health check failed -> ${STAGING_HEALTH_URL}"
+                docker logs "$CONTAINER_NAME" || true
+                exit 1
+              }
 
               rm -f "/tmp/${IMAGE_ARCHIVE}" || true
             EOSSH
@@ -134,47 +169,100 @@ META
       }
     }
 
-    stage("Deploy to GCP (main)") {
+    stage("Deploy to AWS Production Blue/Green (main)") {
       when {
         branch "main"
       }
       steps {
         withCredentials([
-          file(credentialsId: "gcp-service-account-json", variable: "GCP_SA_KEY"),
-          string(credentialsId: "gcp-project-id", variable: "GCP_PROJECT"),
-          string(credentialsId: "gcp-zone", variable: "GCP_ZONE"),
-          string(credentialsId: "gce-instance-name", variable: "GCP_INSTANCE"),
-          string(credentialsId: "gce-user", variable: "GCP_USER")
+          sshUserPrivateKey(credentialsId: "ssh-key-production", keyFileVariable: "SSH_KEY", usernameVariable: "SSH_USER"),
+          string(credentialsId: "host-production", variable: "AWS_HOST")
         ]) {
           sh '''
             set -eu
-            command -v gcloud >/dev/null 2>&1 || { echo "gcloud is required on Jenkins agent"; exit 1; }
+            command -v scp >/dev/null 2>&1 || { echo "scp is required on Jenkins agent"; exit 1; }
+            command -v ssh >/dev/null 2>&1 || { echo "ssh is required on Jenkins agent"; exit 1; }
 
             . ./.cd-meta.env
-            SERVICE_NAME="${DEPLOY_CONTAINER_NAME:-molip-fe}"
 
-            gcloud auth activate-service-account --key-file="$GCP_SA_KEY"
-            gcloud config set project "$GCP_PROJECT"
+            mkdir -p ~/.ssh
+            chmod 700 ~/.ssh
+            ssh-keyscan -H "$AWS_HOST" >> ~/.ssh/known_hosts
 
-            gcloud compute scp "$IMAGE_ARCHIVE" \
-              "${GCP_USER}@${GCP_INSTANCE}:/tmp/${IMAGE_ARCHIVE}" \
-              --zone "$GCP_ZONE" \
-              --project "$GCP_PROJECT" \
-              --quiet
+            scp -i "$SSH_KEY" "$IMAGE_ARCHIVE" "${SSH_USER}@${AWS_HOST}:/tmp/${IMAGE_ARCHIVE}"
 
-            gcloud compute ssh "${GCP_USER}@${GCP_INSTANCE}" \
-              --zone "$GCP_ZONE" \
-              --project "$GCP_PROJECT" \
-              --quiet \
-              --command "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' SERVICE_NAME='${SERVICE_NAME}' bash -se" <<'EOSSH'
+            ssh -i "$SSH_KEY" "${SSH_USER}@${AWS_HOST}" \
+              "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' BLUE_NAME='${PROD_BLUE_NAME}' GREEN_NAME='${PROD_GREEN_NAME}' BLUE_PORT='${PROD_BLUE_PORT}' GREEN_PORT='${PROD_GREEN_PORT}' HEALTH_PATH='${PROD_HEALTH_PATH}' UPSTREAM_CONF='${PROD_NGINX_UPSTREAM_CONF}' bash -se" <<'EOSSH'
               set -eu
               command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
+              command -v curl >/dev/null 2>&1 || { echo "curl is required on target host"; exit 1; }
+
+              wait_healthy() {
+                URL="$1"
+                RETRIES="${2:-30}"
+                I=1
+                while [ "$I" -le "$RETRIES" ]; do
+                  if curl -fsS "$URL" >/dev/null 2>&1; then
+                    return 0
+                  fi
+                  sleep 2
+                  I=$((I + 1))
+                done
+                return 1
+              }
+
+              [ -f "$UPSTREAM_CONF" ] || { echo "upstream conf not found: $UPSTREAM_CONF"; exit 1; }
 
               gunzip -c "/tmp/${IMAGE_ARCHIVE}" | docker load
-              docker stop "$SERVICE_NAME" >/dev/null 2>&1 || true
-              docker rm "$SERVICE_NAME" >/dev/null 2>&1 || true
-              docker run -d --name "$SERVICE_NAME" --restart unless-stopped -p 3000:3000 "$IMAGE_URI"
 
+              ACTIVE_PORT="$(grep -Eo "127\\.0\\.0\\.1:(${BLUE_PORT}|${GREEN_PORT})" "$UPSTREAM_CONF" | head -n 1 | cut -d: -f2 || true)"
+              if [ "$ACTIVE_PORT" = "$BLUE_PORT" ]; then
+                ACTIVE_NAME="$BLUE_NAME"
+                IDLE_NAME="$GREEN_NAME"
+                IDLE_PORT="$GREEN_PORT"
+              elif [ "$ACTIVE_PORT" = "$GREEN_PORT" ]; then
+                ACTIVE_NAME="$GREEN_NAME"
+                IDLE_NAME="$BLUE_NAME"
+                IDLE_PORT="$BLUE_PORT"
+              else
+                ACTIVE_PORT="$BLUE_PORT"
+                ACTIVE_NAME="$BLUE_NAME"
+                IDLE_NAME="$GREEN_NAME"
+                IDLE_PORT="$GREEN_PORT"
+              fi
+
+              IDLE_HEALTH_URL="http://127.0.0.1:${IDLE_PORT}${HEALTH_PATH}"
+              ROUTED_HEALTH_URL="http://127.0.0.1${HEALTH_PATH}"
+
+              PORT_HOLDER_IDS="$(docker ps --filter "publish=${IDLE_PORT}" --format '{{.ID}}' || true)"
+              if [ -n "$PORT_HOLDER_IDS" ]; then
+                echo "Stopping containers bound to idle port ${IDLE_PORT}: ${PORT_HOLDER_IDS}"
+                echo "$PORT_HOLDER_IDS" | xargs -r docker rm -f
+              fi
+
+              docker rm -f "$IDLE_NAME" >/dev/null 2>&1 || true
+              docker run -d --name "$IDLE_NAME" --restart unless-stopped -p "${IDLE_PORT}:3000" "$IMAGE_URI"
+
+              wait_healthy "$IDLE_HEALTH_URL" 30 || {
+                echo "FAIL: idle health check failed -> ${IDLE_HEALTH_URL}"
+                docker logs "$IDLE_NAME" || true
+                exit 1
+              }
+
+              sudo sed -i -E "0,/127\\.0\\.0\\.1:(${BLUE_PORT}|${GREEN_PORT})/s//127.0.0.1:${IDLE_PORT}/" "$UPSTREAM_CONF"
+              sudo nginx -t
+              sudo systemctl reload nginx || sudo nginx -s reload
+
+              if ! wait_healthy "$ROUTED_HEALTH_URL" 15; then
+                echo "FAIL: routed health check failed -> rollback"
+                sudo sed -i -E "0,/127\\.0\\.0\\.1:(${BLUE_PORT}|${GREEN_PORT})/s//127.0.0.1:${ACTIVE_PORT}/" "$UPSTREAM_CONF"
+                sudo nginx -t
+                sudo systemctl reload nginx || sudo nginx -s reload
+                docker rm -f "$IDLE_NAME" >/dev/null 2>&1 || true
+                exit 1
+              fi
+
+              docker rm -f "$ACTIVE_NAME" >/dev/null 2>&1 || true
               rm -f "/tmp/${IMAGE_ARCHIVE}" || true
             EOSSH
           '''

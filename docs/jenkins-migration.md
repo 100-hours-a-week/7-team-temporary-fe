@@ -10,7 +10,8 @@
 동작 요약:
 
 - `CI`: Docker 이미지 빌드 -> 컨테이너 스모크 테스트 -> ECR 푸시(main/release)
-- `CD`: 같은 커밋 태그 이미지를 ECR에서 가져와서 서버에 배포(재빌드 없음)
+- `CD(release/*)`: 스테이징 서버 단일 컨테이너 중단 배포
+- `CD(main)`: 운영 AWS 단일 인스턴스 내부 Blue/Green 배포 (Nginx upstream 전환)
 
 ## 2) Jenkins 플러그인
 
@@ -28,7 +29,6 @@ CI/CD를 실행하는 Jenkins agent에 아래 명령이 있어야 합니다.
 
 - `docker`
 - `aws` (AWS CLI)
-- `gcloud` (main 배포 시)
 - `ssh`, `scp`
 - `git`
 
@@ -63,18 +63,15 @@ ECR 푸시/풀:
 - Secret text: `aws-account-id`
 - Secret text: `ecr-repo` (예: `molip/fe`)
 
-Release 배포(AWS):
+스테이징 배포(AWS, release/*):
 
 - SSH Username with private key: `ssh-key-staging`
 - Secret text: `host-staging`
 
-Main 배포(GCP):
+운영 배포(AWS, main):
 
-- Secret file (Service Account JSON): `gcp-service-account-json`
-- Secret text: `gcp-project-id`
-- Secret text: `gcp-zone`
-- Secret text: `gce-instance-name`
-- Secret text: `gce-user`
+- SSH Username with private key: `ssh-key-production`
+- Secret text: `host-production`
 
 ## 5) Job 생성
 
@@ -101,7 +98,15 @@ GitHub 저장소 -> `Settings` -> `Webhooks` -> `Add webhook`
 ## 7) 운영 주의사항
 
 - CD는 이미지를 재빌드하지 않습니다. `CI`가 올린 커밋 태그 이미지를 기다렸다가 배포합니다.
-- 배포 대상 서버(AWS/GCP)에도 `docker`가 설치되어 있어야 합니다.
-- PM2 의존성은 없습니다. 배포 시 기존 동일 컨테이너명을 stop/rm 후 재실행합니다.
-- 기본 컨테이너명은 `molip-fe`이며, 필요하면 Jenkins Job 환경변수 `DEPLOY_CONTAINER_NAME`으로 덮어쓸 수 있습니다.
-- 컨테이너 실행 포트는 `-p 3000:3000` 고정입니다.
+- 배포 대상 서버(AWS)에도 `docker`가 설치되어 있어야 합니다.
+- 운영 Blue/Green 전환에는 대상 서버에 `nginx`, `curl`, `sudo` 권한이 필요합니다.
+- 운영 기본 값(`Jenkinsfile.cd`의 `environment`):
+  - `PROD_BLUE_NAME=molip-fe-blue`
+  - `PROD_GREEN_NAME=molip-fe-green`
+  - `PROD_BLUE_PORT=3000`
+  - `PROD_GREEN_PORT=3001`
+  - `PROD_HEALTH_PATH=/api/example`
+  - `PROD_NGINX_UPSTREAM_CONF=/etc/nginx/sites-available/molip`
+- 스테이징 기본 값(`Jenkinsfile.cd`의 `environment`):
+  - `STAGING_CONTAINER_NAME=molip-fe-staging`
+  - `STAGING_HOST_PORT=3000`
