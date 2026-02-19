@@ -163,7 +163,7 @@ META
               }
 
               rm -f "/tmp/${IMAGE_ARCHIVE}" || true
-            EOSSH
+EOSSH
           '''
         }
       }
@@ -264,7 +264,7 @@ META
 
               docker rm -f "$ACTIVE_NAME" >/dev/null 2>&1 || true
               rm -f "/tmp/${IMAGE_ARCHIVE}" || true
-            EOSSH
+EOSSH
           '''
         }
       }
