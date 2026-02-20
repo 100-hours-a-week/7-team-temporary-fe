@@ -37,7 +37,11 @@ META
     stage("Build Docker image") {
       steps {
         script {
-          def isDeployBranch = !env.CHANGE_ID?.trim() && ((env.BRANCH_NAME ?: "") == "main" || (env.BRANCH_NAME ?: "").startsWith("release/"))
+          def isDeployBranch = !env.CHANGE_ID?.trim() && (
+            (env.BRANCH_NAME ?: "") == "main" ||
+            (env.BRANCH_NAME ?: "").startsWith("release/") ||
+            (env.BRANCH_NAME ?: "") == "feature/dockerfile"
+          )
           def apiBaseCredential = (env.BRANCH_NAME ?: "").startsWith("release/")
             ? "next-public-api-base-url-staging"
             : "next-public-api-base-url-production"
