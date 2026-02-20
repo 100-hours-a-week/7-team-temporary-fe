@@ -42,7 +42,9 @@ META
             (env.BRANCH_NAME ?: "").startsWith("release/") ||
             (env.BRANCH_NAME ?: "") == "feature/dockerfile"
           )
-          def apiBaseCredential = (env.BRANCH_NAME ?: "").startsWith("release/")
+          def branchName = (env.BRANCH_NAME ?: "")
+          def isStagingBranch = branchName.startsWith("release/") || branchName == "feature/dockerfile"
+          def apiBaseCredential = isStagingBranch
             ? "next-public-api-base-url-staging"
             : "next-public-api-base-url-production"
 
