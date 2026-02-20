@@ -89,7 +89,6 @@ META
               string(credentialsId: "next-public-firebase-storage-bucket", variable: "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"),
               string(credentialsId: "next-public-firebase-messaging-sender-id", variable: "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
               string(credentialsId: "next-public-firebase-app-id", variable: "NEXT_PUBLIC_FIREBASE_APP_ID"),
-              string(credentialsId: "next-public-firebase-measurement-id", variable: "NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID"),
               string(credentialsId: "next-public-firebase-vapid-key", variable: "NEXT_PUBLIC_FIREBASE_VAPID_KEY")
             ]) {
               sh buildScript
