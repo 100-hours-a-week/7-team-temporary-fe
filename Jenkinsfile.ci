@@ -39,11 +39,11 @@ META
         script {
           def isDeployBranch = !env.CHANGE_ID?.trim() && (
             (env.BRANCH_NAME ?: "") == "main" ||
-            (env.BRANCH_NAME ?: "").startsWith("release/") ||
-            (env.BRANCH_NAME ?: "") == "feature/dockerfile"
+            (env.BRANCH_NAME ?: "") == "feature/jenkins-prod" ||
+            (env.BRANCH_NAME ?: "").startsWith("release/")
           )
           def branchName = (env.BRANCH_NAME ?: "")
-          def isStagingBranch = branchName.startsWith("release/") || branchName == "feature/dockerfile"
+          def isStagingBranch = branchName.startsWith("release/")
           def apiBaseCredential = isStagingBranch
             ? "next-public-api-base-url-staging"
             : "next-public-api-base-url-production"
@@ -138,7 +138,11 @@ META
     stage("Push image to ECR") {
       when {
         expression {
-          return !env.CHANGE_ID?.trim() && ((env.BRANCH_NAME ?: "") == "main" || (env.BRANCH_NAME ?: "").startsWith("release/") || (env.BRANCH_NAME ?: "") == "feature/dockerfile")
+          return !env.CHANGE_ID?.trim() && (
+            (env.BRANCH_NAME ?: "") == "main" ||
+            (env.BRANCH_NAME ?: "") == "feature/jenkins-prod" ||
+            (env.BRANCH_NAME ?: "").startsWith("release/")
+          )
         }
       }
       steps {

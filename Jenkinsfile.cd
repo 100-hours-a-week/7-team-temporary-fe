@@ -103,7 +103,7 @@ META
     stage("Deploy to AWS Staging (release/*)") {
       when {
         expression {
-          return (env.BRANCH_NAME ?: "").startsWith("feature/docker")
+          return (env.BRANCH_NAME ?: "").startsWith("release/")
         }
       }
       steps {
@@ -169,9 +169,11 @@ EOSSH
       }
     }
 
-    stage("Deploy to AWS Production Blue/Green (main)") {
+    stage("Deploy to AWS Production Blue/Green (main|feature/jenkins-prod)") {
       when {
-        branch "main"
+        expression {
+          return (env.BRANCH_NAME ?: "") == "main" || (env.BRANCH_NAME ?: "") == "feature/jenkins-prod"
+        }
       }
       steps {
         withCredentials([
