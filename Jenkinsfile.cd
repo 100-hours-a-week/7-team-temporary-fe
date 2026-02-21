@@ -337,8 +337,7 @@ JSON
               --output text)"
 
             if [ "$IS_DEFAULT_RULE" = "True" ]; then
-              LISTENER_ARN="${ALB_RULE_ARN/listener-rule\\//listener/}"
-              LISTENER_ARN="${LISTENER_ARN%/*}"
+              LISTENER_ARN="$(echo "$ALB_RULE_ARN" | sed 's#listener-rule/#listener/#' | sed 's#/[^/]*$##')"
               aws elbv2 modify-listener \
                 --listener-arn "$LISTENER_ARN" \
                 --default-actions file://.alb-actions.json >/dev/null
