@@ -17,7 +17,6 @@ pipeline {
     PROD_BLUE_PORT = "3000"
     PROD_GREEN_PORT = "3001"
     PROD_HEALTH_PATH = "/api/example"
-    PROD_NGINX_UPSTREAM_CONF = "/etc/nginx/sites-available/molip"
   }
 
   stages {
@@ -178,14 +177,62 @@ EOSSH
       steps {
         withCredentials([
           sshUserPrivateKey(credentialsId: "ssh-key-production", keyFileVariable: "SSH_KEY", usernameVariable: "SSH_USER"),
-          string(credentialsId: "host-production", variable: "AWS_HOST")
+          string(credentialsId: "host-production", variable: "AWS_HOST"),
+          string(credentialsId: "aws-access-key-id", variable: "AWS_ACCESS_KEY_ID"),
+          string(credentialsId: "aws-secret-access-key", variable: "AWS_SECRET_ACCESS_KEY"),
+          string(credentialsId: "aws-region", variable: "AWS_REGION"),
+          string(credentialsId: "alb-production-rule-arn", variable: "ALB_RULE_ARN"),
+          string(credentialsId: "alb-production-blue-tg-arn", variable: "ALB_BLUE_TG_ARN"),
+          string(credentialsId: "alb-production-green-tg-arn", variable: "ALB_GREEN_TG_ARN")
         ]) {
           sh '''
             set -eu
             command -v scp >/dev/null 2>&1 || { echo "scp is required on Jenkins agent"; exit 1; }
             command -v ssh >/dev/null 2>&1 || { echo "ssh is required on Jenkins agent"; exit 1; }
+            command -v aws >/dev/null 2>&1 || { echo "aws cli is required on Jenkins agent"; exit 1; }
 
             . ./.cd-meta.env
+            export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION="$AWS_REGION"
+
+            normalize_weight() {
+              VALUE="${1:-}"
+              case "$VALUE" in
+                ""|None|null)
+                  echo 0
+                  ;;
+                *)
+                  echo "$VALUE"
+                  ;;
+              esac
+            }
+
+            get_weight() {
+              TG_ARN="$1"
+              aws elbv2 describe-rules \
+                --rule-arns "$ALB_RULE_ARN" \
+                --query "Rules[0].Actions[?Type=='forward'] | [0].ForwardConfig.TargetGroups[?TargetGroupArn==\\`${TG_ARN}\\`] | [0].Weight" \
+                --output text 2>/dev/null || true
+            }
+
+            wait_target_healthy() {
+              TG_ARN="$1"
+              TARGET_PORT="$2"
+              RETRIES="${3:-24}"
+              I=1
+              while [ "$I" -le "$RETRIES" ]; do
+                STATE="$(aws elbv2 describe-target-health \
+                  --target-group-arn "$TG_ARN" \
+                  --query "TargetHealthDescriptions[?Target.Port==\\`${TARGET_PORT}\\`].TargetHealth.State | [0]" \
+                  --output text 2>/dev/null || true)"
+                if [ "$STATE" = "healthy" ]; then
+                  return 0
+                fi
+                echo "Target group health not ready yet (port=${TARGET_PORT}, state=${STATE:-unknown}, attempt=${I}/${RETRIES})"
+                sleep 5
+                I=$((I + 1))
+              done
+              return 1
+            }
 
             mkdir -p ~/.ssh
             chmod 700 ~/.ssh
@@ -193,8 +240,32 @@ EOSSH
 
             scp -i "$SSH_KEY" "$IMAGE_ARCHIVE" "${SSH_USER}@${AWS_HOST}:/tmp/${IMAGE_ARCHIVE}"
 
+            BLUE_WEIGHT="$(normalize_weight "$(get_weight "$ALB_BLUE_TG_ARN")")"
+            GREEN_WEIGHT="$(normalize_weight "$(get_weight "$ALB_GREEN_TG_ARN")")"
+
+            if [ "$BLUE_WEIGHT" -ge "$GREEN_WEIGHT" ]; then
+              ACTIVE_NAME="$PROD_BLUE_NAME"
+              ACTIVE_TG_ARN="$ALB_BLUE_TG_ARN"
+              IDLE_NAME="$PROD_GREEN_NAME"
+              IDLE_PORT="$PROD_GREEN_PORT"
+              IDLE_TG_ARN="$ALB_GREEN_TG_ARN"
+              BLUE_NEW_WEIGHT=0
+              GREEN_NEW_WEIGHT=100
+            else
+              ACTIVE_NAME="$PROD_GREEN_NAME"
+              ACTIVE_TG_ARN="$ALB_GREEN_TG_ARN"
+              IDLE_NAME="$PROD_BLUE_NAME"
+              IDLE_PORT="$PROD_BLUE_PORT"
+              IDLE_TG_ARN="$ALB_BLUE_TG_ARN"
+              BLUE_NEW_WEIGHT=100
+              GREEN_NEW_WEIGHT=0
+            fi
+
+            echo "ALB weight before switch: blue=${BLUE_WEIGHT}, green=${GREEN_WEIGHT}"
+            echo "Deploying idle slot: name=${IDLE_NAME}, hostPort=${IDLE_PORT}"
+
             ssh -i "$SSH_KEY" "${SSH_USER}@${AWS_HOST}" \
-              "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' BLUE_NAME='${PROD_BLUE_NAME}' GREEN_NAME='${PROD_GREEN_NAME}' BLUE_PORT='${PROD_BLUE_PORT}' GREEN_PORT='${PROD_GREEN_PORT}' HEALTH_PATH='${PROD_HEALTH_PATH}' UPSTREAM_CONF='${PROD_NGINX_UPSTREAM_CONF}' bash -se" <<'EOSSH'
+              "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' IDLE_NAME='${IDLE_NAME}' IDLE_PORT='${IDLE_PORT}' HEALTH_PATH='${PROD_HEALTH_PATH}' bash -se" <<'EOSSH'
               set -eu
               command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
               command -v curl >/dev/null 2>&1 || { echo "curl is required on target host"; exit 1; }
@@ -213,28 +284,9 @@ EOSSH
                 return 1
               }
 
-              [ -f "$UPSTREAM_CONF" ] || { echo "upstream conf not found: $UPSTREAM_CONF"; exit 1; }
-
               gunzip -c "/tmp/${IMAGE_ARCHIVE}" | docker load
 
-              ACTIVE_PORT="$(grep -Eo "127\\.0\\.0\\.1:(${BLUE_PORT}|${GREEN_PORT})" "$UPSTREAM_CONF" | head -n 1 | cut -d: -f2 || true)"
-              if [ "$ACTIVE_PORT" = "$BLUE_PORT" ]; then
-                ACTIVE_NAME="$BLUE_NAME"
-                IDLE_NAME="$GREEN_NAME"
-                IDLE_PORT="$GREEN_PORT"
-              elif [ "$ACTIVE_PORT" = "$GREEN_PORT" ]; then
-                ACTIVE_NAME="$GREEN_NAME"
-                IDLE_NAME="$BLUE_NAME"
-                IDLE_PORT="$BLUE_PORT"
-              else
-                ACTIVE_PORT="$BLUE_PORT"
-                ACTIVE_NAME="$BLUE_NAME"
-                IDLE_NAME="$GREEN_NAME"
-                IDLE_PORT="$GREEN_PORT"
-              fi
-
               IDLE_HEALTH_URL="http://127.0.0.1:${IDLE_PORT}${HEALTH_PATH}"
-              ROUTED_HEALTH_URL="http://127.0.0.1${HEALTH_PATH}"
 
               PORT_HOLDER_IDS="$(docker ps --filter "publish=${IDLE_PORT}" --format '{{.ID}}' || true)"
               if [ -n "$PORT_HOLDER_IDS" ]; then
@@ -251,21 +303,46 @@ EOSSH
                 exit 1
               }
 
-              sudo sed -i -E "0,/127\\.0\\.0\\.1:(${BLUE_PORT}|${GREEN_PORT})/s//127.0.0.1:${IDLE_PORT}/" "$UPSTREAM_CONF"
-              sudo nginx -t
-              sudo systemctl reload nginx || sudo nginx -s reload
-
-              if ! wait_healthy "$ROUTED_HEALTH_URL" 15; then
-                echo "FAIL: routed health check failed -> rollback"
-                sudo sed -i -E "0,/127\\.0\\.0\\.1:(${BLUE_PORT}|${GREEN_PORT})/s//127.0.0.1:${ACTIVE_PORT}/" "$UPSTREAM_CONF"
-                sudo nginx -t
-                sudo systemctl reload nginx || sudo nginx -s reload
-                docker rm -f "$IDLE_NAME" >/dev/null 2>&1 || true
-                exit 1
-              fi
-
-              docker rm -f "$ACTIVE_NAME" >/dev/null 2>&1 || true
               rm -f "/tmp/${IMAGE_ARCHIVE}" || true
+EOSSH
+
+            wait_target_healthy "$IDLE_TG_ARN" "$IDLE_PORT" 24 || {
+              echo "FAIL: ALB target group did not become healthy for idle port ${IDLE_PORT}"
+              exit 1
+            }
+
+            cat > .alb-actions.json <<JSON
+[
+  {
+    "Type": "forward",
+    "ForwardConfig": {
+      "TargetGroups": [
+        {
+          "TargetGroupArn": "${ALB_BLUE_TG_ARN}",
+          "Weight": ${BLUE_NEW_WEIGHT}
+        },
+        {
+          "TargetGroupArn": "${ALB_GREEN_TG_ARN}",
+          "Weight": ${GREEN_NEW_WEIGHT}
+        }
+      ]
+    }
+  }
+]
+JSON
+
+            aws elbv2 modify-rule \
+              --rule-arn "$ALB_RULE_ARN" \
+              --actions file://.alb-actions.json >/dev/null
+            rm -f .alb-actions.json
+
+            echo "ALB traffic switched: blue=${BLUE_NEW_WEIGHT}, green=${GREEN_NEW_WEIGHT}"
+
+            ssh -i "$SSH_KEY" "${SSH_USER}@${AWS_HOST}" \
+              "ACTIVE_NAME='${ACTIVE_NAME}' bash -se" <<'EOSSH'
+              set -eu
+              command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
+              docker rm -f "$ACTIVE_NAME" >/dev/null 2>&1 || true
 EOSSH
           '''
         }
