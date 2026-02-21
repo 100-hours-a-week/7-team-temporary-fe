@@ -6,16 +6,24 @@ import { toRetroCreateRequestDto } from "./dto";
 import type { RetroCreateFormModel, RetroCreateRequestDto } from "./types";
 
 interface UseRetroCreateMutationOptions {
+  dayPlanId: number | null;
+  invalidateKeys?: Array<readonly unknown[]>;
   onSuccess?: (data: RetroCreateResponseDto) => void;
 }
 
-export function useRetroCreateMutation(options: UseRetroCreateMutationOptions = {}) {
+export function useRetroCreateMutation(options: UseRetroCreateMutationOptions) {
   return useApiMutation<RetroCreateFormModel, RetroCreateRequestDto, RetroCreateResponseDto>({
-    url: Endpoint.RETRO.BASE,
+    url: () => {
+      if (!options.dayPlanId) {
+        throw new Error("dayPlanId가 없습니다.");
+      }
+      return Endpoint.DAY_PLAN.REFLECTION(options.dayPlanId);
+    },
     method: "POST",
     dtoFn: toRetroCreateRequestDto,
     authRequired: true,
     refreshOnUnauthorized: true,
+    invalidateKeys: options.invalidateKeys ?? [],
     onSuccess: (data) => options.onSuccess?.(data),
   });
 }

@@ -7,12 +7,29 @@ interface PresignedUploadUrlResponse {
   uploadUrl: string;
   imageKey: string;
   expiresAt: string;
+  imageId?: number | string;
+  reflectionImageId?: number | string;
 }
 
 interface ImageViewUrlResponse {
   url: string;
   expiresAt: string;
   imageKey: string;
+}
+
+function parsePositiveInt(value: unknown): number | null {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isInteger(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return null;
 }
 
 export async function requestPresignedUrl(type: ImageType) {
@@ -60,12 +77,15 @@ export async function requestImageViewUrl(imageKey: string, type: ImageType) {
 }
 
 export async function uploadImageAndResolveViewUrl(file: File, type: ImageType) {
-  const { uploadUrl, imageKey } = await requestPresignedUrl(type);
+  const uploadData = await requestPresignedUrl(type);
+  const { uploadUrl, imageKey } = uploadData;
   await uploadToPresignedUrl(uploadUrl, file);
   const viewUrl = await requestImageViewUrl(imageKey, type);
+  const reflectionImageId = parsePositiveInt(uploadData.reflectionImageId ?? uploadData.imageId);
 
   return {
     imageKey,
     viewUrl,
+    reflectionImageId,
   };
 }

@@ -69,5 +69,6 @@ export function useRetroWriteImageUpload({ showToast }: UseRetroWriteImageUpload
     uploadedImages,
     isImageUploading,
     handleImageChange,
+    clearUploadedImages: () => setUploadedImages([]),
   };
 }

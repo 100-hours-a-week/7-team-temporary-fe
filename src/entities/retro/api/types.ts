@@ -1,4 +1,3 @@
 export interface RetroCreateResponseDto {
-  reflectionImageIds: number[];
-  content: string;
+  reflectionId: number;
 }

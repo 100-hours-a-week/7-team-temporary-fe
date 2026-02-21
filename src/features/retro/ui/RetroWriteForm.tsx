@@ -12,6 +12,9 @@ import { useMutationErrorEffect } from "@/shared/query";
 import {
   RETRO_CONTENT_MAX_HELPER_TEXT,
   RETRO_CONTENT_MAX_LENGTH,
+  RETRO_CREATE_FORM_DEFAULTS,
+  RETRO_IMAGE_SYNC_TOAST_MESSAGE,
+  RETRO_MISSING_DAY_PLAN_TOAST_MESSAGE,
   useRetroCreateForm,
   useRetroCreateMutation,
   useRetroWriteImageUpload,
@@ -19,9 +22,20 @@ import {
 
 interface RetroWriteFormProps {
   dateLabel: string;
+  dayPlanId: number | null;
+  invalidateKeys?: Array<readonly unknown[]>;
+  onCreated?: () => void;
 }
 
-export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
+const isPositiveImageId = (value: number | null): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value > 0;
+
+export function RetroWriteForm({
+  dateLabel,
+  dayPlanId,
+  invalidateKeys = [],
+  onCreated,
+}: RetroWriteFormProps) {
   const { showToast } = useToast();
   const [isContentOverflow, setIsContentOverflow] = useState(false);
 
@@ -32,29 +46,39 @@ export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
     setValue,
     canSubmit,
     handleSubmit,
+    reset,
     formState: { errors },
   } = form;
 
+  const { uploadedImages, isImageUploading, handleImageChange, clearUploadedImages } =
+    useRetroWriteImageUpload({ showToast });
+
   const createRetroMutation = useRetroCreateMutation({
+    dayPlanId,
+    invalidateKeys,
     onSuccess: () => {
       showToast("회고가 생성되었습니다.", "success");
-      setValue("content", "", { shouldValidate: true });
+      reset(RETRO_CREATE_FORM_DEFAULTS);
+      clearUploadedImages();
       setIsContentOverflow(false);
+      onCreated?.();
     },
   });
   useMutationErrorEffect(createRetroMutation);
-
-  const { uploadedImages, isImageUploading, handleImageChange } = useRetroWriteImageUpload({
-    showToast,
-  });
 
   const visibility = watch("visibility") as RetroVisibility;
   const content = watch("content") ?? "";
   const isPublic = visibility === RETRO_VISIBILITY.PUBLIC;
   const previewUrls = uploadedImages.map((image) => image.viewUrl);
-  const isUploadDisabled = !canSubmit || isImageUploading || createRetroMutation.isPending;
+  const isUploadDisabled =
+    !canSubmit || !dayPlanId || isImageUploading || createRetroMutation.isPending;
 
   useEffect(() => {
+    const reflectionImageIds = uploadedImages
+      .map((image) => image.reflectionImageId)
+      .filter(isPositiveImageId);
+
+    setValue("reflectionImageIds", reflectionImageIds, { shouldValidate: true });
     setValue(
       "uploadedImageKeys",
       uploadedImages.map((image) => image.imageKey),
@@ -84,6 +108,16 @@ export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
   };
 
   const handleSubmitRetro = handleSubmit(async (values) => {
+    if (!dayPlanId) {
+      showToast(RETRO_MISSING_DAY_PLAN_TOAST_MESSAGE, "error");
+      return;
+    }
+
+    if (values.uploadedImageKeys.length !== values.reflectionImageIds.length) {
+      showToast(RETRO_IMAGE_SYNC_TOAST_MESSAGE, "error");
+      return;
+    }
+
     await createRetroMutation.mutateAsync(values);
   });
 
@@ -111,7 +145,7 @@ export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
               type="file"
               accept="image/*"
               multiple
-              disabled={isImageUploading}
+              disabled={isImageUploading || createRetroMutation.isPending}
               className="sr-only"
               onChange={handleImageChange}
             />

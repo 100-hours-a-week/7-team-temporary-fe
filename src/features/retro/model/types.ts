@@ -10,9 +10,11 @@ export interface RetroCreateFormModel {
 export interface RetroCreateRequestDto {
   reflectionImageIds: number[];
   content: string;
+  isPublic: boolean;
 }
 
 export interface UploadedRetroImage {
   imageKey: string;
   viewUrl: string;
+  reflectionImageId: number | null;
 }
