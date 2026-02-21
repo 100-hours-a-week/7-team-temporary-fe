@@ -381,6 +381,7 @@ EOSSH
         }
 
         def statusText = currentBuild.currentResult == "SUCCESS" ? "✅ CD 성공" : "🚨 CD 실패"
+        /*
         if (hasWorkspace) {
           try {
             withCredentials([string(credentialsId: "discord-webhook-url", variable: "DISCORD_WEBHOOK_URL")]) {
@@ -398,6 +399,8 @@ EOSSH
         } else {
           echo "Skip Discord notification: no workspace context"
         }
+        */
+        echo "Skip Discord notification: disabled (commented out)"
       }
     }
   }

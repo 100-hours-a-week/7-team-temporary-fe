@@ -211,6 +211,7 @@ META
           context = "PR #${env.CHANGE_ID} (${env.CHANGE_BRANCH ?: "unknown"} -> ${env.CHANGE_TARGET ?: "unknown"})"
         }
 
+        /*
         if (hasWorkspace) {
           try {
             withCredentials([string(credentialsId: "discord-webhook-url", variable: "DISCORD_WEBHOOK_URL")]) {
@@ -228,6 +229,8 @@ META
         } else {
           echo "Skip Discord notification: no workspace context"
         }
+        */
+        echo "Skip Discord notification: disabled (commented out)"
       }
     }
     success {
