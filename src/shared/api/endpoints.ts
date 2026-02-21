@@ -49,6 +49,7 @@ export const Endpoint = {
     SCHEDULE: taskPath("/day-plan/schedule"),
     PERIOD_SCHEDULES: taskPath("/day-plan/period/schedules"),
     SCHEDULE_BY_ID: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/schedule`),
+    REFLECTION: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/reflection`),
     AI_ARRANGEMENT: (dayPlanId: number) =>
       chatPath(`/day-plan/${dayPlanId}/schedules/ai-arrangement`),
     SCHEDULES_BY_ID: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/schedules`),
