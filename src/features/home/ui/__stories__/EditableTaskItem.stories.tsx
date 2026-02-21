@@ -1,7 +1,7 @@
 "use client";
 
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { EditableTaskItem } from "../EditableTaskItem";
+import { EditableTaskItem } from "@/entities/day-plan";
 import type { EditableTaskItemModel } from "@/entities/day-plan";
 
 const meta: Meta<typeof EditableTaskItem> = {

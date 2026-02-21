@@ -1,6 +1,5 @@
 import styled from "@emotion/styled";
-
-import type { ExcludedTaskItemModel } from "@/entities/day-plan";
+import type { ExcludedTaskItemModel } from "../model/taskModels";
 
 type ExcludedTaskItemVariant = "DEFAULT" | "PENDING_SWAP" | "TIME_CONFLICT";
 

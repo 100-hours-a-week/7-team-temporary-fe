@@ -6,8 +6,7 @@ import { css, keyframes } from "@emotion/react";
 import { cn } from "@/shared/lib";
 
 import { Icon } from "@/shared/ui/icon";
-
-import type { TaskItemModel } from "@/entities/day-plan";
+import type { TaskItemModel } from "../model/taskModels";
 
 interface HomeTaskItemProps {
   task: TaskItemModel;
