@@ -1,7 +1,7 @@
 import { useHomePlanStore } from "@/entities/day-plan";
 import { RetroWriteStackPage } from "@/pages/retro";
 import { useStackPage } from "@/widgets/stack";
-import { HomePlanner } from "@/features/home";
+import { HomePlanner } from "@/widgets/home-planner";
 import { Icon } from "@/shared/ui/icon";
 import { PlannerEditStackPage } from "./ui/PlannerEditStackPage";
 
