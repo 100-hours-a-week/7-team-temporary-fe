@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AppHeader, ReportSheet } from "@/widgets/app-header";
 import { BottomNav, TabRoot, TabScope, useTab } from "@/widgets/tab-stack";
 import { StackPageRoot, StackPageScope, useStackPage } from "@/widgets/stack";
+import { FriendStackPage } from "@/pages/friend";
 import { HomePage } from "@/pages/home";
 import { ProfilePage } from "@/pages/profile";
 import { NotificationStackPage } from "@/pages/notification";
@@ -21,11 +22,15 @@ function AppShellHeader({ onReportClick }: AppShellHeaderProps) {
   const handleNotificationClick = async () => {
     push(<NotificationStackPage />);
   };
+  const handleFriendClick = async () => {
+    push(<FriendStackPage />);
+  };
 
   if (activeTab === "home") {
     return (
       <AppHeader
         title="홈"
+        onFriendClick={handleFriendClick}
         onNotificationClick={handleNotificationClick}
         onReportClick={onReportClick}
       />
@@ -36,6 +41,7 @@ function AppShellHeader({ onReportClick }: AppShellHeaderProps) {
     return (
       <AppHeader
         title="회고"
+        onFriendClick={handleFriendClick}
         onNotificationClick={handleNotificationClick}
         onReportClick={onReportClick}
       />
@@ -46,6 +52,7 @@ function AppShellHeader({ onReportClick }: AppShellHeaderProps) {
     return (
       <AppHeader
         title="프로필"
+        onFriendClick={handleFriendClick}
         onNotificationClick={handleNotificationClick}
         onReportClick={onReportClick}
       />
