@@ -331,9 +331,22 @@ EOSSH
 ]
 JSON
 
-            aws elbv2 modify-rule \
-              --rule-arn "$ALB_RULE_ARN" \
-              --actions file://.alb-actions.json >/dev/null
+            IS_DEFAULT_RULE="$(aws elbv2 describe-rules \
+              --rule-arns "$ALB_RULE_ARN" \
+              --query "Rules[0].IsDefault" \
+              --output text)"
+
+            if [ "$IS_DEFAULT_RULE" = "True" ]; then
+              LISTENER_ARN="${ALB_RULE_ARN/listener-rule\\//listener/}"
+              LISTENER_ARN="${LISTENER_ARN%/*}"
+              aws elbv2 modify-listener \
+                --listener-arn "$LISTENER_ARN" \
+                --default-actions file://.alb-actions.json >/dev/null
+            else
+              aws elbv2 modify-rule \
+                --rule-arn "$ALB_RULE_ARN" \
+                --actions file://.alb-actions.json >/dev/null
+            fi
             rm -f .alb-actions.json
 
             echo "ALB traffic switched: blue=${BLUE_NEW_WEIGHT}, green=${GREEN_NEW_WEIGHT}"
