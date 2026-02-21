@@ -1,6 +1,7 @@
 export {
   createDayPlanSchedule,
   fetchCurrentSchedule,
+  fetchDayPlanPeriodSchedules,
   fetchDayPlanSchedule,
   fetchDayPlanSchedules,
   fetchDayPlanScheduleById,
@@ -8,6 +9,8 @@ export {
 } from "./dayPlan.api";
 export type {
   CreateDayPlanScheduleRequestDto,
+  DayPlanPeriodScheduleItemDto,
+  DayPlanPeriodSchedulesResponseDto,
   DayPlanScheduleAssignedBy,
   DayPlanScheduleAssignmentStatus,
   DayPlanScheduleDuration,

@@ -91,3 +91,18 @@ export interface DayPlanScheduleResponseDto {
   totalElements: number;
   totalPages: number;
 }
+
+export interface DayPlanPeriodScheduleItemDto {
+  date: string;
+  hasPlan: boolean;
+}
+
+/**
+ * 기간 단위 일정 존재 여부 조회 응답 DTO.
+ * - API: GET /day-plan/period/schedules
+ */
+export interface DayPlanPeriodSchedulesResponseDto {
+  startDate: string;
+  endDate: string;
+  days: DayPlanPeriodScheduleItemDto[];
+}

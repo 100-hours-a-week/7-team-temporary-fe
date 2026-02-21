@@ -1,4 +1,4 @@
-import { WEEKDAY_LABELS } from "../model/calendar";
+import { WEEKDAY_LABELS } from "@/features/home";
 
 export function WeekdayLabels() {
   return (

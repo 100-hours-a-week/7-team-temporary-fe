@@ -3,7 +3,7 @@ import type { CSSProperties, PointerEvent } from "react";
 import { useCallback, useRef, useState } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 
-import type { EditableTaskItemModel } from "@/entities/day-plan";
+import type { EditableTaskItemModel } from "../model/taskModels";
 import { TaskItemActionRow } from "./TaskItemActionRow";
 
 interface EditableTaskItemProps {

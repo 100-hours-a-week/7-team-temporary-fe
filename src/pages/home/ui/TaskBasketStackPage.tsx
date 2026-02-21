@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { TaskSplitGroup, TaskSplitItem } from "@/features/home";
 import type { TodoCartTaskItemModel } from "@/entities/day-plan";
-import { TaskBasketAddSheet, TaskSplitSheetContent, TodoList } from "@/features/home";
+import { TaskBasketAddSheet, TaskSplitSheetContent } from "@/features/home";
 import {
   dayPlanQueryKeys,
   useDayPlanScheduleByIdQuery,
@@ -17,6 +17,7 @@ import { Icon } from "@/shared/ui/icon";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useStackPage } from "@/widgets/stack";
 import { useToast } from "@/shared/ui/toast";
+import { TodoList } from "@/widgets/planner-edit";
 import { AiArrangeSheetContent } from "./AiArrangeSheet";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };

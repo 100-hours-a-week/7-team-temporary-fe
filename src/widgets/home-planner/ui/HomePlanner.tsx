@@ -5,10 +5,9 @@ import type { CSSProperties, ProfilerOnRenderCallback } from "react";
 
 import { ShinyText } from "@/shared/ui";
 import { Icon } from "@/shared/ui/icon";
-
-import { useHomePlanner } from "../model/useHomePlanner";
-import { HomeTaskItem } from "./HomeTaskItem";
-import { HomeWeekSelector } from "./HomeWeekSelector";
+import { HomeTaskItem } from "@/entities/day-plan";
+import { useHomePlanner } from "@/features/home";
+import { HomeWeekSelector } from "@/widgets/home-week";
 
 export function HomePlanner() {
   const handlePlannerProfileRender = useCallback<ProfilerOnRenderCallback>(

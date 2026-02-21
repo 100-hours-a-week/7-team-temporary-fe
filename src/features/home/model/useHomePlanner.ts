@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { toTaskItemModelFromHomeTask, type TaskItemModel } from "@/entities/day-plan";
-import { useHomePlanStore } from "@/entities/day-plan";
+import {
+  toTaskItemModelFromHomeTask,
+  type TaskItemModel,
+  useHomePlanStore,
+} from "@/entities/day-plan";
 import { useHomePlannerCalendar } from "./useHomePlannerCalendar";
 import { useHomePlannerQueries } from "./useHomePlannerQueries";
 import { useMergedTasks } from "./useMergedTasks";
+import { toHomeWeekPlanPresenceVM } from "./planPresenceViewModel";
 import { usePlannerStatus } from "./usePlannerStatus";
 
 const PAGE_SIZE = 10;
@@ -69,22 +73,22 @@ export function useHomePlanner(): UseHomePlannerResult {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const queryDate = useMemo(() => formatDateParam(selectedDate ?? today), [selectedDate, today]);
-  const prefetchAnchor = selectedDate ?? today;
+  const weekStartDate = useMemo(() => formatDateParam(weekDays[0]), [weekDays]);
+  const weekEndDate = useMemo(() => formatDateParam(weekDays[weekDays.length - 1]), [weekDays]);
   const {
     data,
     isLoading,
     isError,
-    weekPlanQueries,
+    periodSchedulesModel,
     currentScheduleData,
     isCurrentTaskLoading,
     isCurrentTaskError,
-    refetchCurrentSchedule,
   } = useHomePlannerQueries({
     queryDate,
     currentPage,
     pageSize: PAGE_SIZE,
-    weekDays,
-    prefetchAnchor,
+    weekStartDate,
+    weekEndDate,
   });
   const setHomePlan = useHomePlanStore((state) => state.setHomePlan);
 
@@ -92,29 +96,29 @@ export function useHomePlanner(): UseHomePlannerResult {
     setCurrentPage(1);
   }, [queryDate]);
 
-  const { baseTasks, tasks, baseCompletionById, hasMore } = useMergedTasks({
+  const { tasks, baseCompletionById, hasMore } = useMergedTasks({
     data,
     currentPage,
     pageSize: PAGE_SIZE,
     overrides: completionOverrides,
     resetKey: queryDate,
   });
-  const planPresenceByDate = useMemo(() => {
-    const map = new Map<string, boolean>();
-    weekDays.forEach((day, index) => {
-      const date = formatDateParam(day);
-      if (date === queryDate) {
-        map.set(date, (data?.totalElements ?? 0) > 0);
-        return;
-      }
-      const query = weekPlanQueries[index];
-      map.set(date, (query?.data?.content.length ?? 0) > 0);
-    });
-    return map;
-  }, [weekDays, weekPlanQueries, data?.totalElements, queryDate]);
+
+  const weekDates = useMemo(() => weekDays.map((day) => formatDateParam(day)), [weekDays]);
+  const hasPlanVM = useMemo(
+    () =>
+      toHomeWeekPlanPresenceVM({
+        weekDates,
+        periodSchedules: periodSchedulesModel,
+        selectedDate: queryDate,
+        selectedDateHasPlan: data?.totalElements !== undefined ? data.totalElements > 0 : undefined,
+      }),
+    [weekDates, periodSchedulesModel, queryDate, data?.totalElements],
+  );
+
   const hasPlan = useCallback(
-    (day: Date) => planPresenceByDate.get(formatDateParam(day)) ?? false,
-    [planPresenceByDate],
+    (day: Date) => hasPlanVM.hasPlanByDate.get(formatDateParam(day)) ?? false,
+    [hasPlanVM],
   );
   const handleToggleComplete = useCallback(
     (taskId: number) => {

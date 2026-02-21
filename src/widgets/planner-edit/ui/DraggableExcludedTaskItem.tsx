@@ -3,8 +3,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 
-import { ExcludedTaskItem } from "@/features/home";
-import type { EditableTaskItemModel } from "@/entities/day-plan";
+import { ExcludedTaskItem, type EditableTaskItemModel } from "@/entities/day-plan";
 
 type DraggableExcludedTaskItemProps = {
   task: EditableTaskItemModel;
