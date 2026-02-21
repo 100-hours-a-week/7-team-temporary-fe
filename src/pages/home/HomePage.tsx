@@ -8,13 +8,19 @@ import { PlannerEditStackPage } from "./ui/PlannerEditStackPage";
 export function HomePage() {
   const { push } = useStackPage();
   const homeDate = useHomePlanStore((state) => state.date);
+  const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
 
   const handleOpenPlannerEdit = () => {
     push(<PlannerEditStackPage />);
   };
 
   const handleOpenRetroWrite = () => {
-    push(<RetroWriteStackPage baseDate={homeDate} />);
+    push(
+      <RetroWriteStackPage
+        baseDate={homeDate}
+        dayPlanId={dayPlanId}
+      />,
+    );
   };
 
   return (
