@@ -9,6 +9,8 @@ export const dayPlanQueryKeys = {
     baseKeys.by("day-plan-schedule", date, page, size),
   dayPlanScheduleById: (dayPlanId: number, page: number, size: number) =>
     baseKeys.by("day-plan-schedule-by-id", dayPlanId, page, size),
+  dayPlanPeriodSchedules: (startDate: string, endDate: string) =>
+    baseKeys.by("day-plan-period-schedules", startDate, endDate),
   dayPlanSchedulesById: (dayPlanId: number, status: string, page: number, size: number) =>
     baseKeys.by("day-plan-schedules-by-id", dayPlanId, status, page, size),
   dayPlanScheduleCacheKeys: ({
