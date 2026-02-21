@@ -210,8 +210,8 @@ EOSSH
               TG_ARN="$1"
               aws elbv2 describe-rules \
                 --rule-arns "$ALB_RULE_ARN" \
-                --query "Rules[0].Actions[?Type=='forward'] | [0].ForwardConfig.TargetGroups[?TargetGroupArn==\\`${TG_ARN}\\`] | [0].Weight" \
-                --output text 2>/dev/null || true
+                --query "Rules[0].Actions[?Type=='forward'] | [0].ForwardConfig.TargetGroups[?TargetGroupArn=='${TG_ARN}'] | [0].Weight" \
+                --output text
             }
 
             wait_target_healthy() {
@@ -222,8 +222,8 @@ EOSSH
               while [ "$I" -le "$RETRIES" ]; do
                 STATE="$(aws elbv2 describe-target-health \
                   --target-group-arn "$TG_ARN" \
-                  --query "TargetHealthDescriptions[?Target.Port==\\`${TARGET_PORT}\\`].TargetHealth.State | [0]" \
-                  --output text 2>/dev/null || true)"
+                  --query "TargetHealthDescriptions[?Target.Port==\\`${TARGET_PORT}\\`] | [0].TargetHealth.State" \
+                  --output text)"
                 if [ "$STATE" = "healthy" ]; then
                   return 0
                 fi
