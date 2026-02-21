@@ -21,6 +21,7 @@ import Siren from "./assets/Siren-icon.svg";
 import Error from "./assets/Error-icon.svg";
 import Eye from "./assets/Eye-icon.svg";
 import EyeOff from "./assets/Eye-off-icon.svg";
+import Friend from "./assets/Friend-icon.svg";
 import Basket from "./assets/Basket-icon.svg";
 import CalendarPlus from "./assets/Calendar-plus-icon.svg";
 import Home_filled from "./assets/Home-filled-icon.svg";
@@ -57,6 +58,7 @@ export const IconMap = {
   error: Error,
   eye: Eye,
   eye_off: EyeOff,
+  friend: Friend,
   basket: Basket,
   calendar_plus: CalendarPlus,
   home_filled: Home_filled,
