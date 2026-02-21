@@ -3,7 +3,7 @@ import { createProxyRouteHandlers } from "../../_proxy/route-handler";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const handlers = createProxyRouteHandlers("legacy");
+const handlers = createProxyRouteHandlers("chat");
 
 export const GET = handlers.GET;
 export const POST = handlers.POST;
