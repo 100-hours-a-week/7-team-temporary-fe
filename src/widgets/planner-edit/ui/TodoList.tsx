@@ -6,8 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { DayPlanScheduleStatus } from "@/entities/day-plan";
 import type { TodoCartTaskItemModel } from "@/entities/day-plan";
 import { useDayPlanScheduleByIdQuery } from "@/entities/day-plan";
-import { TodoCartTaskItem } from "./TodoCartTaskItem";
-import type { TodoCartViewMode } from "./TodoCartTaskItem";
+import { TodoCartTaskItem, type TodoCartViewMode } from "@/entities/day-plan";
 
 type TodoListTask = TodoCartTaskItemModel & { status?: DayPlanScheduleStatus };
 

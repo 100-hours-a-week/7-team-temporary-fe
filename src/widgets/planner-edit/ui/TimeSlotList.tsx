@@ -1,5 +1,5 @@
 import type { TaskItemModel } from "@/entities/day-plan";
-import { HomeTaskItem } from "./HomeTaskItem";
+import { HomeTaskItem } from "@/entities/day-plan";
 
 interface TimeSlotListProps {
   slots: number[];

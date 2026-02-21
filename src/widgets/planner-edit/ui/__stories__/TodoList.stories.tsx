@@ -1,11 +1,11 @@
 "use client";
 
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { TodoList } from "../TodoList";
+import { TodoList } from "@/widgets/planner-edit";
 import type { TodoCartTaskItemModel } from "@/entities/day-plan";
 
 const meta: Meta<typeof TodoList> = {
-  title: "features/home/TodoList",
+  title: "widgets/planner-edit/TodoList",
   component: TodoList,
 };
 

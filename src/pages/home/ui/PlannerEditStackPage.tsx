@@ -4,16 +4,11 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "r
 import { useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 
-import {
-  END_HOUR,
-  EditableTaskItem,
-  ExcludedTaskItem,
-  START_HOUR,
-  TaskBasketAddSheet,
-  TimeSlotGrid,
-} from "@/features/home";
+import { END_HOUR, START_HOUR, TaskBasketAddSheet } from "@/features/home";
 import {
   dayPlanQueryKeys,
+  EditableTaskItem,
+  ExcludedTaskItem,
   type EditableTaskItemModel,
   type TodoCartTaskItemModel,
   useDayPlanScheduleByIdQuery,
@@ -31,6 +26,7 @@ import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
 import { TaskBasketStackPage } from "./TaskBasketStackPage";
 import {
   ExcludedTasksSheet,
+  TimeSlotGrid,
   capturePlannerEditScrollPosition,
   removeScheduleCache,
   restorePlannerEditScrollPosition,

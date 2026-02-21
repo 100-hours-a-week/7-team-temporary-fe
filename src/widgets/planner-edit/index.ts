@@ -2,6 +2,9 @@ export { resetDragState } from "./lib/resetDragState";
 export { capturePlannerEditScrollPosition, restorePlannerEditScrollPosition } from "./lib/scroll";
 export { removeScheduleCache, updateScheduleCache } from "./lib/scheduleCache";
 export { ExcludedTasksSheet } from "./ui/ExcludedTasksSheet";
+export { TimeSlotGrid } from "./ui/TimeSlotGrid";
+export { TimeSlotList } from "./ui/TimeSlotList";
+export { TodoList } from "./ui/TodoList";
 export { useExcludedTasksSheetState } from "./model/useExcludedTasksSheetState";
 export { usePlannerEditOptimisticUpdate } from "./model/usePlannerEditOptimisticUpdate";
 export {
