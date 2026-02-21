@@ -1,16 +1,21 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 
 import { RETRO_VISIBILITY, type RetroVisibility } from "@/entities/retro";
-import { uploadImageAndResolveViewUrl } from "@/shared/api";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { HorizontalImageAlbum } from "@/shared/ui/image";
 import { RetroContentField, RetroVisibilityToggle } from "@/shared/ui/retro";
 import { useToast } from "@/shared/ui/toast";
 import { useMutationErrorEffect } from "@/shared/query";
 
-import { useRetroCreateForm, useRetroCreateMutation } from "../model";
+import {
+  RETRO_CONTENT_MAX_HELPER_TEXT,
+  RETRO_CONTENT_MAX_LENGTH,
+  useRetroCreateForm,
+  useRetroCreateMutation,
+  useRetroWriteImageUpload,
+} from "../model";
 
 interface RetroWriteFormProps {
   dateLabel: string;
@@ -18,63 +23,73 @@ interface RetroWriteFormProps {
 
 export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
   const { showToast } = useToast();
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [isContentOverflow, setIsContentOverflow] = useState(false);
+
+  const form = useRetroCreateForm();
+  const {
+    register,
+    watch,
+    setValue,
+    canSubmit,
+    handleSubmit,
+    formState: { errors },
+  } = form;
+
   const createRetroMutation = useRetroCreateMutation({
     onSuccess: () => {
       showToast("회고가 생성되었습니다.", "success");
+      setValue("content", "", { shouldValidate: true });
+      setIsContentOverflow(false);
     },
   });
   useMutationErrorEffect(createRetroMutation);
 
-  const form = useRetroCreateForm({
-    onValid: (values) => {
-      createRetroMutation.mutate(values);
-    },
+  const { uploadedImages, isImageUploading, handleImageChange } = useRetroWriteImageUpload({
+    showToast,
   });
-  const { register, watch, setValue, submitForm, canSubmit } = form;
 
   const visibility = watch("visibility") as RetroVisibility;
-  const content = watch("content");
-  const reflectionImageIds = watch("reflectionImageIds");
+  const content = watch("content") ?? "";
   const isPublic = visibility === RETRO_VISIBILITY.PUBLIC;
-  const hasPayload =
-    content.trim().length > 0 || reflectionImageIds.length > 0 || previewUrls.length > 0;
+  const previewUrls = uploadedImages.map((image) => image.viewUrl);
+  const isUploadDisabled = !canSubmit || isImageUploading || createRetroMutation.isPending;
 
-  const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    if (files.length === 0) return;
+  useEffect(() => {
+    setValue(
+      "uploadedImageKeys",
+      uploadedImages.map((image) => image.imageKey),
+      { shouldValidate: true },
+    );
+  }, [uploadedImages, setValue]);
 
-    setIsImageUploading(true);
+  const contentField = register("content");
 
-    try {
-      const uploadResults = await Promise.allSettled(
-        files.map((file) => uploadImageAndResolveViewUrl(file, "REFLECTIONS")),
-      );
+  const handleContentChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    const nextValue = event.target.value;
 
-      const uploaded = uploadResults
-        .filter(
-          (result): result is PromiseFulfilledResult<{ imageKey: string; viewUrl: string }> =>
-            result.status === "fulfilled",
-        )
-        .map((result) => result.value);
-
-      if (uploaded.length > 0) {
-        setPreviewUrls((prev) => [...prev, ...uploaded.map((item) => item.viewUrl)]);
-      }
-
-      // TODO: 이미지 업로드 응답 스펙 확정 후 imageKey -> reflectionImageId 매핑 반영
-      setValue("reflectionImageIds", [], { shouldValidate: true, shouldDirty: true });
-
-      const failedCount = uploadResults.length - uploaded.length;
-      if (failedCount > 0) {
-        showToast(`이미지 ${failedCount}개 업로드에 실패했습니다.`, "error");
-      }
-    } finally {
-      setIsImageUploading(false);
-      event.target.value = "";
+    if (nextValue.length > RETRO_CONTENT_MAX_LENGTH) {
+      setIsContentOverflow(true);
+      setValue("content", nextValue.slice(0, RETRO_CONTENT_MAX_LENGTH), {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      return;
     }
+
+    if (isContentOverflow) {
+      setIsContentOverflow(false);
+    }
+
+    setValue("content", nextValue, { shouldValidate: true, shouldDirty: true });
   };
+
+  const handleSubmitRetro = handleSubmit(async (values) => {
+    await createRetroMutation.mutateAsync(values);
+  });
+
+  const contentHelperText = isContentOverflow
+    ? RETRO_CONTENT_MAX_HELPER_TEXT
+    : (errors.content?.message ?? undefined);
 
   return (
     <>
@@ -109,7 +124,12 @@ export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
         <RetroContentField
           placeholder="(선택) 내용을 입력하세요."
           className="mt-6"
-          {...register("content")}
+          value={content}
+          name={contentField.name}
+          onBlur={contentField.onBlur}
+          onChange={handleContentChange}
+          invalid={isContentOverflow || Boolean(errors.content)}
+          helperText={contentHelperText}
         />
 
         <div className="mt-5 flex items-center">
@@ -128,8 +148,8 @@ export function RetroWriteForm({ dateLabel }: RetroWriteFormProps) {
       <FixedActionBar>
         <PrimaryButton
           type="button"
-          onClick={() => void submitForm()}
-          disabled={!hasPayload || !canSubmit || isImageUploading || createRetroMutation.isPending}
+          onClick={() => void handleSubmitRetro()}
+          disabled={isUploadDisabled}
         >
           {createRetroMutation.isPending ? "업로드 중..." : "업로드"}
         </PrimaryButton>
