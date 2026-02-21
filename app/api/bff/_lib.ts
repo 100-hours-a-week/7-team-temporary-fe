@@ -29,6 +29,8 @@ type HeadersWithGetSetCookie = Headers & {
   raw?: () => Record<string, string[]>;
 };
 
+export type ProxyTargetKind = "task" | "chat" | "legacy";
+
 function getHostFromUrl(url: string) {
   try {
     return new URL(url).host;
@@ -37,9 +39,8 @@ function getHostFromUrl(url: string) {
   }
 }
 
-function normalizeSetCookieForClient(cookie: string, req: NextRequest) {
+function normalizeSetCookieForClient(cookie: string, req: NextRequest, upstreamBase: string) {
   let normalized = cookie;
-  const upstreamBase = process.env.API_PROXY_TARGET?.trim();
   const upstreamHost = upstreamBase ? getHostFromUrl(upstreamBase) : null;
   const clientHost = req.nextUrl.host;
 
@@ -97,16 +98,38 @@ function ensureTrailingSlash(url: string) {
   return url.endsWith("/") ? url : `${url}/`;
 }
 
-/**
- * 프록시 경로 세그먼트와 원본 쿼리스트링을 기반으로 업스트림 URL을 생성한다.
- * 모든 환경(local/staging/prod)은 API_PROXY_TARGET만 다르고
- * 프록시 코드 자체는 동일하게 유지되도록 URL 조합 책임을 이 함수로 고정한다.
- */
-export function buildBackendUrl(req: NextRequest, path: string[]) {
-  const base = process.env.API_PROXY_TARGET?.trim();
-  if (!base) {
-    throw new Error("API_PROXY_TARGET is required");
+function getTaskProxyTarget() {
+  const taskTarget =
+    process.env.API_PROXY_TASK_TARGET?.trim() || process.env.API_PROXY_TARGET?.trim();
+  if (!taskTarget) {
+    throw new Error("API_PROXY_TASK_TARGET (or API_PROXY_TARGET) is required");
   }
+  return taskTarget;
+}
+
+function getChatProxyTarget() {
+  const chatTarget =
+    process.env.API_PROXY_CHAT_TARGET?.trim() || process.env.API_PROXY_TARGET?.trim();
+  if (!chatTarget) {
+    throw new Error("API_PROXY_CHAT_TARGET (or API_PROXY_TARGET) is required");
+  }
+  return chatTarget;
+}
+
+export function getProxyTarget(kind: ProxyTargetKind) {
+  if (kind === "chat") {
+    return getChatProxyTarget();
+  }
+
+  return getTaskProxyTarget();
+}
+
+/**
+ * 프록시 kind(task/chat/legacy)와 경로 세그먼트를 기반으로 업스트림 URL을 생성한다.
+ * task/chat은 분리된 타깃 환경변수를 사용하고, legacy는 task 타깃으로 호환된다.
+ */
+export function buildBackendUrl(req: NextRequest, path: string[], kind: ProxyTargetKind) {
+  const base = getProxyTarget(kind);
 
   const upstreamUrl = new URL(path.join("/"), ensureTrailingSlash(base));
   upstreamUrl.search = req.nextUrl.search;
@@ -137,7 +160,11 @@ export function buildUpstreamRequestHeaders(source: Headers) {
  * hop-by-hop 헤더는 제거하고, Set-Cookie는 단일/복수 케이스를 분기해 append 하여
  * 리프레시 토큰 쿠키가 손실되지 않도록 보존한다.
  */
-export function buildClientResponseHeaders(source: Headers, req: NextRequest) {
+export function buildClientResponseHeaders(
+  source: Headers,
+  req: NextRequest,
+  upstreamBase: string,
+) {
   const headers = new Headers();
   const sourceHeaders = source as HeadersWithGetSetCookie;
 
@@ -161,7 +188,7 @@ export function buildClientResponseHeaders(source: Headers, req: NextRequest) {
 
   if (setCookies.length > 0) {
     setCookies.forEach((cookie) =>
-      headers.append("set-cookie", normalizeSetCookieForClient(cookie, req)),
+      headers.append("set-cookie", normalizeSetCookieForClient(cookie, req, upstreamBase)),
     );
     return headers;
   }
@@ -169,7 +196,7 @@ export function buildClientResponseHeaders(source: Headers, req: NextRequest) {
   const singleCookie = source.get("set-cookie");
   if (singleCookie) {
     splitCombinedSetCookieHeader(singleCookie).forEach((cookie) =>
-      headers.append("set-cookie", normalizeSetCookieForClient(cookie, req)),
+      headers.append("set-cookie", normalizeSetCookieForClient(cookie, req, upstreamBase)),
     );
   }
 
