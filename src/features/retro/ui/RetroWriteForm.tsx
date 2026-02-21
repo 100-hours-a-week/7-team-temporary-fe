@@ -13,6 +13,7 @@ import {
   RETRO_CONTENT_MAX_HELPER_TEXT,
   RETRO_CONTENT_MAX_LENGTH,
   RETRO_CREATE_FORM_DEFAULTS,
+  RETRO_IMAGE_SYNC_TOAST_MESSAGE,
   RETRO_MISSING_DAY_PLAN_TOAST_MESSAGE,
   useRetroCreateForm,
   useRetroCreateMutation,
@@ -25,6 +26,9 @@ interface RetroWriteFormProps {
   invalidateKeys?: Array<readonly unknown[]>;
   onCreated?: () => void;
 }
+
+const isPositiveImageId = (value: number | null): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value > 0;
 
 export function RetroWriteForm({
   dateLabel,
@@ -70,6 +74,11 @@ export function RetroWriteForm({
     !canSubmit || !dayPlanId || isImageUploading || createRetroMutation.isPending;
 
   useEffect(() => {
+    const reflectionImageIds = uploadedImages
+      .map((image) => image.reflectionImageId)
+      .filter(isPositiveImageId);
+
+    setValue("reflectionImageIds", reflectionImageIds, { shouldValidate: true });
     setValue(
       "uploadedImageKeys",
       uploadedImages.map((image) => image.imageKey),
@@ -101,6 +110,11 @@ export function RetroWriteForm({
   const handleSubmitRetro = handleSubmit(async (values) => {
     if (!dayPlanId) {
       showToast(RETRO_MISSING_DAY_PLAN_TOAST_MESSAGE, "error");
+      return;
+    }
+
+    if (values.uploadedImageKeys.length !== values.reflectionImageIds.length) {
+      showToast(RETRO_IMAGE_SYNC_TOAST_MESSAGE, "error");
       return;
     }
 

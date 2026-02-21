@@ -16,4 +16,5 @@ export interface RetroCreateRequestDto {
 export interface UploadedRetroImage {
   imageKey: string;
   viewUrl: string;
+  reflectionImageId: number | null;
 }
