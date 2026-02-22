@@ -66,12 +66,16 @@ export const Endpoint = {
     LIST: taskPath("/notifications"),
   },
   FRIENDS: {
-    LIST: taskPath("/friends"),
+    LIST: chatPath("/friends"),
+    DELETE: (friendUserId: number) => chatPath(`/friends/${friendUserId}`),
+  },
+  FRIEND_REQUESTS: {
+    DELETE: (requestId: number) => chatPath(`/friend-requests/${requestId}`),
   },
   ISSUE: {
     BASE: taskPath("/issue"),
   },
   RETRO: {
-    BASE: taskPath("/reflections"),
+    BASE: chatPath("/reflections"),
   },
 } as const;

@@ -1,4 +1,9 @@
-export { fetchFriendSearchByNickname, fetchFriends } from "./friends.api";
+export {
+  deleteFriend,
+  deleteFriendRequest,
+  fetchFriendSearchByNickname,
+  fetchFriends,
+} from "./friends.api";
 export type {
   FriendItemResponseDto,
   FriendListResponseDto,

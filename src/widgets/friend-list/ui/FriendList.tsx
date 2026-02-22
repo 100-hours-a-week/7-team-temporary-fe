@@ -6,8 +6,19 @@ import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { EmptyStateCard } from "@/shared/ui/empty";
 
 export function FriendList() {
-  const { friendRequests, friends, isLoading, isError, isFetching, hasMore, loadMore } =
-    useFriendListSection();
+  const {
+    friendRequests,
+    rejectFriendRequest,
+    rejectingRequestId,
+    friends,
+    deleteFriend,
+    deletingFriendId,
+    isLoading,
+    isError,
+    isFetching,
+    hasMore,
+    loadMore,
+  } = useFriendListSection();
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled: true,
@@ -41,8 +52,12 @@ export function FriendList() {
               <h2 className="mb-2 text-[14px] font-semibold text-neutral-500">친구 요청</h2>
               <ul className="flex flex-col gap-3">
                 {friendRequests.map((friendRequest) => (
-                  <li key={`request-${friendRequest.id}`}>
-                    <FriendRequestItem vm={friendRequest} />
+                  <li key={`request-${friendRequest.requestId}`}>
+                    <FriendRequestItem
+                      vm={friendRequest}
+                      onReject={rejectFriendRequest}
+                      isRejecting={rejectingRequestId === friendRequest.requestId}
+                    />
                   </li>
                 ))}
               </ul>
@@ -54,7 +69,11 @@ export function FriendList() {
             <ul className="flex flex-col gap-3">
               {friends.map((friend) => (
                 <li key={friend.id}>
-                  <FriendListItem vm={friend} />
+                  <FriendListItem
+                    vm={friend}
+                    onDelete={deleteFriend}
+                    isDeleting={deletingFriendId === friend.id}
+                  />
                 </li>
               ))}
             </ul>
