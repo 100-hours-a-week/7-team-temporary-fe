@@ -1,12 +1,13 @@
 import styled from "@emotion/styled";
 
 import type { RefObject } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { DayPlanScheduleStatus } from "@/entities/day-plan";
 import type { TodoCartTaskItemModel } from "@/entities/day-plan";
 import { useDayPlanScheduleByIdQuery } from "@/entities/day-plan";
 import { TodoCartTaskItem, type TodoCartViewMode } from "@/entities/day-plan";
+import { useInfiniteScrollTrigger } from "@/shared/hooks";
 
 type TodoListTask = TodoCartTaskItemModel & { status?: DayPlanScheduleStatus };
 
@@ -38,7 +39,6 @@ export function TodoList({
   const [currentPage, setCurrentPage] = useState(page);
   const [fetchedTasks, setFetchedTasks] = useState<TodoListTask[]>([]);
   const [totalPages, setTotalPages] = useState<number | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const scheduleQuery = useDayPlanScheduleByIdQuery({
     dayPlanId: dayPlanId ?? 0,
@@ -74,7 +74,6 @@ export function TodoList({
 
   useEffect(() => {
     if (!scheduleQuery.data) return;
-    console.log("[TodoList] 일정 조회 응답", scheduleQuery.data);
     setTotalPages(scheduleQuery.data.totalPages);
     setFetchedTasks((prev) => {
       const base = currentPage === 1 ? [] : prev;
@@ -86,25 +85,13 @@ export function TodoList({
 
   const hasMore = totalPages === null ? mappedTasks.length === size : currentPage < totalPages;
 
-  useEffect(() => {
-    if (!shouldFetch) return;
-    if (!loadMoreRef.current) return;
-    if (!hasMore) return;
-    if (scheduleQuery.isFetching) return;
-
-    const root = scrollRootRef?.current ?? getScrollParent(loadMoreRef.current);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const isIntersecting = entries.some((entry) => entry.isIntersecting);
-        if (!isIntersecting) return;
-        setCurrentPage((prev) => prev + 1);
-      },
-      { root, rootMargin: "200px" },
-    );
-
-    observer.observe(loadMoreRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, scheduleQuery.isFetching, scrollRootRef, shouldFetch]);
+  const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
+    enabled: shouldFetch,
+    hasMore,
+    isFetching: scheduleQuery.isFetching,
+    onLoadMore: () => setCurrentPage((prev) => prev + 1),
+    rootRef: scrollRootRef,
+  });
 
   const mergedTasks = useMemo(() => {
     if (!shouldFetch) return tasks;
@@ -167,30 +154,6 @@ function toMinutes(time?: string) {
   const [hours, minutes] = time.split(":").map(Number);
   if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
   return hours * 60 + minutes;
-}
-
-function getScrollParent(element: HTMLElement | null) {
-  if (!element || typeof window === "undefined") return null;
-  const classRoot = element.closest(
-    ".overflow-y-auto, .overflow-auto, .overflow-y-scroll",
-  ) as HTMLElement | null;
-  if (classRoot) return classRoot;
-  let current: HTMLElement | null = element.parentElement;
-  while (current) {
-    const styles = window.getComputedStyle(current);
-    const overflowY = styles.overflowY;
-    const overflow = styles.overflow;
-    if (
-      overflowY === "auto" ||
-      overflowY === "scroll" ||
-      overflow === "auto" ||
-      overflow === "scroll"
-    ) {
-      return current;
-    }
-    current = current.parentElement;
-  }
-  return null;
 }
 
 const ListContainer = styled.div`

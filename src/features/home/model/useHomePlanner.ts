@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
 import {
   toTaskItemModelFromHomeTask,
   type TaskItemModel,
   useHomePlanStore,
 } from "@/entities/day-plan";
+import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { useHomePlannerCalendar } from "./useHomePlannerCalendar";
 import { useHomePlannerQueries } from "./useHomePlannerQueries";
 import { useMergedTasks } from "./useMergedTasks";
@@ -18,30 +19,6 @@ const formatDateParam = (date: Date) => {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
-
-function getScrollParent(element: HTMLElement | null) {
-  if (!element || typeof window === "undefined") return null;
-  const classRoot = element.closest(
-    ".overflow-y-auto, .overflow-auto, .overflow-y-scroll",
-  ) as HTMLElement | null;
-  if (classRoot) return classRoot;
-  let current: HTMLElement | null = element.parentElement;
-  while (current) {
-    const styles = window.getComputedStyle(current);
-    const overflowY = styles.overflowY;
-    const overflow = styles.overflow;
-    if (
-      overflowY === "auto" ||
-      overflowY === "scroll" ||
-      overflow === "auto" ||
-      overflow === "scroll"
-    ) {
-      return current;
-    }
-    current = current.parentElement;
-  }
-  return null;
-}
 
 interface UseHomePlannerResult {
   today: Date;
@@ -70,7 +47,6 @@ export function useHomePlanner(): UseHomePlannerResult {
     () => new Map(),
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const queryDate = useMemo(() => formatDateParam(selectedDate ?? today), [selectedDate, today]);
   const weekStartDate = useMemo(() => formatDateParam(weekDays[0]), [weekDays]);
@@ -157,24 +133,11 @@ export function useHomePlanner(): UseHomePlannerResult {
     }
   }, [data?.dayPlanId, queryDate, setHomePlan]);
 
-  useEffect(() => {
-    if (!loadMoreRef.current) return;
-    if (!hasMore) return;
-    if (isLoading) return;
-
-    const root = getScrollParent(loadMoreRef.current);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const isIntersecting = entries.some((entry) => entry.isIntersecting);
-        if (!isIntersecting) return;
-        setCurrentPage((prev) => prev + 1);
-      },
-      { root, rootMargin: "200px" },
-    );
-
-    observer.observe(loadMoreRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, isLoading]);
+  const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
+    hasMore,
+    isFetching: isLoading,
+    onLoadMore: () => setCurrentPage((prev) => prev + 1),
+  });
 
   return {
     today,
