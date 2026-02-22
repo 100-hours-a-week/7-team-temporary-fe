@@ -25,3 +25,11 @@ export interface PublicRetroCardVM extends RetroCoreItem {
 }
 
 export type RetroListItem = MyRetroCardVM | PublicRetroCardVM;
+
+export interface MyRetroListModel {
+  content: MyRetroCardVM[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
