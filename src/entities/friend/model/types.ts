@@ -5,6 +5,10 @@ export interface FriendListItemVM {
   profileImageUrl: string | null;
 }
 
+export interface FriendRequestItemVM extends FriendListItemVM {
+  requestedAt: string;
+}
+
 export interface FriendListModel {
   content: FriendListItemVM[];
   page: number;

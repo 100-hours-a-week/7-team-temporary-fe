@@ -1,13 +1,14 @@
 import { Icon } from "@/shared/ui/icon";
 
-import type { FriendListItemVM } from "../model";
+import type { FriendRequestItemVM } from "../model";
+
 import { FriendBaseItem } from "./FriendBaseItem";
 
-interface FriendListItemProps {
-  vm: FriendListItemVM;
+interface FriendRequestItemProps {
+  vm: FriendRequestItemVM;
 }
 
-export function FriendListItem({ vm }: FriendListItemProps) {
+export function FriendRequestItem({ vm }: FriendRequestItemProps) {
   return (
     <FriendBaseItem
       vm={vm}
@@ -15,21 +16,21 @@ export function FriendListItem({ vm }: FriendListItemProps) {
         <>
           <button
             type="button"
-            aria-label={`${vm.nickname} 채팅`}
+            aria-label={`${vm.nickname} 요청 수락`}
             className="inline-flex h-8 w-8 items-center justify-center text-neutral-700"
           >
             <Icon
-              name="chat_single"
+              name="comform"
               className="h-6 w-6"
             />
           </button>
           <button
             type="button"
-            aria-label={`${vm.nickname} 삭제`}
+            aria-label={`${vm.nickname} 요청 거절`}
             className="inline-flex h-8 w-8 items-center justify-center text-neutral-700"
           >
             <Icon
-              name="user_delete"
+              name="reject"
               className="h-6 w-6"
             />
           </button>

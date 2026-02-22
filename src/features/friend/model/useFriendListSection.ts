@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { type FriendListItemVM, useFriendsQuery } from "@/entities/friend";
+import { FRIEND_REQUEST_MOCKS, type FriendListItemVM, useFriendsQuery } from "@/entities/friend";
 
 const FRIEND_LIST_PAGE = 1;
 const FRIEND_LIST_SIZE = 10;
@@ -41,8 +41,16 @@ export function useFriendListSection() {
   }, [friendsQuery.isFetching, hasMore]);
 
   const friends = useMemo(() => fetchedFriends, [fetchedFriends]);
+  const friendRequests = useMemo(
+    () =>
+      [...FRIEND_REQUEST_MOCKS].sort(
+        (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
+      ),
+    [],
+  );
 
   return {
+    friendRequests,
     friends,
     isLoading: friendsQuery.isLoading,
     isError: friendsQuery.isError,

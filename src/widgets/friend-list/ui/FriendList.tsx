@@ -1,12 +1,13 @@
 "use client";
 
-import { FriendListItem } from "@/entities/friend";
+import { FriendListItem, FriendRequestItem } from "@/entities/friend";
 import { useFriendListSection } from "@/features/friend";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { EmptyStateCard } from "@/shared/ui/empty";
 
 export function FriendList() {
-  const { friends, isLoading, isError, isFetching, hasMore, loadMore } = useFriendListSection();
+  const { friendRequests, friends, isLoading, isError, isFetching, hasMore, loadMore } =
+    useFriendListSection();
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled: true,
@@ -29,18 +30,36 @@ export function FriendList() {
         </div>
       ) : null}
 
-      {!isLoading && !isError && friends.length === 0 ? (
+      {!isLoading && !isError && friends.length === 0 && friendRequests.length === 0 ? (
         <EmptyStateCard message="아직 친구 목록이 비어 있어요. 새 친구를 만들어볼까요?" />
       ) : null}
 
       {!isLoading && !isError ? (
-        <ul className="flex flex-col gap-3">
-          {friends.map((friend) => (
-            <li key={friend.id}>
-              <FriendListItem vm={friend} />
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-4">
+          {friendRequests.length > 0 ? (
+            <section>
+              <h2 className="mb-2 text-[14px] font-semibold text-neutral-500">친구 요청</h2>
+              <ul className="flex flex-col gap-3">
+                {friendRequests.map((friendRequest) => (
+                  <li key={`request-${friendRequest.id}`}>
+                    <FriendRequestItem vm={friendRequest} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <section>
+            <h2 className="mb-2 text-[14px] font-semibold text-neutral-500">친구 목록</h2>
+            <ul className="flex flex-col gap-3">
+              {friends.map((friend) => (
+                <li key={friend.id}>
+                  <FriendListItem vm={friend} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       ) : null}
 
       {!isLoading && !isError ? (

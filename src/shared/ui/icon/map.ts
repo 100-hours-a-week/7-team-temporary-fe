@@ -35,6 +35,8 @@ import Retro from "./assets/Retro.svg";
 import Retro_filled from "./assets/Retro-fill.svg";
 import ChatSingle from "./assets/Chat-Single.svg";
 import UserDelete from "./assets/User-Delete.svg";
+import Comform from "./assets/Comform-icon.svg";
+import Reject from "./assets/Reject-icon.svg";
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -74,6 +76,8 @@ export const IconMap = {
   retro_filled: Retro_filled,
   chat_single: ChatSingle,
   user_delete: UserDelete,
+  comform: Comform,
+  reject: Reject,
 } as const satisfies Record<string, SvgComponent>;
 
 export type IconName = keyof typeof IconMap;
