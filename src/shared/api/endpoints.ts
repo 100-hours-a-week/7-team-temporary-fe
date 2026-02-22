@@ -65,6 +65,9 @@ export const Endpoint = {
   NOTIFICATIONS: {
     LIST: taskPath("/notifications"),
   },
+  FRIENDS: {
+    LIST: taskPath("/friends"),
+  },
   ISSUE: {
     BASE: taskPath("/issue"),
   },
