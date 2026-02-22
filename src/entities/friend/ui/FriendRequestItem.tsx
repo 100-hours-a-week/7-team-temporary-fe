@@ -6,9 +6,11 @@ import { FriendBaseItem } from "./FriendBaseItem";
 
 interface FriendRequestItemProps {
   vm: FriendRequestItemVM;
+  onReject?: (requestId: number) => void;
+  isRejecting?: boolean;
 }
 
-export function FriendRequestItem({ vm }: FriendRequestItemProps) {
+export function FriendRequestItem({ vm, onReject, isRejecting = false }: FriendRequestItemProps) {
   return (
     <FriendBaseItem
       vm={vm}
@@ -28,6 +30,8 @@ export function FriendRequestItem({ vm }: FriendRequestItemProps) {
             type="button"
             aria-label={`${vm.nickname} 요청 거절`}
             className="inline-flex h-8 w-8 items-center justify-center text-neutral-700"
+            onClick={() => onReject?.(vm.requestId)}
+            disabled={isRejecting}
           >
             <Icon
               name="reject"

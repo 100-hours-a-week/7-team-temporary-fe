@@ -6,6 +6,7 @@ export interface FriendListItemVM {
 }
 
 export interface FriendRequestItemVM extends FriendListItemVM {
+  requestId: number;
   requestedAt: string;
 }
 
