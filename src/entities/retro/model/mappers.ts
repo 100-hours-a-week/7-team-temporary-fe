@@ -7,12 +7,6 @@ const DEFAULT_DATE_LABEL = "날짜 미정";
 const DEFAULT_VISIBILITY_TEXT = "비공개";
 const PUBLIC_VISIBILITY_TEXT = "전체 공개";
 
-function toTimestamp(value?: string) {
-  if (!value) return 0;
-  const parsed = new Date(value).getTime();
-  return Number.isNaN(parsed) ? 0 : parsed;
-}
-
 function formatDateLabel(createdAt?: string, fallbackTitle?: string) {
   if (!createdAt) return fallbackTitle ?? DEFAULT_DATE_LABEL;
 
@@ -52,12 +46,8 @@ function toMyRetroCardVM(item: MyRetroItemResponseDto): MyRetroCardVM {
 }
 
 export function toMyRetroListModel(dto: MyRetroListResponseDto): MyRetroListModel {
-  const sorted = [...dto.content].sort(
-    (a, b) => toTimestamp(b.createdAt) - toTimestamp(a.createdAt),
-  );
-
   return {
-    content: sorted.map(toMyRetroCardVM),
+    content: dto.content.map(toMyRetroCardVM),
     page: dto.page,
     size: dto.size,
     totalElements: dto.totalElements,
