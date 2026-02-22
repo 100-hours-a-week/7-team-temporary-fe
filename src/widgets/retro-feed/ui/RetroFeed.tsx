@@ -1,11 +1,16 @@
 "use client";
 
 import { RetroListItemCard, useRetroSection } from "@/features/retro";
+import { RETRO_SECTION } from "@/entities/retro";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { EmptyStateCard } from "@/shared/ui/empty";
 import { RetroSectionTabs } from "./RetroSectionTabs";
 
-export function RetroFeed() {
+interface RetroFeedProps {
+  enabled?: boolean;
+}
+
+export function RetroFeed({ enabled = true }: RetroFeedProps) {
   const {
     activeSection,
     setActiveSection,
@@ -16,10 +21,10 @@ export function RetroFeed() {
     isFetching,
     hasMore,
     loadMore,
-  } = useRetroSection();
+  } = useRetroSection(RETRO_SECTION.MY_PAGE, { enabled });
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
-    enabled: true,
+    enabled,
     hasMore,
     isFetching,
     onLoadMore: loadMore,

@@ -14,6 +14,10 @@ import {
 const RETRO_LIST_PAGE = 1;
 const RETRO_LIST_SIZE = 10;
 
+interface UseRetroSectionOptions {
+  enabled?: boolean;
+}
+
 /**
  * 회고 피드 탭 상태와 MY_PAGE 목록 페이징을 함께 관리하는 훅.
  *
@@ -21,7 +25,10 @@ const RETRO_LIST_SIZE = 10;
  * - EXPLORE 탭: API(usePublicRetrosQuery)로 공개 회고 목록(isOpen=true)을 페이징 조회
  * - loadMore: 다음 페이지 요청이 가능한 경우에만 currentPage를 증가시켜 무한 스크롤을 지원
  */
-export function useRetroSection(initialSection: RetroSection = RETRO_SECTION.MY_PAGE) {
+export function useRetroSection(
+  initialSection: RetroSection = RETRO_SECTION.MY_PAGE,
+  { enabled = true }: UseRetroSectionOptions = {},
+) {
   const [activeSection, setActiveSection] = useState<RetroSection>(initialSection);
   const [currentPage, setCurrentPage] = useState(RETRO_LIST_PAGE);
   const [fetchedRetros, setFetchedRetros] = useState<Array<MyRetroCardVM | PublicRetroCardVM>>([]);
@@ -31,14 +38,14 @@ export function useRetroSection(initialSection: RetroSection = RETRO_SECTION.MY_
   const myRetrosQuery = useMyRetrosQuery({
     page: currentPage,
     size: RETRO_LIST_SIZE,
-    enabled: isMyPage,
+    enabled: enabled && isMyPage,
   });
 
   const publicRetrosQuery = usePublicRetrosQuery({
     isOpen: true,
     page: currentPage,
     size: RETRO_LIST_SIZE,
-    enabled: !isMyPage,
+    enabled: enabled && !isMyPage,
   });
 
   const currentQuery = isMyPage ? myRetrosQuery : publicRetrosQuery;
@@ -67,10 +74,11 @@ export function useRetroSection(initialSection: RetroSection = RETRO_SECTION.MY_
       : currentPage < totalPages;
 
   const loadMore = useCallback(() => {
+    if (!enabled) return;
     if (!hasMore) return;
     if (currentQuery.isFetching) return;
     setCurrentPage((prev) => prev + 1);
-  }, [currentQuery.isFetching, hasMore]);
+  }, [currentQuery.isFetching, enabled, hasMore]);
 
   const retros = useMemo(() => fetchedRetros, [fetchedRetros]);
 

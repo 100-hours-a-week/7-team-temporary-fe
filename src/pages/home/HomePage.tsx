@@ -5,7 +5,11 @@ import { HomePlanner } from "@/widgets/home-planner";
 import { Icon } from "@/shared/ui/icon";
 import { PlannerEditStackPage } from "./ui/PlannerEditStackPage";
 
-export function HomePage() {
+interface HomePageProps {
+  enabled?: boolean;
+}
+
+export function HomePage({ enabled = true }: HomePageProps) {
   const { push } = useStackPage();
   const homeDate = useHomePlanStore((state) => state.date);
   const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
@@ -25,7 +29,7 @@ export function HomePage() {
 
   return (
     <div className="relative h-full pb-20">
-      <HomePlanner />
+      <HomePlanner enabled={enabled} />
       <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
         <div className="pointer-events-auto absolute right-5 bottom-[calc(env(safe-area-inset-bottom)+110px)] flex flex-col items-end gap-3">
           <button

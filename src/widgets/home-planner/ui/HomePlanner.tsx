@@ -9,7 +9,11 @@ import { HomeTaskItem } from "@/entities/day-plan";
 import { useHomePlanner } from "@/features/home";
 import { HomeWeekSelector } from "@/widgets/home-week";
 
-export function HomePlanner() {
+interface HomePlannerProps {
+  enabled?: boolean;
+}
+
+export function HomePlanner({ enabled = true }: HomePlannerProps) {
   const handlePlannerProfileRender = useCallback<ProfilerOnRenderCallback>(
     (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
       if (typeof window !== "undefined" && (window as any).__MOLIP_PROFILE_CAPTURE__) {
@@ -53,7 +57,7 @@ export function HomePlanner() {
     isLoading,
     loadMoreRef,
     isCurrentTaskLoading,
-  } = useHomePlanner();
+  } = useHomePlanner({ enabled });
 
   return (
     <Profiler

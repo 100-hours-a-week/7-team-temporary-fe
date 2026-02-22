@@ -11,11 +11,16 @@ interface TabScopeProps {
   tab: AppTab;
   children: ReactNode;
   className?: string;
+  keepMounted?: boolean;
 }
 
-export function TabScope({ tab, children, className }: TabScopeProps) {
+export function TabScope({ tab, children, className, keepMounted = false }: TabScopeProps) {
   const { activeTab } = useTab();
   const isActive = activeTab === tab;
+
+  if (!isActive && !keepMounted) {
+    return null;
+  }
 
   return (
     <div

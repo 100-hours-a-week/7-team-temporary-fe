@@ -40,7 +40,13 @@ interface UseHomePlannerResult {
   loadMoreRef: RefObject<HTMLDivElement | null>;
 }
 
-export function useHomePlanner(): UseHomePlannerResult {
+interface UseHomePlannerOptions {
+  enabled?: boolean;
+}
+
+export function useHomePlanner({
+  enabled = true,
+}: UseHomePlannerOptions = {}): UseHomePlannerResult {
   const { today, weekDays, headerMonthIndex, selectedDate, setSelectedDate, handleMoveWeek } =
     useHomePlannerCalendar();
   const [completionOverrides, setCompletionOverrides] = useState<Map<number, boolean>>(
@@ -65,6 +71,7 @@ export function useHomePlanner(): UseHomePlannerResult {
     pageSize: PAGE_SIZE,
     weekStartDate,
     weekEndDate,
+    enabled,
   });
   const setHomePlan = useHomePlanStore((state) => state.setHomePlan);
 
@@ -134,6 +141,7 @@ export function useHomePlanner(): UseHomePlannerResult {
   }, [data?.dayPlanId, queryDate, setHomePlan]);
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
+    enabled,
     hasMore,
     isFetching: isLoading,
     onLoadMore: () => setCurrentPage((prev) => prev + 1),
