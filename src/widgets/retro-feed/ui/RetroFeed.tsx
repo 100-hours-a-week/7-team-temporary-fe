@@ -2,7 +2,7 @@
 
 import { RetroListItemCard, useRetroSection } from "@/features/retro";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
-
+import { EmptyStateCard } from "@/shared/ui/empty";
 import { RetroSectionTabs } from "./RetroSectionTabs";
 
 export function RetroFeed() {
@@ -33,21 +33,22 @@ export function RetroFeed() {
       />
 
       {isLoading ? (
-        <div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-6 text-center text-sm text-neutral-500">
+        <div className="mt-4 rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
           회고를 불러오는 중...
         </div>
       ) : null}
 
       {isError ? (
-        <div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-6 text-center text-sm text-neutral-500">
+        <div className="mt-4 rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
           회고를 불러오지 못했습니다.
         </div>
       ) : null}
 
       {!isLoading && !isError && retros.length === 0 ? (
-        <div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-6 text-center text-sm text-neutral-500">
-          {isMyPage ? "아직 작성한 회고가 없습니다." : "공개된 회고가 없습니다."}
-        </div>
+        <EmptyStateCard
+          message={isMyPage ? "아직 작성한 회고가 없습니다." : "공개된 회고가 없습니다."}
+          className="mt-4"
+        />
       ) : null}
 
       {!isLoading && !isError ? (

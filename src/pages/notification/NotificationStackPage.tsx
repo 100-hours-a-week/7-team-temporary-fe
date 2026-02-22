@@ -43,17 +43,17 @@ export function NotificationStackPage() {
   return (
     <div className="px-6 pt-[13px] pb-32">
       {isLoading ? (
-        <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-6 text-center text-sm text-neutral-500">
+        <div className="rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
           알림을 불러오는 중...
         </div>
       ) : null}
       {isError ? (
-        <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-6 text-center text-sm text-neutral-500">
+        <div className="rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
           알림을 불러오지 못했습니다.
         </div>
       ) : null}
       {!isLoading && !isError && notifications.length === 0 ? (
-        <div className="rounded-2xl border border-neutral-200 bg-white px-4 py-6 text-center text-sm text-neutral-500">
+        <div className="rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
           아직 받은 알림이 없습니다.
         </div>
       ) : null}
