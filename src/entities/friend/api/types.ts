@@ -18,3 +18,18 @@ export interface FriendListResponseDto {
   totalElements: number;
   totalPages: number;
 }
+
+export interface FriendSearchItemResponseDto {
+  userId: number;
+  nickname?: string;
+  email?: string;
+  profileImage?: FriendProfileImageResponseDto | null;
+}
+
+export interface FriendSearchResponseDto {
+  content: FriendSearchItemResponseDto[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
