@@ -28,3 +28,6 @@ export interface MyRetroListResponseDto {
   totalElements: number;
   totalPages: number;
 }
+
+export type PublicRetroItemResponseDto = MyRetroItemResponseDto;
+export type PublicRetroListResponseDto = MyRetroListResponseDto;

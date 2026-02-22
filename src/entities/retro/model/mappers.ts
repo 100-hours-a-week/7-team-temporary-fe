@@ -1,6 +1,16 @@
-import type { MyRetroListResponseDto, MyRetroItemResponseDto } from "../api";
+import type {
+  MyRetroItemResponseDto,
+  MyRetroListResponseDto,
+  PublicRetroItemResponseDto,
+  PublicRetroListResponseDto,
+} from "../api";
 
-import type { MyRetroCardVM, MyRetroListModel } from "./list";
+import type {
+  MyRetroCardVM,
+  MyRetroListModel,
+  PublicRetroCardVM,
+  PublicRetroListModel,
+} from "./list";
 
 const DEFAULT_TIME_LABEL = "--:--";
 const DEFAULT_DATE_LABEL = "날짜 미정";
@@ -45,9 +55,32 @@ function toMyRetroCardVM(item: MyRetroItemResponseDto): MyRetroCardVM {
   };
 }
 
+function toPublicRetroCardVM(item: PublicRetroItemResponseDto): PublicRetroCardVM {
+  return {
+    id: item.reflectionId,
+    dateLabel: formatDateLabel(item.createdAt, item.title),
+    timeLabel: formatTimeLabel(item.createdAt),
+    imageUrls: (item.images ?? []).map((image) => image.url).filter((url): url is string => !!url),
+    content: item.content ?? "",
+    likeCount: item.likes ?? 0,
+    isMine: item.isMine ?? false,
+    authorNickname: item.ownerNickname ?? item.onwerNickname ?? "알 수 없음",
+  };
+}
+
 export function toMyRetroListModel(dto: MyRetroListResponseDto): MyRetroListModel {
   return {
     content: dto.content.map(toMyRetroCardVM),
+    page: dto.page,
+    size: dto.size,
+    totalElements: dto.totalElements,
+    totalPages: dto.totalPages,
+  };
+}
+
+export function toPublicRetroListModel(dto: PublicRetroListResponseDto): PublicRetroListModel {
+  return {
+    content: dto.content.map(toPublicRetroCardVM),
     page: dto.page,
     size: dto.size,
     totalElements: dto.totalElements,
