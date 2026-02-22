@@ -30,7 +30,7 @@ export function FriendList() {
       ) : null}
 
       {!isLoading && !isError && friends.length === 0 ? (
-        <EmptyStateCard message="아직 등록된 친구가 없습니다." />
+        <EmptyStateCard message="아직 친구 목록이 비어 있어요. 새 친구를 만들어볼까요?" />
       ) : null}
 
       {!isLoading && !isError ? (
