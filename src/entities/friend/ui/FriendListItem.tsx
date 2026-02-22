@@ -1,3 +1,5 @@
+import { Icon } from "@/shared/ui/icon";
+
 import type { FriendListItemVM } from "../model";
 
 interface FriendListItemProps {
@@ -27,6 +29,29 @@ export function FriendListItem({ vm }: FriendListItemProps) {
       <div className="min-w-0 flex-1">
         <h3 className="truncate text-[15px] font-semibold text-black">{vm.nickname}</h3>
         <p className="truncate text-[13px] text-neutral-500">{vm.email}</p>
+      </div>
+
+      <div className="ml-2 flex shrink-0 items-center gap-1">
+        <button
+          type="button"
+          aria-label={`${vm.nickname} 채팅`}
+          className="inline-flex h-8 w-8 items-center justify-center text-neutral-700"
+        >
+          <Icon
+            name="chat_single"
+            className="h-6 w-6"
+          />
+        </button>
+        <button
+          type="button"
+          aria-label={`${vm.nickname} 삭제`}
+          className="inline-flex h-8 w-8 items-center justify-center text-neutral-700"
+        >
+          <Icon
+            name="user_delete"
+            className="h-6 w-6"
+          />
+        </button>
       </div>
     </article>
   );
