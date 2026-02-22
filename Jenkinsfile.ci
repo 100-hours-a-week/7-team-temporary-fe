@@ -34,15 +34,65 @@ META
       }
     }
 
-    stage("Build Docker image") {
+    stage("Check CI trigger scope") {
       steps {
         script {
-          def isDeployBranch = !env.CHANGE_ID?.trim() && (
-            (env.BRANCH_NAME ?: "") == "main" ||
-            (env.BRANCH_NAME ?: "").startsWith("release/")
-          )
           def branchName = (env.BRANCH_NAME ?: "")
-          def isStagingBranch = branchName.startsWith("release/")
+          def changeTarget = (env.CHANGE_TARGET ?: "")
+          def isPullRequest = env.CHANGE_ID?.trim()
+
+          def allowedPush = (
+            branchName == "develop" ||
+            branchName == "release" ||
+            branchName == "main" ||
+            branchName.startsWith("release/")
+          )
+          def allowedPrTarget = (
+            changeTarget == "develop" ||
+            changeTarget == "release" ||
+            changeTarget == "main" ||
+            changeTarget.startsWith("release/")
+          )
+
+          def ciAllowed = isPullRequest ? allowedPrTarget : allowedPush
+          env.CI_ALLOWED = ciAllowed ? "true" : "false"
+
+          if (env.CI_ALLOWED == "true") {
+            echo "CI enabled (branch=${branchName}, changeTarget=${changeTarget ?: "n/a"})"
+          } else {
+            currentBuild.description = "CI skipped: unsupported branch/target"
+            echo "CI disabled for this ref (branch=${branchName}, changeTarget=${changeTarget ?: "n/a"})"
+          }
+        }
+      }
+    }
+
+    stage("Build Docker image") {
+      when {
+        expression {
+          return env.CI_ALLOWED == "true"
+        }
+      }
+      steps {
+        script {
+          def sourceBranch = (env.BRANCH_NAME ?: "")
+          def effectiveBranch = env.CHANGE_ID?.trim() ? (env.CHANGE_TARGET ?: "") : sourceBranch
+          def isDeployBranch = !env.CHANGE_ID?.trim() && (
+            effectiveBranch == "release" ||
+            effectiveBranch == "main" ||
+            effectiveBranch.startsWith("release/")
+          )
+          def useBuildCredentials = (
+            effectiveBranch == "develop" ||
+            effectiveBranch == "release" ||
+            effectiveBranch == "main" ||
+            effectiveBranch.startsWith("release/")
+          )
+          def isStagingBranch = (
+            effectiveBranch == "develop" ||
+            effectiveBranch == "release" ||
+            effectiveBranch.startsWith("release/")
+          )
           def apiBaseCredential = isStagingBranch
             ? "next-public-api-base-url-staging"
             : "next-public-api-base-url-production"
@@ -79,7 +129,7 @@ META
               -t "$LOCAL_IMAGE" .
           '''
 
-          if (isDeployBranch) {
+          if (useBuildCredentials) {
             withCredentials([
               string(credentialsId: apiBaseCredential, variable: "NEXT_PUBLIC_API_BASE_URL"),
               string(credentialsId: "next-public-enable-sw", variable: "NEXT_PUBLIC_ENABLE_SW"),
@@ -102,6 +152,11 @@ META
     }
 
     stage("Smoke test container") {
+      when {
+        expression {
+          return env.CI_ALLOWED == "true"
+        }
+      }
       steps {
         sh '''
           set -eu
@@ -137,7 +192,8 @@ META
     stage("Push image to ECR") {
       when {
         expression {
-          return !env.CHANGE_ID?.trim() && (
+          return env.CI_ALLOWED == "true" && !env.CHANGE_ID?.trim() && (
+            (env.BRANCH_NAME ?: "") == "release" ||
             (env.BRANCH_NAME ?: "") == "main" ||
             (env.BRANCH_NAME ?: "").startsWith("release/")
           )
