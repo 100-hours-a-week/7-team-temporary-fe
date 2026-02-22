@@ -39,7 +39,6 @@ META
         script {
           def isDeployBranch = !env.CHANGE_ID?.trim() && (
             (env.BRANCH_NAME ?: "") == "main" ||
-            (env.BRANCH_NAME ?: "") == "feature/jenkins-prod" ||
             (env.BRANCH_NAME ?: "").startsWith("release/")
           )
           def branchName = (env.BRANCH_NAME ?: "")
@@ -140,7 +139,6 @@ META
         expression {
           return !env.CHANGE_ID?.trim() && (
             (env.BRANCH_NAME ?: "") == "main" ||
-            (env.BRANCH_NAME ?: "") == "feature/jenkins-prod" ||
             (env.BRANCH_NAME ?: "").startsWith("release/")
           )
         }
@@ -211,7 +209,6 @@ META
           context = "PR #${env.CHANGE_ID} (${env.CHANGE_BRANCH ?: "unknown"} -> ${env.CHANGE_TARGET ?: "unknown"})"
         }
 
-        /*
         if (hasWorkspace) {
           try {
             withCredentials([string(credentialsId: "discord-webhook-url", variable: "DISCORD_WEBHOOK_URL")]) {
@@ -229,8 +226,6 @@ META
         } else {
           echo "Skip Discord notification: no workspace context"
         }
-        */
-        echo "Skip Discord notification: disabled (commented out)"
       }
     }
     success {

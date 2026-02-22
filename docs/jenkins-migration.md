@@ -1,5 +1,9 @@
 # Jenkins Migration Guide (Docker Image CI/CD)
 
+> 최신 운영 기준 문서는 `docs/dockerfile-ci-cd-operations.md`를 우선 확인하세요.
+>
+> 이 문서는 마이그레이션 과정 기록 성격이 강해 일부 항목(예: 운영 전환 방식)이 현재 코드와 다를 수 있습니다.
+
 이 문서는 `/Users/dokkang/Projects/KakaoTech/molip/fe/7-team-temporary-fe/.github/workflows/fe-bigbang-ci.yaml`과 `/Users/dokkang/Projects/KakaoTech/molip/fe/7-team-temporary-fe/.github/workflows/fe-bigbang-cd.yaml`를 Jenkins로 옮기면서, 배포 방식을 `build once, deploy many`로 전환한 가이드입니다.
 
 ## 1) 파이프라인 파일
