@@ -33,3 +33,11 @@ export interface MyRetroListModel {
   totalElements: number;
   totalPages: number;
 }
+
+export interface PublicRetroListModel {
+  content: PublicRetroCardVM[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}

@@ -19,7 +19,7 @@ export function RetroFeed() {
   } = useRetroSection();
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
-    enabled: isMyPage,
+    enabled: true,
     hasMore,
     isFetching,
     onLoadMore: loadMore,
@@ -44,9 +44,9 @@ export function RetroFeed() {
         </div>
       ) : null}
 
-      {!isLoading && !isError && isMyPage && retros.length === 0 ? (
+      {!isLoading && !isError && retros.length === 0 ? (
         <div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-6 text-center text-sm text-neutral-500">
-          아직 작성한 회고가 없습니다.
+          {isMyPage ? "아직 작성한 회고가 없습니다." : "공개된 회고가 없습니다."}
         </div>
       ) : null}
 
@@ -60,7 +60,7 @@ export function RetroFeed() {
         </ul>
       ) : null}
 
-      {!isLoading && !isError && isMyPage ? (
+      {!isLoading && !isError ? (
         <>
           <div
             ref={loadMoreRef}
