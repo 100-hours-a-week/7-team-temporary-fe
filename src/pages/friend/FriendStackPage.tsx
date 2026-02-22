@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-import { EmptyStateCard } from "@/shared/ui/empty";
+import { FriendList } from "@/widgets/friend-list";
 import { useStackPage } from "@/widgets/stack";
 
 export function FriendStackPage() {
@@ -13,9 +13,5 @@ export function FriendStackPage() {
     return () => setHeaderContent(null);
   }, [setHeaderContent]);
 
-  return (
-    <div className="px-6 pt-[13px] pb-32">
-      <EmptyStateCard message="친구 목록 기능" />
-    </div>
-  );
+  return <FriendList />;
 }
