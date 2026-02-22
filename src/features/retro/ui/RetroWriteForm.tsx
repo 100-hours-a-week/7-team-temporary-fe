@@ -136,7 +136,9 @@ export function RetroWriteForm({
               imageUrls={previewUrls}
               tileSize={140}
               imageAltPrefix="회고 업로드 이미지 미리보기"
-              className="shrink-0"
+              scrollAreaLabel="회고 업로드 이미지 미리보기 가로 스크롤"
+              enableKeyboardScroll={false}
+              className="shrink-0 overflow-visible"
             />
           ) : null}
 

@@ -42,13 +42,13 @@ export function RetroCardView({
       </header>
 
       {vm.imageUrls.length > 0 ? (
-        <div className="scrollbar-hide mt-3 w-full overflow-x-auto pb-1">
-          <HorizontalImageAlbum
-            imageUrls={vm.imageUrls}
-            tileSize={140}
-            imageAltPrefix={`${vm.dateLabel} 회고 이미지`}
-          />
-        </div>
+        <HorizontalImageAlbum
+          imageUrls={vm.imageUrls}
+          tileSize={140}
+          imageAltPrefix={`${vm.dateLabel} 회고 이미지`}
+          scrollAreaLabel={`${vm.dateLabel} 회고 이미지 가로 스크롤`}
+          className="mt-3 w-full"
+        />
       ) : null}
 
       <RetroContentText
