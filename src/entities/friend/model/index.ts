@@ -1,4 +1,5 @@
 export { toFriendListModel } from "./mappers";
 export { friendQueryKeys } from "./queryKeys";
 export { useFriendsQuery } from "./useFriendsQuery";
-export type { FriendListItemVM, FriendListModel } from "./types";
+export { FRIEND_REQUEST_MOCKS } from "./mock";
+export type { FriendListItemVM, FriendListModel, FriendRequestItemVM } from "./types";
