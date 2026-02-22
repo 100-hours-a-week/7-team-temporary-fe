@@ -87,6 +87,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     if (!("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
+    // FCM 토큰 등록은 AppShell 탭 마운트 정책과 분리된 전역 세션 정책으로 유지한다.
 
     let cancelled = false;
     const run = async () => {

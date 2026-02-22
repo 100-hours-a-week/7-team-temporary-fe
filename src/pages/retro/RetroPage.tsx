@@ -1,5 +1,9 @@
 import { RetroFeed } from "@/widgets/retro-feed";
 
-export function RetroPage() {
-  return <RetroFeed />;
+interface RetroPageProps {
+  enabled?: boolean;
+}
+
+export function RetroPage({ enabled = true }: RetroPageProps) {
+  return <RetroFeed enabled={enabled} />;
 }

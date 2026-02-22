@@ -13,9 +13,13 @@ import { AuthService } from "@/shared/auth";
 
 import { MyInfoStackPage } from "./MyInfoStackPage";
 
-export function ProfilePage() {
+interface ProfilePageProps {
+  enabled?: boolean;
+}
+
+export function ProfilePage({ enabled = true }: ProfilePageProps) {
   const { push } = useStackPage();
-  const { data: myProfile, isLoading: isProfileLoading } = useMyProfileQuery();
+  const { data: myProfile, isLoading: isProfileLoading } = useMyProfileQuery({ enabled });
   const { handleFileSelect, previewUrl, imageKey, isUploading, loadImageViewUrl } =
     useProfileImagePresign();
   const updateImageMutation = useUpdateMyProfileImageMutation();

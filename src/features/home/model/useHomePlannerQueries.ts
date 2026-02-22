@@ -10,6 +10,7 @@ interface UseHomePlannerQueriesParams {
   pageSize: number;
   weekStartDate: string;
   weekEndDate: string;
+  enabled?: boolean;
 }
 
 interface UseHomePlannerQueriesResult {
@@ -38,19 +39,22 @@ export function useHomePlannerQueries({
   pageSize,
   weekStartDate,
   weekEndDate,
+  enabled = true,
 }: UseHomePlannerQueriesParams): UseHomePlannerQueriesResult {
   const { data, isLoading, isError } = useDayPlanScheduleQuery({
     date: queryDate,
     page: currentPage,
     size: pageSize,
+    enabled,
   });
 
   const periodSchedulesQuery = useDayPlanPeriodSchedulesQuery({
     startDate: weekStartDate,
     endDate: weekEndDate,
+    enabled,
   });
 
-  const currentScheduleQuery = useCurrentScheduleQuery();
+  const currentScheduleQuery = useCurrentScheduleQuery({ enabled });
 
   return {
     data,
