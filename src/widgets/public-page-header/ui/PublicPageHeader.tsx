@@ -1,4 +1,8 @@
+import Link from "next/link";
+
+import { AUTH_LOGIN_PATH } from "@/shared/auth";
 import { cn } from "@/shared/lib";
+import { Icon } from "@/shared/ui/icon";
 
 interface PublicPageHeaderProps {
   title: string;
@@ -13,8 +17,19 @@ export function PublicPageHeader({ title, className }: PublicPageHeaderProps) {
         className,
       )}
     >
-      <span className="text-ink-900 text-xl font-semibold">{title}</span>
+      <span className="text-ink-800 text-xl font-bold">{title}</span>
       <div />
+      <Link
+        href={AUTH_LOGIN_PATH}
+        aria-label="로그인 페이지로 이동"
+        className="justify-self-end rounded-sm focus-visible:ring-2 focus-visible:ring-[#391616]/30 focus-visible:outline-none"
+      >
+        <Icon
+          name="logoDefault"
+          className="h-7 w-auto"
+          aria-hidden
+        />
+      </Link>
     </header>
   );
 }
