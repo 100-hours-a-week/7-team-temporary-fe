@@ -17,6 +17,14 @@ interface FetchFriendSearchByNicknameParams {
   signal?: AbortSignal;
 }
 
+interface DeleteFriendRequestParams {
+  requestId: number;
+}
+
+interface DeleteFriendParams {
+  friendUserId: number;
+}
+
 const FRIEND_LIST_ENABLE_MOCK_FALLBACK = true;
 
 function toFriendListSearchParams({ page = 1, size = 10 }: { page?: number; size?: number }) {
@@ -76,6 +84,24 @@ export async function fetchFriendSearchByNickname({
   return AuthService.refreshAndRetry(() =>
     apiFetch<FriendSearchResponseDto>(`${Endpoint.USER.NICKNAME}?${searchParams.toString()}`, {
       signal,
+      authRequired: true,
+    }),
+  );
+}
+
+export async function deleteFriendRequest({ requestId }: DeleteFriendRequestParams): Promise<void> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<void>(Endpoint.FRIEND_REQUESTS.DELETE(requestId), {
+      method: "DELETE",
+      authRequired: true,
+    }),
+  );
+}
+
+export async function deleteFriend({ friendUserId }: DeleteFriendParams): Promise<void> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<void>(Endpoint.FRIENDS.DELETE(friendUserId), {
+      method: "DELETE",
       authRequired: true,
     }),
   );
