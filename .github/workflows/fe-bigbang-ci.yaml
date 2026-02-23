@@ -46,7 +46,7 @@ jobs:
       - name: Build (Next.js)
         run: pnpm run build
 
-      - name: Security Audit (push: main/release)
+      - name: "Security Audit (push: main/release)"
         if: >
           github.event_name == 'push' &&
           (
