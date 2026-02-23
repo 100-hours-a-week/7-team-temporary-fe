@@ -10,8 +10,7 @@ import { retroCreateFormSchema } from "./schema";
 import type { RetroCreateFormModel } from "./types";
 
 export const RETRO_CREATE_FORM_DEFAULTS: RetroCreateFormModel = {
-  reflectionImageIds: [],
-  uploadedImageKeys: [],
+  imageKeys: [],
   content: "",
   visibility: RETRO_VISIBILITY.PUBLIC,
 };

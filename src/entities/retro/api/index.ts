@@ -1,5 +1,6 @@
 export { fetchMyRetros } from "./retro.api";
 export { fetchPublicRetros } from "./retro.api";
+export { likeRetro, unlikeRetro } from "./retro.api";
 export type { RetroCreateResponseDto } from "./types";
 export type {
   MyRetroItemResponseDto,

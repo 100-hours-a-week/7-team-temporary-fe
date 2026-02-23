@@ -77,5 +77,6 @@ export const Endpoint = {
   },
   RETRO: {
     BASE: chatPath("/reflections"),
+    LIKES: (reflectionId: number) => chatPath(`/reflections/${reflectionId}/likes`),
   },
 } as const;
