@@ -67,6 +67,36 @@ META
       }
     }
 
+    stage("Prepare Docker disk") {
+      when {
+        expression {
+          return env.CI_ALLOWED == "true"
+        }
+      }
+      steps {
+        sh '''
+          set -eu
+          command -v docker >/dev/null 2>&1 || { echo "docker is required on Jenkins agent"; exit 1; }
+
+          FREE_MB_BEFORE="$(df -Pm / | awk 'NR==2 {print $4}')"
+          echo "Free disk before cleanup: ${FREE_MB_BEFORE}MB"
+
+          # Keep only recent build cache to avoid containerd disk explosion on small Jenkins nodes.
+          docker builder prune -af --filter "until=24h" >/dev/null 2>&1 || true
+          docker image prune -af --filter "until=24h" >/dev/null 2>&1 || true
+
+          FREE_MB_AFTER="$(df -Pm / | awk 'NR==2 {print $4}')"
+          echo "Free disk after cleanup: ${FREE_MB_AFTER}MB"
+
+          if [ "$FREE_MB_AFTER" -lt 3072 ]; then
+            echo "Not enough free disk (<3GB) after cleanup. Aborting before docker build."
+            df -h /
+            exit 1
+          fi
+        '''
+      }
+    }
+
     stage("Build Docker image") {
       when {
         expression {
@@ -253,7 +283,9 @@ META
             if [ -f .ci-meta.env ]; then
               . ./.ci-meta.env
               docker rm -f "ci-smoke-${SHORT_SHA}" >/dev/null 2>&1 || true
+              docker image rm "$LOCAL_IMAGE" >/dev/null 2>&1 || true
             fi
+            docker builder prune -af --filter "until=24h" >/dev/null 2>&1 || true
           '''
         } else {
           echo "Skip workspace cleanup: no workspace context"
