@@ -5,6 +5,7 @@ export interface RetroCreateResponseDto {
 export interface RetroImageInfoResponseDto {
   url?: string;
   expiresAt?: string;
+  imageKey?: string;
   key?: string;
 }
 
@@ -17,6 +18,7 @@ export interface MyRetroItemResponseDto {
   title?: string;
   content?: string;
   likes?: number;
+  isLikedByMe?: boolean;
   images?: RetroImageInfoResponseDto[];
   createdAt?: string;
 }

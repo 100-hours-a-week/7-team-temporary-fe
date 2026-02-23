@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from "react";
 
-import { RetroCardView, type MyRetroCardVM, type PublicRetroCardVM } from "@/entities/retro";
+import {
+  RetroCardView,
+  type MyRetroCardVM,
+  type PublicRetroCardVM,
+  useRetroLikeMutation,
+} from "@/entities/retro";
 import { MoreActionSheet } from "@/shared/ui/bottom-sheet";
+import { useToast } from "@/shared/ui/toast";
 
 type RetroListItemCardProps = {
   vm: MyRetroCardVM | PublicRetroCardVM;
-  onLikeClick?: (isLiked?: boolean) => void;
+  onLikeClick?: (isLiked: boolean) => Promise<void> | void;
   onMoreClick?: () => void;
   onEditClick?: () => void;
   onDeleteClick?: () => void;
@@ -23,6 +29,8 @@ export function RetroListItemCard({
   onShareClick,
 }: RetroListItemCardProps) {
   const isMine = vm.isMine;
+  const { showToast } = useToast();
+  const likeMutation = useRetroLikeMutation();
   const [isLiked, setIsLiked] = useState(vm.defaultLiked ?? false);
   const [displayLikeCount, setDisplayLikeCount] = useState(vm.likeCount);
   const [isActionSheetOpen, setIsActionSheetOpen] = useState(false);
@@ -35,13 +43,24 @@ export function RetroListItemCard({
     setIsLiked(vm.defaultLiked ?? false);
   }, [vm.defaultLiked]);
 
-  const handleLikeClick = () => {
-    setIsLiked((prev) => {
-      const nextLiked = !prev;
-      setDisplayLikeCount((count) => Math.max(0, count + (nextLiked ? 1 : -1)));
-      onLikeClick?.(nextLiked);
-      return nextLiked;
-    });
+  const handleLikeClick = async () => {
+    if (likeMutation.isPending) return;
+
+    const prevLiked = isLiked;
+    const prevLikeCount = displayLikeCount;
+    const nextLiked = !prevLiked;
+
+    setIsLiked(nextLiked);
+    setDisplayLikeCount((count) => Math.max(0, count + (nextLiked ? 1 : -1)));
+
+    try {
+      await likeMutation.mutateAsync({ reflectionId: vm.id, nextLiked });
+      await Promise.resolve(onLikeClick?.(nextLiked));
+    } catch {
+      setIsLiked(prevLiked);
+      setDisplayLikeCount(prevLikeCount);
+      showToast("좋아요 처리에 실패했습니다.", "error");
+    }
   };
 
   const handleMoreClick = () => {
@@ -69,7 +88,7 @@ export function RetroListItemCard({
       vm={vm}
       isLiked={isLiked}
       likeCount={displayLikeCount}
-      onLikeClick={handleLikeClick}
+      onLikeClick={() => void handleLikeClick()}
       onMoreClick={handleMoreClick}
       actionSheet={
         isActionSheetOpen ? (

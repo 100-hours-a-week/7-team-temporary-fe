@@ -50,6 +50,7 @@ function toMyRetroCardVM(item: MyRetroItemResponseDto): MyRetroCardVM {
     imageUrls: (item.images ?? []).map((image) => image.url).filter((url): url is string => !!url),
     content: item.content ?? "",
     likeCount: item.likes ?? 0,
+    defaultLiked: item.isLikedByMe ?? false,
     isMine: item.isMine ?? true,
     visibilityText: item.isOpen ? PUBLIC_VISIBILITY_TEXT : DEFAULT_VISIBILITY_TEXT,
   };
@@ -63,6 +64,7 @@ function toPublicRetroCardVM(item: PublicRetroItemResponseDto): PublicRetroCardV
     imageUrls: (item.images ?? []).map((image) => image.url).filter((url): url is string => !!url),
     content: item.content ?? "",
     likeCount: item.likes ?? 0,
+    defaultLiked: item.isLikedByMe ?? false,
     isMine: item.isMine ?? false,
     authorNickname: item.ownerNickname ?? item.onwerNickname ?? "알 수 없음",
   };
