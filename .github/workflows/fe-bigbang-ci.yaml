@@ -3,14 +3,10 @@ name: BigBang-FE-CI
 on:
   pull_request:
     branches:
-      - develop
-      - main
-      - 'release/**'
+      - deprecated
   push:
     branches:
-      - develop
-      - main
-      - 'release/**'
+      - deprecated
 
 jobs:
   fe:

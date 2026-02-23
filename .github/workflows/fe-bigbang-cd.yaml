@@ -3,8 +3,7 @@ name: BigBang-FE-CD
 on:
   push:
     branches:
-      - main
-      - "release/**"
+      - deprecated
 permissions:
   contents: read
   id-token: write
