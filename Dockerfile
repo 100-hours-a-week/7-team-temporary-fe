@@ -9,12 +9,6 @@ RUN corepack enable
 
 WORKDIR /app
 
-FROM base AS deps
-
-COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --frozen-lockfile
-
 FROM base AS build
 
 ARG NEXT_PUBLIC_API_BASE_URL=""
@@ -29,6 +23,7 @@ ARG NEXT_PUBLIC_FIREBASE_APP_ID=""
 ARG NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=""
 ARG NEXT_PUBLIC_FIREBASE_VAPID_KEY=""
 
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 ENV NEXT_PUBLIC_ENABLE_SW=${NEXT_PUBLIC_ENABLE_SW}
 ENV NEXT_PUBLIC_ENABLE_MIDDLEWARE=${NEXT_PUBLIC_ENABLE_MIDDLEWARE}
@@ -41,7 +36,10 @@ ENV NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
 ENV NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}
 ENV NEXT_PUBLIC_FIREBASE_VAPID_KEY=${NEXT_PUBLIC_FIREBASE_VAPID_KEY}
 
-COPY --from=deps /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile --prefer-offline
+
 COPY . .
 RUN --mount=type=cache,id=next-cache,target=/app/.next/cache \
     pnpm build
