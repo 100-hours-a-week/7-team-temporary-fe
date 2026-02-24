@@ -6,6 +6,8 @@ import type { WeeklyAchievementPoint } from "./types";
 import { WEEKLY_ACHIEVEMENT_MOCK, WEEKLY_ACHIEVEMENT_ZERO } from "./weeklyAchievement.constants";
 
 const TOOLTIP_GAP_PX = 8;
+const INITIAL_TOOLTIP_SHOW_DELAY_MS = 300;
+const INITIAL_TOOLTIP_ALIGN_DURATION_MS = 900;
 
 const toWeeklyPoint = (value: unknown): WeeklyAchievementPoint | null => {
   if (!value || typeof value !== "object") return null;
@@ -25,7 +27,9 @@ export function useWeeklyAchievementChart() {
   const [selectedPoint, setSelectedPoint] = useState<WeeklyAchievementPoint | null>(null);
   const [tooltipLeftPx, setTooltipLeftPx] = useState<number | null>(null);
   const [tooltipTopPx, setTooltipTopPx] = useState<number | null>(null);
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
   const [isTooltipPinned, setIsTooltipPinned] = useState(false);
+  const [needsInitialTooltipTracking, setNeedsInitialTooltipTracking] = useState(false);
   const chartWrapRef = useRef<HTMLDivElement>(null);
 
   const maxRate = useMemo(() => Math.max(...WEEKLY_ACHIEVEMENT_MOCK.map((item) => item.rate)), []);
@@ -47,13 +51,24 @@ export function useWeeklyAchievementChart() {
   );
 
   useEffect(() => {
+    let tooltipDelayTimer: ReturnType<typeof setTimeout> | null = null;
     const frame = requestAnimationFrame(() => {
       setChartData(WEEKLY_ACHIEVEMENT_MOCK);
       setSelectedPoint(defaultPoint);
+      setTooltipLeftPx(null);
+      setTooltipTopPx(null);
+      setIsTooltipVisible(false);
       setIsTooltipPinned(false);
+      setNeedsInitialTooltipTracking(true);
+      tooltipDelayTimer = setTimeout(() => {
+        setIsTooltipVisible(true);
+      }, INITIAL_TOOLTIP_SHOW_DELAY_MS);
     });
 
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      if (tooltipDelayTimer) clearTimeout(tooltipDelayTimer);
+    };
   }, [defaultPoint]);
 
   const alignTooltipToDay = useCallback((day: string) => {
@@ -91,6 +106,8 @@ export function useWeeklyAchievementChart() {
       const point = toWeeklyPoint(value);
       if (!point) return;
       setIsTooltipPinned(true);
+      setNeedsInitialTooltipTracking(false);
+      setIsTooltipVisible(true);
       setSelectedPoint(point);
       alignTooltipToDay(point.day);
     },
@@ -106,6 +123,8 @@ export function useWeeklyAchievementChart() {
         ?.payload;
       const point = toWeeklyPoint(payload);
       if (!point) return;
+      setNeedsInitialTooltipTracking(false);
+      setIsTooltipVisible(true);
       setSelectedPoint(point);
       alignTooltipToDay(point.day);
     },
@@ -114,9 +133,11 @@ export function useWeeklyAchievementChart() {
 
   const handleChartMouseLeave = useCallback(() => {
     if (isTooltipPinned) return;
-    setSelectedPoint(defaultPoint);
-    alignTooltipToDay(defaultPoint.day);
-  }, [alignTooltipToDay, defaultPoint.day, isTooltipPinned]);
+    setSelectedPoint(null);
+    setTooltipLeftPx(null);
+    setTooltipTopPx(null);
+    setIsTooltipVisible(false);
+  }, [isTooltipPinned]);
 
   useEffect(() => {
     if (!selectedPoint) return;
@@ -128,9 +149,34 @@ export function useWeeklyAchievementChart() {
     return () => cancelAnimationFrame(frame);
   }, [alignTooltipToDay, selectedPoint]);
 
+  useEffect(() => {
+    if (!needsInitialTooltipTracking) return;
+    if (!selectedPoint) return;
+    if (isTooltipPinned) return;
+
+    const startedAt = performance.now();
+    let frameId = 0;
+
+    const track = (now: number) => {
+      alignTooltipToDay(selectedPoint.day);
+
+      if (now - startedAt < INITIAL_TOOLTIP_ALIGN_DURATION_MS) {
+        frameId = requestAnimationFrame(track);
+        return;
+      }
+
+      setNeedsInitialTooltipTracking(false);
+    };
+
+    frameId = requestAnimationFrame(track);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [alignTooltipToDay, isTooltipPinned, needsInitialTooltipTracking, selectedPoint]);
+
   return {
     chartData,
     selectedPoint,
+    isTooltipVisible,
     tooltipLeftPx,
     tooltipTopPx,
     chartWrapRef,
