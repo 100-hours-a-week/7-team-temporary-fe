@@ -64,3 +64,21 @@ export async function fetchPublicRetros({
     signal,
   });
 }
+
+export async function likeRetro(reflectionId: number): Promise<void> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<void>(Endpoint.RETRO.LIKES(reflectionId), {
+      method: "POST",
+      authRequired: true,
+    }),
+  );
+}
+
+export async function unlikeRetro(reflectionId: number): Promise<void> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<void>(Endpoint.RETRO.LIKES(reflectionId), {
+      method: "DELETE",
+      authRequired: true,
+    }),
+  );
+}

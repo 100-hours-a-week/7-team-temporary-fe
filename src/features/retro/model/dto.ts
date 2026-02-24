@@ -4,8 +4,8 @@ import type { RetroCreateFormModel, RetroCreateRequestDto } from "./types";
 
 export function toRetroCreateRequestDto(form: RetroCreateFormModel): RetroCreateRequestDto {
   return {
-    reflectionImageIds: form.reflectionImageIds,
+    reflectionImageKeys: form.imageKeys,
     content: form.content.trim(),
-    isPublic: form.visibility === RETRO_VISIBILITY.PUBLIC,
+    isOpen: form.visibility === RETRO_VISIBILITY.PUBLIC,
   };
 }

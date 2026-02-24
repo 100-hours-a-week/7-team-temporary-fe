@@ -1,20 +1,18 @@
 import type { RetroVisibility } from "@/entities/retro";
 
 export interface RetroCreateFormModel {
-  reflectionImageIds: number[];
-  uploadedImageKeys: string[];
+  imageKeys: string[];
   content: string;
   visibility: RetroVisibility;
 }
 
 export interface RetroCreateRequestDto {
-  reflectionImageIds: number[];
+  reflectionImageKeys: string[];
   content: string;
-  isPublic: boolean;
+  isOpen: boolean;
 }
 
 export interface UploadedRetroImage {
   imageKey: string;
   viewUrl: string;
-  reflectionImageId: number | null;
 }
