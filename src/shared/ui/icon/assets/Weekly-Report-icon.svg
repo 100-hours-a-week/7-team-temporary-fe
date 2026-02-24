@@ -1,0 +1,31 @@
+<svg
+  viewBox="0 0 24 24"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <path
+    d="M7 3.75H14.5L18.75 8V18.75C18.75 19.9926 17.7426 21 16.5 21H7C5.75736 21 4.75 19.9926 4.75 18.75V6C4.75 4.75736 5.75736 3.75 7 3.75Z"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M14.25 3.75V7.25C14.25 7.94036 14.8096 8.5 15.5 8.5H18.75"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M8.5 16.25L10.5 14.25L12.25 15.75L15.5 12.5"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="8.5" cy="16.25" r="0.8" fill="currentColor" />
+  <circle cx="10.5" cy="14.25" r="0.8" fill="currentColor" />
+  <circle cx="12.25" cy="15.75" r="0.8" fill="currentColor" />
+  <circle cx="15.5" cy="12.5" r="0.8" fill="currentColor" />
+</svg>

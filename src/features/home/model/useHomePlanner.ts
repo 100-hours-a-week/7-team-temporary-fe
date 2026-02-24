@@ -27,6 +27,7 @@ interface UseHomePlannerResult {
   selectedDate: Date | null;
   setSelectedDate: (date: Date | null) => void;
   todayScheduleLabel: string;
+  isWeeklyReportAvailable: boolean;
   tasks: TaskItemModel[];
   statusMessage: ReturnType<typeof usePlannerStatus>["statusMessage"];
   currentTask: TaskItemModel | null;
@@ -88,6 +89,12 @@ export function useHomePlanner({
   });
 
   const weekDates = useMemo(() => weekDays.map((day) => formatDateParam(day)), [weekDays]);
+  const isWeeklyReportAvailable = useMemo(() => {
+    const weekEndDate = new Date(weekDays[weekDays.length - 1]);
+    weekEndDate.setHours(23, 59, 59, 999);
+    return today.getTime() > weekEndDate.getTime();
+  }, [today, weekDays]);
+
   const hasPlanVM = useMemo(
     () =>
       toHomeWeekPlanPresenceVM({
@@ -154,6 +161,7 @@ export function useHomePlanner({
     selectedDate,
     setSelectedDate,
     todayScheduleLabel,
+    isWeeklyReportAvailable,
     tasks,
     statusMessage,
     currentTask,
