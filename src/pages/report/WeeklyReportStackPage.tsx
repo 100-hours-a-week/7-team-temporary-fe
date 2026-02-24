@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  getWeeklyReportPeriodLabel,
-  WeeklyAchievementSection,
-  WeeklyButlerSection,
-} from "@/features/report";
+import { getWeeklyReportPeriodLabel, WeeklyAchievementSection } from "@/features/report";
 import { useStackPage } from "@/widgets/stack";
 
 interface WeeklyReportStackPageProps {
@@ -56,14 +52,14 @@ export function WeeklyReportStackPage({ baseDate }: WeeklyReportStackPageProps) 
         <WeeklyAchievementSection />
       </section>
 
-      <section
-        className={`transition-all duration-500 ease-out ${
+      <div
+        className={`mt-4 transition-all duration-500 ease-out ${
           isEntered ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
         }`}
         style={{ transitionDelay: "130ms" }}
       >
-        <WeeklyButlerSection />
-      </section>
+        <p className="text-base font-semibold text-black">주간 리포트 화면을 준비 중입니다.</p>
+      </div>
     </div>
   );
 }
