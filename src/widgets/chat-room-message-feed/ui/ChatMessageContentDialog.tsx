@@ -24,8 +24,12 @@ export function ChatMessageContentDialog({
         showOverlay
       >
         <DialogHeader className="space-y-0 border-b border-neutral-100 px-5 py-4">
-          <DialogTitle className="text-base font-semibold text-neutral-900">전체 메시지</DialogTitle>
-          <DialogDescription className="sr-only">잘린 메시지 전체 내용을 확인합니다.</DialogDescription>
+          <DialogTitle className="text-base font-semibold text-neutral-900">
+            전체 메시지
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            잘린 메시지 전체 내용을 확인합니다.
+          </DialogDescription>
         </DialogHeader>
         <div className="max-h-[55vh] overflow-y-auto px-5 py-4 text-[14px] leading-6 break-words whitespace-pre-wrap text-neutral-800">
           {content}

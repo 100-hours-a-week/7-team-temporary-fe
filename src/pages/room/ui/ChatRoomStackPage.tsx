@@ -1,6 +1,9 @@
 "use client";
 
-import { useChatRoomMessagesInfiniteQuery, useChatRoomOwnerStatusQuery } from "@/entities/chat-room";
+import {
+  useChatRoomMessagesInfiniteQuery,
+  useChatRoomOwnerStatusQuery,
+} from "@/entities/chat-room";
 import { ChatMessageFeed } from "@/widgets/chat-room-message-feed";
 import { useChatRoomStackHeader } from "./useChatRoomStackHeader";
 
