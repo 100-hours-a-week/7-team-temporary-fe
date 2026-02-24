@@ -25,6 +25,94 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
     maxParticipants: 20,
     participantsCount: 7,
   },
+  {
+    roomId: 13,
+    type: "OPEN_CHAT",
+    title: "프론트엔드 코드리뷰 모임",
+    description: "코드리뷰 규칙과 사례를 공유하는 방",
+    maxParticipants: 30,
+    participantsCount: 18,
+  },
+  {
+    roomId: 14,
+    type: "OPEN_CHAT",
+    title: "백엔드 API 계약 협의",
+    description: "API 스펙 변경사항을 협의하는 방",
+    maxParticipants: 25,
+    participantsCount: 9,
+  },
+  {
+    roomId: 15,
+    type: "OPEN_CHAT",
+    title: "면접 스터디 질문 아카이브",
+    description: "면접 질문과 답변을 정리하는 방",
+    maxParticipants: 40,
+    participantsCount: 22,
+  },
+  {
+    roomId: 16,
+    type: "OPEN_CHAT",
+    title: "데이터 분석 입문 스터디",
+    description: "SQL과 지표 해석을 연습하는 방",
+    maxParticipants: 18,
+    participantsCount: 11,
+  },
+  {
+    roomId: 17,
+    type: "OPEN_CHAT",
+    title: "취업 포트폴리오 피드백",
+    description: "포트폴리오 상호 피드백 채팅방",
+    maxParticipants: 20,
+    participantsCount: 14,
+  },
+  {
+    roomId: 18,
+    type: "OPEN_CHAT",
+    title: "알고리즘 문제 풀이 데일리",
+    description: "매일 1문제 풀이 인증 방",
+    maxParticipants: 50,
+    participantsCount: 31,
+  },
+  {
+    roomId: 19,
+    type: "OPEN_CHAT",
+    title: "디자인 시스템 구축 논의",
+    description: "토큰/컴포넌트 구조를 논의하는 방",
+    maxParticipants: 16,
+    participantsCount: 10,
+  },
+  {
+    roomId: 22,
+    type: "OPEN_CHAT",
+    title: "커리어 멘토링 Q&A",
+    description: "주니어 커리어 고민 상담 방",
+    maxParticipants: 35,
+    participantsCount: 17,
+  },
+  {
+    roomId: 23,
+    type: "OPEN_CHAT",
+    title: "이력서 첨삭 클리닉",
+    description: "이력서/자소서 첨삭 공유 방",
+    maxParticipants: 24,
+    participantsCount: 8,
+  },
+  {
+    roomId: 24,
+    type: "OPEN_CHAT",
+    title: "모의 코딩테스트 실전반",
+    description: "실전 코테 시간 맞춰 푸는 방",
+    maxParticipants: 60,
+    participantsCount: 27,
+  },
+  {
+    roomId: 25,
+    type: "OPEN_CHAT",
+    title: "CS 스터디 핵심 개념",
+    description: "운영체제/네트워크 핵심 정리 방",
+    maxParticipants: 45,
+    participantsCount: 20,
+  },
 ];
 
 const CAM_STUDY_MOCK_ITEMS: ChatRoomSummaryDto[] = [
@@ -73,6 +161,61 @@ export const MOCK_REALTIME_STATE: Record<number, MockRealtimeEntry> = {
     lastMessageAt: "2026-02-23T20:00:00+09:00",
     unreadCount: 1,
   },
+  13: {
+    lastMessage: "코드리뷰 코멘트 남겼어요.",
+    lastMessageAt: "2026-02-24T10:05:00+09:00",
+    unreadCount: 4,
+  },
+  14: {
+    lastMessage: "API 스키마 v2 공유합니다.",
+    lastMessageAt: "2026-02-24T10:20:00+09:00",
+    unreadCount: 0,
+  },
+  15: {
+    lastMessage: "오늘 면접 질문 3개 정리 완료!",
+    lastMessageAt: "2026-02-24T09:48:00+09:00",
+    unreadCount: 2,
+  },
+  16: {
+    lastMessage: "SQL JOIN 문제 같이 풀어봐요.",
+    lastMessageAt: "2026-02-24T09:12:00+09:00",
+    unreadCount: 1,
+  },
+  17: {
+    lastMessage: "포폴 피드백 드렸습니다.",
+    lastMessageAt: "2026-02-24T08:40:00+09:00",
+    unreadCount: 0,
+  },
+  18: {
+    lastMessage: "오늘 문제 난이도 꽤 높네요.",
+    lastMessageAt: "2026-02-24T11:02:00+09:00",
+    unreadCount: 5,
+  },
+  19: {
+    lastMessage: "토큰 네이밍 룰 확정할까요?",
+    lastMessageAt: "2026-02-24T10:58:00+09:00",
+    unreadCount: 3,
+  },
+  22: {
+    lastMessage: "신입 지원 전략 공유합니다.",
+    lastMessageAt: "2026-02-24T09:55:00+09:00",
+    unreadCount: 1,
+  },
+  23: {
+    lastMessage: "이력서 2차 첨삭 반영했어요.",
+    lastMessageAt: "2026-02-24T10:42:00+09:00",
+    unreadCount: 0,
+  },
+  24: {
+    lastMessage: "모의 코테 1회차 시작합니다!",
+    lastMessageAt: "2026-02-24T11:11:00+09:00",
+    unreadCount: 6,
+  },
+  25: {
+    lastMessage: "운영체제 요약본 업로드 완료.",
+    lastMessageAt: "2026-02-24T08:15:00+09:00",
+    unreadCount: 2,
+  },
   20: {
     lastMessage: "오늘도 열심히 달려봅시다!",
     lastMessageAt: "2026-02-24T08:55:00+09:00",
@@ -84,8 +227,6 @@ export const MOCK_REALTIME_STATE: Record<number, MockRealtimeEntry> = {
     unreadCount: 2,
   },
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 interface GetMockChatRoomListOptions {
   type: ChatRoomType;
