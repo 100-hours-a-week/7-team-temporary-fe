@@ -37,6 +37,7 @@ import ChatSingle from "./assets/Chat-Single.svg";
 import UserDelete from "./assets/User-Delete.svg";
 import Comform from "./assets/Comform-icon.svg";
 import Reject from "./assets/Reject-icon.svg";
+import WeeklyReport from "./assets/Weekly-Report-icon.svg";
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -78,6 +79,7 @@ export const IconMap = {
   user_delete: UserDelete,
   comform: Comform,
   reject: Reject,
+  weekly_report: WeeklyReport,
 } as const satisfies Record<string, SvgComponent>;
 
 export type IconName = keyof typeof IconMap;
