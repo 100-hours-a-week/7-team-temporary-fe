@@ -5,8 +5,12 @@ on:
     branches:
       - develop
       - main
-      - release
       - 'release/**'
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
 
 permissions:
   contents: read
@@ -40,31 +44,28 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Lint (PR)
-        if: github.event_name == 'pull_request'
+        if: github.event.action != 'closed'
         run: pnpm run lint
 
       - name: Build (Next.js)
+        if: github.event.action != 'closed'
         run: pnpm run build
 
-      - name: "Security Audit (push: main/release)"
-        if: >
-          github.event_name == 'push' &&
-          (
-            github.ref_name == 'main' ||
-            startsWith(github.ref_name, 'release/')
-          )
+      - name: "Security Audit (merged PR: main/release/*)"
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/'))
         run: pnpm audit --audit-level=high
 
       - name: Resolve build metadata
         run: |
           set -euo pipefail
-          SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-7)"
-
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            TARGET_BRANCH="${{ github.base_ref }}"
+          if [ "${{ github.event.action }}" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ] && [ -n "${{ github.event.pull_request.merge_commit_sha }}" ]; then
+            SOURCE_SHA="${{ github.event.pull_request.merge_commit_sha }}"
           else
-            TARGET_BRANCH="${{ github.ref_name }}"
+            SOURCE_SHA="${GITHUB_SHA}"
           fi
+          SHORT_SHA="$(echo "${SOURCE_SHA}" | cut -c1-7)"
+
+          TARGET_BRANCH="${{ github.base_ref }}"
 
           TARGET_SLUG="$(echo "${TARGET_BRANCH}" | tr '/:' '--' | tr -cd '[:alnum:]._-')"
           [ -n "${TARGET_SLUG}" ] || TARGET_SLUG="detached"
@@ -84,6 +85,7 @@ jobs:
           fi
 
       - name: Build Docker image
+        if: github.event.action != 'closed' || (github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')))
         env:
           NEXT_PUBLIC_ENABLE_SW: ${{ secrets.NEXT_PUBLIC_ENABLE_SW }}
           NEXT_PUBLIC_ENABLE_MIDDLEWARE: ${{ secrets.NEXT_PUBLIC_ENABLE_MIDDLEWARE }}
@@ -112,17 +114,7 @@ jobs:
             -t "${LOCAL_IMAGE}" .
 
       - name: Configure AWS credentials
-        if: >
-          success() &&
-          (
-            (github.event_name == 'pull_request' &&
-              (github.base_ref == 'main' || github.base_ref == 'release' || startsWith(github.base_ref, 'release/')) &&
-              github.event.pull_request.head.repo.full_name == github.repository
-            ) ||
-            (github.event_name == 'push' &&
-              (github.ref_name == 'main' || github.ref_name == 'release' || startsWith(github.ref_name, 'release/'))
-            )
-          )
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')) && github.event.pull_request.head.repo.full_name == github.repository
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -130,17 +122,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Push image to ECR
-        if: >
-          success() &&
-          (
-            (github.event_name == 'pull_request' &&
-              (github.base_ref == 'main' || github.base_ref == 'release' || startsWith(github.base_ref, 'release/')) &&
-              github.event.pull_request.head.repo.full_name == github.repository
-            ) ||
-            (github.event_name == 'push' &&
-              (github.ref_name == 'main' || github.ref_name == 'release' || startsWith(github.ref_name, 'release/'))
-            )
-          )
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')) && github.event.pull_request.head.repo.full_name == github.repository
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -166,44 +148,32 @@ jobs:
 
           echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
 
-      - name: Notify success (develop)
-        if: >
-          success() &&
-          (
-            (github.event_name == 'pull_request' && github.base_ref == 'develop') ||
-            (github.event_name == 'push' && github.ref_name == 'develop')
-          )
+      - name: Notify success (develop PR)
+        if: success() && github.event.action != 'closed' && github.base_ref == 'develop'
         run: |
           set -euo pipefail
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d "{\"content\":\"✅ FE CI 성공 (develop)\\nRepo: ${{ github.repository }}\\nEvent: ${{ github.event_name }}\\nTarget: ${TARGET_BRANCH}\\nCommit: ${SHORT_SHA}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
+            -d "{\"content\":\"✅ FE CI 성공 (develop PR)\\nRepo: ${{ github.repository }}\\nPR: #${{ github.event.pull_request.number }} (${{ github.head_ref }} -> ${{ github.base_ref }})\\nCommit: ${SHORT_SHA}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
 
-      - name: Notify success (release/main + ECR)
-        if: >
-          success() &&
-          (
-            (github.event_name == 'pull_request' &&
-              (github.base_ref == 'main' || github.base_ref == 'release' || startsWith(github.base_ref, 'release/'))
-            ) ||
-            (github.event_name == 'push' &&
-              (github.ref_name == 'main' || github.ref_name == 'release' || startsWith(github.ref_name, 'release/'))
-            )
-          )
+      - name: Notify success (merged PR to release/main + ECR)
+        if: success() && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/'))
         run: |
           set -euo pipefail
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d "{\"content\":\"✅ FE CI + ECR 업로드 성공\\nRepo: ${{ github.repository }}\\nEvent: ${{ github.event_name }}\\nTarget: ${TARGET_BRANCH}\\nCommit: ${SHORT_SHA}\\nImage: ${IMAGE_URI:-N/A}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
+            -d "{\"content\":\"✅ FE CI + ECR 업로드 성공\\nRepo: ${{ github.repository }}\\nPR: #${{ github.event.pull_request.number }} (${{ github.head_ref }} -> ${{ github.base_ref }})\\nCommit: ${SHORT_SHA}\\nImage: ${IMAGE_URI}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
 
       - name: Notify failure
         if: failure()
         run: |
           set +e
           SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-7)"
+          CONTEXT="PR #${{ github.event.pull_request.number }} (${{ github.head_ref }} -> ${{ github.base_ref }})"
+
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d "{\"content\":\"🚨 FE CI 실패\\nRepo: ${{ github.repository }}\\nEvent: ${{ github.event_name }}\\nRef: ${{ github.ref_name }}\\nCommit: ${SHORT_SHA}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
+            -d "{\"content\":\"🚨 FE CI 실패\\nRepo: ${{ github.repository }}\\n${CONTEXT}\\nCommit: ${SHORT_SHA}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
 
       - name: Cleanup local docker artifacts
         if: always()
