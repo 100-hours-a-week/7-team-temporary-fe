@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { useGroupChatRoomListQuery } from "@/entities/chat-room";
 import { FloatingActionButton } from "@/shared/ui/button";
-import { EmptyStateCard } from "@/shared/ui/empty";
 import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
+
+import { ChatRoomList } from "./ChatRoomList";
 
 const ROOM_SECTION = {
   GROUP_CHAT: "GROUP_CHAT",
@@ -18,23 +20,34 @@ const ROOM_TABS: ReadonlyArray<SectionTab<RoomSection>> = [
 
 interface RoomFeedProps {
   enabled?: boolean;
+  onChatRoomClick?: (roomId: number) => void;
   onChatSearchClick?: () => void;
 }
 
-export function RoomFeed({ enabled: _enabled = true, onChatSearchClick }: RoomFeedProps) {
+export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }: RoomFeedProps) {
   const [activeSection, setActiveSection] = useState<RoomSection>(ROOM_SECTION.GROUP_CHAT);
+  const scrollRef = useRef<HTMLElement>(null);
+
+  const groupChatQuery = useGroupChatRoomListQuery({ enabled });
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [activeSection]);
 
   return (
-    <section className="scrollbar-hide h-full overflow-y-auto px-6 pb-[90px]">
+    <section
+      ref={scrollRef}
+      className="scrollbar-hide h-full overflow-y-auto px-6 pb-[90px]"
+    >
       <SectionTabs
         tabs={ROOM_TABS}
         activeTab={activeSection}
         onChange={setActiveSection}
       />
 
-      <EmptyStateCard
-        message="아직 들어간 채팅방이 없어요. 새로운 채팅방을 만들어볼까요?"
-        className="mt-4"
+      <ChatRoomList
+        items={groupChatQuery.data?.content ?? []}
+        onChatRoomClick={onChatRoomClick ?? (() => undefined)}
       />
 
       {activeSection === ROOM_SECTION.GROUP_CHAT && (
