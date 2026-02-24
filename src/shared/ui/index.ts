@@ -1,4 +1,5 @@
 export * from "./shadcn";
+export * from "./section-tabs";
 export * from "./icon";
 export * from "./button";
 export * from "./image";

@@ -1,10 +1,15 @@
 "use client";
 
 import { RetroListItemCard, useRetroSection } from "@/features/retro";
-import { RETRO_SECTION } from "@/entities/retro";
+import { RETRO_SECTION, type RetroSection } from "@/entities/retro";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { EmptyStateCard } from "@/shared/ui/empty";
-import { RetroSectionTabs } from "./RetroSectionTabs";
+import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
+
+const RETRO_TABS: ReadonlyArray<SectionTab<RetroSection>> = [
+  { id: RETRO_SECTION.MY_PAGE, label: "내 페이지" },
+  { id: RETRO_SECTION.EXPLORE, label: "둘러보기" },
+];
 
 interface RetroFeedProps {
   enabled?: boolean;
@@ -32,8 +37,9 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
 
   return (
     <section className="scrollbar-hide h-full overflow-y-auto px-6 pb-[90px]">
-      <RetroSectionTabs
-        activeSection={activeSection}
+      <SectionTabs
+        tabs={RETRO_TABS}
+        activeTab={activeSection}
         onChange={setActiveSection}
       />
 
