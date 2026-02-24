@@ -1,4 +1,11 @@
-import type { ChatRoomSummaryDto, ChatRoomListResponseDto, ChatRoomType } from "./types";
+import type {
+  ChatMessageDto,
+  ChatMessageListResponseDto,
+  ChatRoomSummaryDto,
+  ChatRoomListResponseDto,
+  ChatRoomType,
+  ChatRoomOwnerStatusDto,
+} from "./types";
 
 const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   {
@@ -312,6 +319,172 @@ export function subscribeMockChatRoomRealtime(
   }, intervalMs);
 
   return () => clearInterval(timer);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MOCK_OWNER_STATUS_BY_ID: Record<number, boolean> = {
+  10: true,
+  11: false,
+  12: false,
+  13: true,
+  14: false,
+  15: false,
+  16: true,
+  17: false,
+  18: false,
+  19: true,
+  22: false,
+  23: false,
+  24: true,
+  25: false,
+};
+
+export function getMockChatRoomOwnerStatus(ownerId: number): ChatRoomOwnerStatusDto {
+  return {
+    isOwner: Boolean(MOCK_OWNER_STATUS_BY_ID[ownerId]),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MOCK_OTHER_LONG_MESSAGE = Array.from(
+  { length: 22 },
+  (_, index) => `${index + 1}줄: 오늘 논의한 내용을 정리해서 공유합니다.`,
+).join("\n");
+
+const MOCK_MY_LONG_MESSAGE = Array.from(
+  { length: 12 },
+  (_, index) => `${index + 1}줄: 제가 확인한 내용도 같이 남겨둘게요.`,
+).join("\n");
+
+const DEFAULT_MESSAGE_SEED: ChatMessageDto[] = [
+  {
+    messageId: 210,
+    messageType: "TEXT",
+    senderType: "USER",
+    senderId: 3,
+    content: "오늘 스터디 몇 시에 시작해?",
+    images: [],
+    sentAt: "2026-01-13T19:20:10+09:00",
+  },
+  {
+    messageId: 209,
+    messageType: "FILE",
+    senderType: "USER",
+    senderId: 5,
+    content: null,
+    images: [
+      {
+        url: "https://picsum.photos/seed/chat-image-1/320/220",
+        expiresAt: "2026-01-13T19:25:00+09:00",
+        key: "aosifsdg4132sdkghsi",
+        sortOrder: 1,
+      },
+      {
+        url: "https://picsum.photos/seed/chat-image-2/320/220",
+        expiresAt: "2026-01-13T19:25:00+09:00",
+        key: "aosifsdg4132sdkghsiasfgsdfgsd",
+        sortOrder: 2,
+      },
+    ],
+    sentAt: "2026-01-13T19:20:02+09:00",
+  },
+  {
+    messageId: 208,
+    messageType: "FILE",
+    senderType: "USER",
+    senderId: 5,
+    content: null,
+    images: [
+      {
+        url: "https://picsum.photos/seed/chat-image-3/320/220",
+        expiresAt: "2026-01-13T19:25:00+09:00",
+        key: "aosifsdg4132sdkghsisafsgsgsdg",
+        sortOrder: 1,
+      },
+    ],
+    sentAt: "2026-01-13T19:19:58+09:00",
+  },
+  {
+    messageId: 207,
+    messageType: "TEXT",
+    senderType: "USER",
+    senderId: 5,
+    content: MOCK_OTHER_LONG_MESSAGE,
+    images: [],
+    sentAt: "2026-01-13T19:19:10+09:00",
+  },
+  {
+    messageId: 206,
+    messageType: "TEXT",
+    senderType: "AI",
+    senderId: null,
+    content: "지원님이 들어왔습니다.",
+    images: [],
+    sentAt: "2026-01-13T19:18:40+09:00",
+  },
+  {
+    messageId: 205,
+    messageType: "TEXT",
+    senderType: "USER",
+    senderId: 3,
+    content: MOCK_MY_LONG_MESSAGE,
+    images: [],
+    sentAt: "2026-01-13T19:18:10+09:00",
+  },
+  {
+    messageId: 204,
+    messageType: "TEXT",
+    senderType: "USER",
+    senderId: 7,
+    content: "좋아요, 그럼 8시에 시작하죠.",
+    images: [],
+    sentAt: "2026-01-13T19:17:20+09:00",
+  },
+  {
+    messageId: 203,
+    messageType: "TEXT",
+    senderType: "USER",
+    senderId: 3,
+    content: "확인했습니다!",
+    images: [],
+    sentAt: "2026-01-13T19:16:58+09:00",
+  },
+];
+
+function getDefaultMessages(roomId: number): ChatMessageDto[] {
+  return DEFAULT_MESSAGE_SEED.map((message) => ({
+    ...message,
+    messageId: message.messageId + roomId * 1000,
+    sentAt: new Date(new Date(message.sentAt).getTime() + roomId * 30_000).toISOString(),
+  })).sort((a, b) => b.messageId - a.messageId);
+}
+
+export function getMockChatRoomMessageListResponse({
+  roomId,
+  cursor,
+  size = 50,
+}: {
+  roomId: number;
+  cursor?: number;
+  size?: number;
+}): ChatMessageListResponseDto {
+  const safeSize = Math.max(size, 1);
+  const all = getDefaultMessages(roomId);
+  const filtered =
+    typeof cursor === "number" ? all.filter((message) => message.messageId < cursor) : all;
+  const page = filtered.slice(0, safeSize);
+  const content = [...page].reverse();
+  const hasNext = filtered.length > safeSize;
+  const nextCursor = hasNext ? (page[page.length - 1]?.messageId ?? null) : null;
+
+  return {
+    content,
+    nextCursor,
+    size: safeSize,
+    hasNext,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
