@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import { SectionCard } from "@/shared/ui";
 
 import {
@@ -7,17 +5,23 @@ import {
   WEEKLY_BUTLER_CHAT_MIN_HEIGHT_PX,
   WEEKLY_BUTLER_CHAT_INPUT_MAX_LENGTH,
   WEEKLY_BUTLER_CHAT_INPUT_PLACEHOLDER,
+  WEEKLY_BUTLER_CHAT_LIMIT_REACHED_PLACEHOLDER,
   WEEKLY_BUTLER_GREETING_LINES,
   WEEKLY_BUTLER_QUICK_ACTIONS,
 } from "../model/weeklyButler.constants";
+import { useWeeklyButlerChatForm } from "../model/useWeeklyButlerChatForm";
 import { WeeklyButlerAvatar, WeeklyButlerBotBubble } from "./WeeklyButlerBubble";
 import { WeeklyButlerChatComposer } from "./WeeklyButlerChatComposer";
 import { WeeklyButlerHero } from "./WeeklyButlerHero";
 import { WeeklyButlerQuickActions } from "./WeeklyButlerQuickActions";
 
 export function WeeklyButlerSection() {
-  const [draftMessage, setDraftMessage] = useState("");
-  const isSendDisabled = draftMessage.trim().length === 0;
+  const { message, isSendDisabled, isSendHidden, handleChange, handleSend } =
+    useWeeklyButlerChatForm();
+
+  const placeholder = isSendHidden
+    ? WEEKLY_BUTLER_CHAT_LIMIT_REACHED_PLACEHOLDER
+    : WEEKLY_BUTLER_CHAT_INPUT_PLACEHOLDER;
 
   return (
     <section className="mt-4">
@@ -56,11 +60,13 @@ export function WeeklyButlerSection() {
           </div>
 
           <WeeklyButlerChatComposer
-            value={draftMessage}
-            onChange={setDraftMessage}
+            value={message}
+            onChange={handleChange}
             maxLength={WEEKLY_BUTLER_CHAT_INPUT_MAX_LENGTH}
-            placeholder={WEEKLY_BUTLER_CHAT_INPUT_PLACEHOLDER}
+            placeholder={placeholder}
             isSendDisabled={isSendDisabled}
+            isSendHidden={isSendHidden}
+            onSend={handleSend}
           />
         </div>
       </SectionCard>
