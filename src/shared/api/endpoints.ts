@@ -79,4 +79,9 @@ export const Endpoint = {
     BASE: chatPath("/reflections"),
     LIKES: (reflectionId: number) => chatPath(`/reflections/${reflectionId}/likes`),
   },
+  CHAT_ROOMS: {
+    PARTICIPANTS: chatPath("/chat-rooms/participants"),
+    PARTICIPANT_MESSAGE: (participantId: number) =>
+      chatPath(`/chat-rooms/participants/${participantId}/message`),
+  },
 } as const;

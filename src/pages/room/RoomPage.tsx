@@ -1,3 +1,4 @@
+import { ChatRoomStackPage } from "./ui/ChatRoomStackPage";
 import { ChatSearchStackPage } from "./ui/ChatSearchStackPage";
 import { RoomFeed } from "@/widgets/room-feed";
 import { useStackPage } from "@/widgets/stack";
@@ -13,9 +14,14 @@ export function RoomPage({ enabled = true }: RoomPageProps) {
     push(<ChatSearchStackPage />);
   };
 
+  const handleOpenChatRoom = (id: number) => {
+    push(<ChatRoomStackPage roomId={id} />);
+  };
+
   return (
     <RoomFeed
       enabled={enabled}
+      onChatRoomClick={handleOpenChatRoom}
       onChatSearchClick={handleOpenChatSearch}
     />
   );
