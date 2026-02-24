@@ -4,6 +4,7 @@ export * from "./button";
 export * from "./image";
 export * from "./retro";
 export * from "./empty";
+export * from "./surface";
 export * from "./bottom-sheet";
 export * from "./dialog";
 export * from "./dialogs/ConfirmDialog";

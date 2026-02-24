@@ -3,7 +3,7 @@
 import { Profiler, useCallback } from "react";
 import type { CSSProperties, ProfilerOnRenderCallback } from "react";
 
-import { ShinyText } from "@/shared/ui";
+import { SectionCard, ShinyText } from "@/shared/ui";
 import { SectionActionButton } from "@/shared/ui/button";
 import { Icon } from "@/shared/ui/icon";
 import { HomeTaskItem } from "@/entities/day-plan";
@@ -79,7 +79,7 @@ export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlanner
           hasPlan={hasPlan}
         />
         <div className="mt-6 flex flex-col gap-3">
-          <section className="1px border-ink-100 rounded-[15px] border border-solid bg-white px-4 py-4">
+          <SectionCard>
             <div className="text-primary-600 flex items-center gap-2 pb-1 text-base font-bold">
               <Icon
                 name="fire"
@@ -120,8 +120,8 @@ export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlanner
                 />
               ) : null}
             </div>
-          </section>
-          <section className="1px border-ink-100 rounded-[15px] border border-solid bg-white px-4 py-4">
+          </SectionCard>
+          <SectionCard>
             <div className="flex items-center justify-between gap-3 pb-1">
               <div className="text-primary-600 flex items-center gap-2 text-base font-bold">
                 <Icon
@@ -188,7 +188,7 @@ export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlanner
                 </>
               )}
             </div>
-          </section>
+          </SectionCard>
         </div>
         <div
           className="h-24"
