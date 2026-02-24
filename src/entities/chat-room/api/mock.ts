@@ -228,6 +228,94 @@ export const MOCK_REALTIME_STATE: Record<number, MockRealtimeEntry> = {
   },
 };
 
+export const CHAT_ROOM_WEBSOCKET_MOCK_ENABLED = true;
+
+export interface MockRealtimeMessage extends MockRealtimeEntry {
+  roomId: number;
+}
+
+const MOCK_WEBSOCKET_MESSAGES = [
+  "새 메시지가 도착했어요.",
+  "자료 링크 올려둘게요!",
+  "좋은 의견 감사합니다.",
+  "지금 바로 확인 가능해요.",
+  "다음 일정 공지드립니다.",
+  "이 스레드로 계속 이야기해요.",
+];
+
+let runtimeRealtimeState: Record<number, MockRealtimeEntry> = { ...MOCK_REALTIME_STATE };
+
+function pickRandomMessage() {
+  return MOCK_WEBSOCKET_MESSAGES[Math.floor(Math.random() * MOCK_WEBSOCKET_MESSAGES.length)];
+}
+
+function pickTargetRoomId(roomIds?: number[]) {
+  const candidates = (
+    roomIds?.length ? roomIds : OPEN_CHAT_MOCK_ITEMS.map((item) => item.roomId)
+  ).filter((roomId) => OPEN_CHAT_MOCK_ITEMS.some((item) => item.roomId === roomId));
+  if (candidates.length === 0) return null;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+export function getMockRealtimeStateSnapshot(roomIds?: number[]) {
+  if (!roomIds?.length) return { ...runtimeRealtimeState };
+
+  const picked: Record<number, MockRealtimeEntry> = {};
+  roomIds.forEach((roomId) => {
+    const state = runtimeRealtimeState[roomId];
+    if (state) picked[roomId] = state;
+  });
+  return picked;
+}
+
+interface SubscribeMockChatRoomRealtimeOptions {
+  enabled?: boolean;
+  intervalMs?: number;
+  roomIds?: number[];
+}
+
+export function subscribeMockChatRoomRealtime(
+  onMessage: (message: MockRealtimeMessage) => void,
+  {
+    enabled = CHAT_ROOM_WEBSOCKET_MOCK_ENABLED,
+    intervalMs = 3000,
+    roomIds,
+  }: SubscribeMockChatRoomRealtimeOptions = {},
+) {
+  if (!enabled) {
+    return () => undefined;
+  }
+
+  const timer = setInterval(() => {
+    const roomId = pickTargetRoomId(roomIds);
+    if (roomId === null) return;
+
+    const prev = runtimeRealtimeState[roomId] ?? {
+      lastMessage: pickRandomMessage(),
+      lastMessageAt: new Date().toISOString(),
+      unreadCount: 0,
+    };
+
+    const nextUnreadCount = Math.min(99, prev.unreadCount + Math.floor(Math.random() * 3 + 1));
+    const next: MockRealtimeEntry = {
+      lastMessage: pickRandomMessage(),
+      lastMessageAt: new Date().toISOString(),
+      unreadCount: nextUnreadCount,
+    };
+
+    runtimeRealtimeState = {
+      ...runtimeRealtimeState,
+      [roomId]: next,
+    };
+
+    onMessage({ roomId, ...next });
+  }, intervalMs);
+
+  return () => clearInterval(timer);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface GetMockChatRoomListOptions {
   type: ChatRoomType;
   page?: number;
