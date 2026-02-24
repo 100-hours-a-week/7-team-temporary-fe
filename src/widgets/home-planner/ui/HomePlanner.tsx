@@ -4,6 +4,7 @@ import { Profiler, useCallback } from "react";
 import type { CSSProperties, ProfilerOnRenderCallback } from "react";
 
 import { ShinyText } from "@/shared/ui";
+import { SectionActionButton } from "@/shared/ui/button";
 import { Icon } from "@/shared/ui/icon";
 import { HomeTaskItem } from "@/entities/day-plan";
 import { useHomePlanner } from "@/features/home";
@@ -11,9 +12,10 @@ import { HomeWeekSelector } from "@/widgets/home-week";
 
 interface HomePlannerProps {
   enabled?: boolean;
+  onWeeklyReportClick?: () => void;
 }
 
-export function HomePlanner({ enabled = true }: HomePlannerProps) {
+export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlannerProps) {
   const handlePlannerProfileRender = useCallback<ProfilerOnRenderCallback>(
     (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
       if (typeof window !== "undefined" && (window as any).__MOLIP_PROFILE_CAPTURE__) {
@@ -46,6 +48,7 @@ export function HomePlanner({ enabled = true }: HomePlannerProps) {
     selectedDate,
     setSelectedDate,
     todayScheduleLabel,
+    isWeeklyReportAvailable,
     tasks,
     statusMessage,
     currentTask,
@@ -119,14 +122,31 @@ export function HomePlanner({ enabled = true }: HomePlannerProps) {
             </div>
           </section>
           <section className="1px border-ink-100 rounded-[15px] border border-solid bg-white px-4 py-4">
-            <div className="text-primary-600 flex items-center gap-2 pb-1 text-base font-bold">
-              <Icon
-                name="home_outline"
-                className="h-7 w-7"
-                style={{ "--icon-stroke": 3 } as CSSProperties}
-                aria-hidden
-              />
-              {todayScheduleLabel}
+            <div className="flex items-center justify-between gap-3 pb-1">
+              <div className="text-primary-600 flex items-center gap-2 text-base font-bold">
+                <Icon
+                  name="home_outline"
+                  className="h-7 w-7"
+                  style={{ "--icon-stroke": 3 } as CSSProperties}
+                  aria-hidden
+                />
+                {todayScheduleLabel}
+              </div>
+              <SectionActionButton
+                type="button"
+                onClick={onWeeklyReportClick}
+                disabled={!isWeeklyReportAvailable}
+                aria-label="주간 레포트 페이지 이동"
+                icon={
+                  <Icon
+                    name="weekly_report"
+                    className="h-5 w-5"
+                    aria-hidden
+                  />
+                }
+              >
+                주간 레포트
+              </SectionActionButton>
             </div>
             <div className="flex flex-col gap-2">
               {isLoading ? (
