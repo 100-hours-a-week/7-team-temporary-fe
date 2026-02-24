@@ -1,20 +1,37 @@
 "use client";
 
-import { useEffect } from "react";
-
-import { useStackPage } from "@/widgets/stack";
+import { useChatRoomMessagesInfiniteQuery, useChatRoomOwnerStatusQuery } from "@/entities/chat-room";
+import { ChatMessageFeed } from "@/widgets/chat-room-message-feed";
+import { useChatRoomStackHeader } from "./useChatRoomStackHeader";
 
 interface ChatRoomStackPageProps {
   roomId: number;
 }
 
-export function ChatRoomStackPage({ roomId: _roomId }: ChatRoomStackPageProps) {
-  const { setHeaderContent } = useStackPage();
+export function ChatRoomStackPage({ roomId }: ChatRoomStackPageProps) {
+  const chatMessagesQuery = useChatRoomMessagesInfiniteQuery({
+    roomId,
+    size: 50,
+    enabled: roomId > 0,
+  });
+  const { data: ownerStatus } = useChatRoomOwnerStatusQuery({
+    ownerId: roomId,
+    enabled: roomId > 0,
+  });
+  const isOwner = ownerStatus?.isOwner ?? false;
 
-  useEffect(() => {
-    setHeaderContent(<span className="text-[18px] font-semibold text-black">채팅방</span>);
-    return () => setHeaderContent(null);
-  }, [setHeaderContent]);
+  useChatRoomStackHeader({ roomId, isOwner });
 
-  return <div className="px-6 pt-4" />;
+  return (
+    <div className="px-6 pt-4">
+      <ChatMessageFeed
+        messages={chatMessagesQuery.messages}
+        isLoading={chatMessagesQuery.isLoading}
+        isError={chatMessagesQuery.isError}
+        hasMore={chatMessagesQuery.hasMore}
+        isFetchingMore={chatMessagesQuery.isFetchingMore}
+        onLoadMore={chatMessagesQuery.loadMore}
+      />
+    </div>
+  );
 }
