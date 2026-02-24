@@ -29,7 +29,7 @@ export function HomePage({ enabled = true }: HomePageProps) {
   };
 
   const handleOpenWeeklyReport = () => {
-    push(<WeeklyReportStackPage />);
+    push(<WeeklyReportStackPage baseDate={homeDate} />);
   };
 
   return (
