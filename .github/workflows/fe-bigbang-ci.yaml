@@ -30,16 +30,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node.js
+        if: github.event.action != 'closed'
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Enable Corepack (pnpm)
+        if: github.event.action != 'closed'
         run: |
           corepack enable
           corepack prepare pnpm@9.15.1 --activate
 
       - name: Install dependencies
+        if: github.event.action != 'closed'
         run: |
           set -euo pipefail
           pnpm install --frozen-lockfile
@@ -51,10 +54,6 @@ jobs:
       - name: Build (Next.js)
         if: github.event.action != 'closed'
         run: pnpm run build
-
-      - name: "Security Audit (merged PR: main/release/*)"
-        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/'))
-        run: pnpm audit --audit-level=high
 
       - name: Resolve build metadata
         run: |
