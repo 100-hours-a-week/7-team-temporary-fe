@@ -1,11 +1,22 @@
+import { ChatSearchStackPage } from "./ui/ChatSearchStackPage";
+import { RoomFeed } from "@/widgets/room-feed";
+import { useStackPage } from "@/widgets/stack";
+
 interface RoomPageProps {
   enabled?: boolean;
 }
 
-export function RoomPage({ enabled: _enabled = true }: RoomPageProps) {
+export function RoomPage({ enabled = true }: RoomPageProps) {
+  const { push } = useStackPage();
+
+  const handleOpenChatSearch = () => {
+    push(<ChatSearchStackPage />);
+  };
+
   return (
-    <div className="flex h-full items-center justify-center">
-      <p className="text-sm text-neutral-400">방 기능이 준비 중이에요.</p>
-    </div>
+    <RoomFeed
+      enabled={enabled}
+      onChatSearchClick={handleOpenChatSearch}
+    />
   );
 }
