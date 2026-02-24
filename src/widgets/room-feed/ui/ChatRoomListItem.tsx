@@ -21,8 +21,8 @@ export function ChatRoomListItem({ item, onClick }: ChatRoomListItemProps) {
             </span>
             <span className="inline-flex shrink-0 items-center gap-1 text-[14px] text-neutral-500">
               <Icon
-                name="friend"
-                className="h-5 w-5"
+                name="user_filled"
+                className="h-5 w-5 text-neutral-500"
                 aria-hidden
               />
               {item.participantsCount}

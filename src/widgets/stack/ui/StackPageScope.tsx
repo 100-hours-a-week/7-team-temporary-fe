@@ -53,7 +53,7 @@ export function StackPageScope({
   onHeaderActionClick,
   showHeader = true,
 }: StackPageScopeProps) {
-  const { stack, pop, poppingKey, headerContent } = useStackPage();
+  const { stack, pop, poppingKey, headerContent, headerRightContent } = useStackPage();
 
   const hasOverlay = stack.length > 0;
   const isPopping = Boolean(poppingKey);
@@ -65,6 +65,7 @@ export function StackPageScope({
       onActionClick={handleHeaderAction}
       title={headerTitle}
       headerContent={headerContent}
+      headerRightContent={headerRightContent}
     />
   ) : null;
 

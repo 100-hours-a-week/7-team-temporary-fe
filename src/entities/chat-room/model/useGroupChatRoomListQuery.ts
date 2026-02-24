@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { fetchChatRoomList, CHAT_ROOM_REALTIME_MOCK_ENABLED, MOCK_REALTIME_STATE } from "../api";
 
-import { toChatRoomListModel } from "./mappers";
+import { toChatRoomListModel } from "./chatRoomList.mapper";
 import { chatRoomQueryKeys } from "./queryKeys";
 
 interface UseGroupChatRoomListQueryOptions {
