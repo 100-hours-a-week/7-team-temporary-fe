@@ -85,7 +85,7 @@ jobs:
           fi
 
       - name: Build Docker image
-        if: github.event.action != 'closed' || (github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')))
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/'))
         env:
           NEXT_PUBLIC_ENABLE_SW: ${{ secrets.NEXT_PUBLIC_ENABLE_SW }}
           NEXT_PUBLIC_ENABLE_MIDDLEWARE: ${{ secrets.NEXT_PUBLIC_ENABLE_MIDDLEWARE }}
