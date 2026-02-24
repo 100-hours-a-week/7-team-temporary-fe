@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ChatRoomListItemVM } from "@/entities/chat-room";
-import { useGroupChatRoomListQuery } from "@/entities/chat-room";
+import { useChatRoomRealtimeMock, useGroupChatRoomListQuery } from "@/entities/chat-room";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { FloatingActionButton } from "@/shared/ui/button";
 import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
@@ -88,6 +88,29 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
     rootRef: scrollRef,
   });
 
+  const roomIds = useMemo(() => fetchedRooms.map((room) => room.roomId), [fetchedRooms]);
+  const realtimeStateMap = useChatRoomRealtimeMock({
+    enabled: enabled && isGroupChatSection,
+    roomIds,
+    intervalMs: 3000,
+  });
+
+  const rooms = useMemo(
+    () =>
+      fetchedRooms.map((room) => {
+        const realtime = realtimeStateMap[room.roomId];
+        if (!realtime) return room;
+
+        return {
+          ...room,
+          lastMessage: realtime.lastMessage,
+          lastMessageAt: realtime.lastMessageAt,
+          unreadCount: realtime.unreadCount,
+        };
+      }),
+    [fetchedRooms, realtimeStateMap],
+  );
+
   return (
     <section
       ref={scrollRef}
@@ -113,7 +136,7 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
 
       {!groupChatQuery.isLoading && !groupChatQuery.isError ? (
         <ChatRoomList
-          items={fetchedRooms}
+          items={rooms}
           onChatRoomClick={onChatRoomClick ?? (() => undefined)}
         />
       ) : null}
