@@ -1,0 +1,404 @@
+pipeline {
+  agent any
+
+  options {
+    skipDefaultCheckout(true)
+    disableConcurrentBuilds()
+    timestamps()
+    buildDiscarder(logRotator(numToKeepStr: "30"))
+  }
+
+  environment {
+    STAGING_CONTAINER_NAME = "molip-fe-staging"
+    STAGING_HOST_PORT = "3000"
+
+    PROD_BLUE_NAME = "molip-fe-blue"
+    PROD_GREEN_NAME = "molip-fe-green"
+    PROD_BLUE_PORT = "3000"
+    PROD_GREEN_PORT = "3001"
+    PROD_HEALTH_PATH = "/api/example"
+  }
+
+  stages {
+    stage("Checkout") {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage("Resolve deploy metadata") {
+      steps {
+        sh '''
+          set -eu
+          SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+          BRANCH_RAW="${BRANCH_NAME:-detached}"
+          BRANCH_SLUG="$(echo "$BRANCH_RAW" | tr '/:' '--' | tr -cd '[:alnum:]._-')"
+          [ -n "$BRANCH_SLUG" ] || BRANCH_SLUG="detached"
+
+          cat > .cd-meta.env <<META
+SHORT_SHA=${SHORT_SHA}
+BRANCH_SLUG=${BRANCH_SLUG}
+META
+        '''
+      }
+    }
+
+    stage("Fetch image from ECR") {
+      steps {
+        withCredentials([
+          string(credentialsId: "aws-access-key-id", variable: "AWS_ACCESS_KEY_ID"),
+          string(credentialsId: "aws-secret-access-key", variable: "AWS_SECRET_ACCESS_KEY"),
+          string(credentialsId: "aws-region", variable: "AWS_REGION"),
+          string(credentialsId: "aws-account-id", variable: "AWS_ACCOUNT_ID"),
+          string(credentialsId: "ecr-repo", variable: "ECR_REPO")
+        ]) {
+          sh '''
+            set -eu
+            command -v aws >/dev/null 2>&1 || { echo "aws cli is required on Jenkins agent"; exit 1; }
+            command -v docker >/dev/null 2>&1 || { echo "docker is required on Jenkins agent"; exit 1; }
+
+            . ./.cd-meta.env
+            export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION="$AWS_REGION"
+
+            REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+            IMAGE_URI="$REGISTRY/$ECR_REPO:$SHORT_SHA"
+            IMAGE_ARCHIVE="app-image-${SHORT_SHA}.tar.gz"
+
+            FOUND=0
+            ATTEMPT=1
+            while [ "$ATTEMPT" -le 20 ]; do
+              if aws ecr describe-images \
+                --repository-name "$ECR_REPO" \
+                --image-ids imageTag="$SHORT_SHA" \
+                --region "$AWS_REGION" >/dev/null 2>&1; then
+                FOUND=1
+                break
+              fi
+              echo "Image not ready yet (attempt ${ATTEMPT}/20). wait 15s..."
+              ATTEMPT=$((ATTEMPT + 1))
+              sleep 15
+            done
+
+            if [ "$FOUND" -ne 1 ]; then
+              echo "Image tag $SHORT_SHA not found in ECR repository $ECR_REPO"
+              exit 1
+            fi
+
+            aws ecr get-login-password --region "$AWS_REGION" | \
+              docker login --username AWS --password-stdin "$REGISTRY"
+
+            docker pull "$IMAGE_URI"
+            docker save "$IMAGE_URI" | gzip > "$IMAGE_ARCHIVE"
+
+            cat >> .cd-meta.env <<META
+IMAGE_URI=${IMAGE_URI}
+IMAGE_ARCHIVE=${IMAGE_ARCHIVE}
+META
+          '''
+        }
+      }
+    }
+
+    stage("Deploy to AWS Staging (release/*)") {
+      when {
+        expression {
+          return (env.BRANCH_NAME ?: "").startsWith("release/")
+        }
+      }
+      steps {
+        withCredentials([
+          sshUserPrivateKey(credentialsId: "ssh-key-staging", keyFileVariable: "SSH_KEY", usernameVariable: "SSH_USER"),
+          string(credentialsId: "host-staging", variable: "AWS_HOST")
+        ]) {
+          sh '''
+            set -eu
+            command -v scp >/dev/null 2>&1 || { echo "scp is required on Jenkins agent"; exit 1; }
+            command -v ssh >/dev/null 2>&1 || { echo "ssh is required on Jenkins agent"; exit 1; }
+
+            . ./.cd-meta.env
+
+            mkdir -p ~/.ssh
+            chmod 700 ~/.ssh
+            ssh-keyscan -H "$AWS_HOST" >> ~/.ssh/known_hosts
+
+            scp -i "$SSH_KEY" "$IMAGE_ARCHIVE" "${SSH_USER}@${AWS_HOST}:/tmp/${IMAGE_ARCHIVE}"
+
+            ssh -i "$SSH_KEY" "${SSH_USER}@${AWS_HOST}" \
+              "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' CONTAINER_NAME='${STAGING_CONTAINER_NAME}' HOST_PORT='${STAGING_HOST_PORT}' HEALTH_PATH='${PROD_HEALTH_PATH}' bash -se" <<'EOSSH'
+              set -eu
+              command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
+              command -v curl >/dev/null 2>&1 || { echo "curl is required on target host"; exit 1; }
+
+              wait_healthy() {
+                URL="$1"
+                RETRIES="${2:-30}"
+                I=1
+                while [ "$I" -le "$RETRIES" ]; do
+                  if curl -fsS "$URL" >/dev/null 2>&1; then
+                    return 0
+                  fi
+                  sleep 2
+                  I=$((I + 1))
+                done
+                return 1
+              }
+
+              gunzip -c "/tmp/${IMAGE_ARCHIVE}" | docker load
+
+              PORT_HOLDER_IDS="$(docker ps --filter "publish=${HOST_PORT}" --format '{{.ID}}' || true)"
+              if [ -n "$PORT_HOLDER_IDS" ]; then
+                echo "Stopping containers bound to host port ${HOST_PORT}: ${PORT_HOLDER_IDS}"
+                echo "$PORT_HOLDER_IDS" | xargs -r docker rm -f
+              fi
+
+              docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+              docker run -d --name "$CONTAINER_NAME" --restart unless-stopped -p "${HOST_PORT}:3000" "$IMAGE_URI"
+
+              STAGING_HEALTH_URL="http://127.0.0.1:${HOST_PORT}${HEALTH_PATH}"
+              wait_healthy "$STAGING_HEALTH_URL" 30 || {
+                echo "FAIL: staging health check failed -> ${STAGING_HEALTH_URL}"
+                docker logs "$CONTAINER_NAME" || true
+                exit 1
+              }
+
+              rm -f "/tmp/${IMAGE_ARCHIVE}" || true
+EOSSH
+          '''
+        }
+      }
+    }
+
+    stage("Deploy to AWS Production Blue/Green (main)") {
+      when {
+        expression {
+          return (env.BRANCH_NAME ?: "") == "main"
+        }
+      }
+      steps {
+        withCredentials([
+          sshUserPrivateKey(credentialsId: "ssh-key-production", keyFileVariable: "SSH_KEY", usernameVariable: "SSH_USER"),
+          string(credentialsId: "host-production", variable: "AWS_HOST"),
+          string(credentialsId: "aws-access-key-id", variable: "AWS_ACCESS_KEY_ID"),
+          string(credentialsId: "aws-secret-access-key", variable: "AWS_SECRET_ACCESS_KEY"),
+          string(credentialsId: "aws-region", variable: "AWS_REGION"),
+          string(credentialsId: "alb-production-rule-arn", variable: "ALB_RULE_ARN"),
+          string(credentialsId: "alb-production-blue-tg-arn", variable: "ALB_BLUE_TG_ARN"),
+          string(credentialsId: "alb-production-green-tg-arn", variable: "ALB_GREEN_TG_ARN")
+        ]) {
+          sh '''
+            set -eu
+            command -v scp >/dev/null 2>&1 || { echo "scp is required on Jenkins agent"; exit 1; }
+            command -v ssh >/dev/null 2>&1 || { echo "ssh is required on Jenkins agent"; exit 1; }
+            command -v aws >/dev/null 2>&1 || { echo "aws cli is required on Jenkins agent"; exit 1; }
+
+            . ./.cd-meta.env
+            export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION="$AWS_REGION"
+
+            normalize_weight() {
+              VALUE="${1:-}"
+              case "$VALUE" in
+                ""|None|null)
+                  echo 0
+                  ;;
+                *)
+                  echo "$VALUE"
+                  ;;
+              esac
+            }
+
+            get_weight() {
+              TG_ARN="$1"
+              aws elbv2 describe-rules \
+                --rule-arns "$ALB_RULE_ARN" \
+                --query "Rules[0].Actions[?Type=='forward'] | [0].ForwardConfig.TargetGroups[?TargetGroupArn=='${TG_ARN}'] | [0].Weight" \
+                --output text
+            }
+
+            wait_target_healthy() {
+              TG_ARN="$1"
+              TARGET_PORT="$2"
+              RETRIES="${3:-24}"
+              I=1
+              while [ "$I" -le "$RETRIES" ]; do
+                STATE="$(aws elbv2 describe-target-health \
+                  --target-group-arn "$TG_ARN" \
+                  --query "TargetHealthDescriptions[?Target.Port==\\`${TARGET_PORT}\\`] | [0].TargetHealth.State" \
+                  --output text)"
+                if [ "$STATE" = "healthy" ]; then
+                  return 0
+                fi
+                echo "Target group health not ready yet (port=${TARGET_PORT}, state=${STATE:-unknown}, attempt=${I}/${RETRIES})"
+                sleep 5
+                I=$((I + 1))
+              done
+              return 1
+            }
+
+            mkdir -p ~/.ssh
+            chmod 700 ~/.ssh
+            ssh-keyscan -H "$AWS_HOST" >> ~/.ssh/known_hosts
+
+            scp -i "$SSH_KEY" "$IMAGE_ARCHIVE" "${SSH_USER}@${AWS_HOST}:/tmp/${IMAGE_ARCHIVE}"
+
+            BLUE_WEIGHT="$(normalize_weight "$(get_weight "$ALB_BLUE_TG_ARN")")"
+            GREEN_WEIGHT="$(normalize_weight "$(get_weight "$ALB_GREEN_TG_ARN")")"
+
+            if [ "$BLUE_WEIGHT" -ge "$GREEN_WEIGHT" ]; then
+              ACTIVE_NAME="$PROD_BLUE_NAME"
+              ACTIVE_TG_ARN="$ALB_BLUE_TG_ARN"
+              IDLE_NAME="$PROD_GREEN_NAME"
+              IDLE_PORT="$PROD_GREEN_PORT"
+              IDLE_TG_ARN="$ALB_GREEN_TG_ARN"
+              BLUE_NEW_WEIGHT=0
+              GREEN_NEW_WEIGHT=100
+            else
+              ACTIVE_NAME="$PROD_GREEN_NAME"
+              ACTIVE_TG_ARN="$ALB_GREEN_TG_ARN"
+              IDLE_NAME="$PROD_BLUE_NAME"
+              IDLE_PORT="$PROD_BLUE_PORT"
+              IDLE_TG_ARN="$ALB_BLUE_TG_ARN"
+              BLUE_NEW_WEIGHT=100
+              GREEN_NEW_WEIGHT=0
+            fi
+
+            echo "ALB weight before switch: blue=${BLUE_WEIGHT}, green=${GREEN_WEIGHT}"
+            echo "Deploying idle slot: name=${IDLE_NAME}, hostPort=${IDLE_PORT}"
+
+            ssh -i "$SSH_KEY" "${SSH_USER}@${AWS_HOST}" \
+              "IMAGE_URI='${IMAGE_URI}' IMAGE_ARCHIVE='${IMAGE_ARCHIVE}' IDLE_NAME='${IDLE_NAME}' IDLE_PORT='${IDLE_PORT}' HEALTH_PATH='${PROD_HEALTH_PATH}' bash -se" <<'EOSSH'
+              set -eu
+              command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
+              command -v curl >/dev/null 2>&1 || { echo "curl is required on target host"; exit 1; }
+
+              wait_healthy() {
+                URL="$1"
+                RETRIES="${2:-30}"
+                I=1
+                while [ "$I" -le "$RETRIES" ]; do
+                  if curl -fsS "$URL" >/dev/null 2>&1; then
+                    return 0
+                  fi
+                  sleep 2
+                  I=$((I + 1))
+                done
+                return 1
+              }
+
+              gunzip -c "/tmp/${IMAGE_ARCHIVE}" | docker load
+
+              IDLE_HEALTH_URL="http://127.0.0.1:${IDLE_PORT}${HEALTH_PATH}"
+
+              PORT_HOLDER_IDS="$(docker ps --filter "publish=${IDLE_PORT}" --format '{{.ID}}' || true)"
+              if [ -n "$PORT_HOLDER_IDS" ]; then
+                echo "Stopping containers bound to idle port ${IDLE_PORT}: ${PORT_HOLDER_IDS}"
+                echo "$PORT_HOLDER_IDS" | xargs -r docker rm -f
+              fi
+
+              docker rm -f "$IDLE_NAME" >/dev/null 2>&1 || true
+              docker run -d --name "$IDLE_NAME" --restart unless-stopped -p "${IDLE_PORT}:3000" "$IMAGE_URI"
+
+              wait_healthy "$IDLE_HEALTH_URL" 30 || {
+                echo "FAIL: idle health check failed -> ${IDLE_HEALTH_URL}"
+                docker logs "$IDLE_NAME" || true
+                exit 1
+              }
+
+              rm -f "/tmp/${IMAGE_ARCHIVE}" || true
+EOSSH
+
+            wait_target_healthy "$IDLE_TG_ARN" "$IDLE_PORT" 24 || {
+              echo "FAIL: ALB target group did not become healthy for idle port ${IDLE_PORT}"
+              exit 1
+            }
+
+            cat > .alb-actions.json <<JSON
+[
+  {
+    "Type": "forward",
+    "ForwardConfig": {
+      "TargetGroups": [
+        {
+          "TargetGroupArn": "${ALB_BLUE_TG_ARN}",
+          "Weight": ${BLUE_NEW_WEIGHT}
+        },
+        {
+          "TargetGroupArn": "${ALB_GREEN_TG_ARN}",
+          "Weight": ${GREEN_NEW_WEIGHT}
+        }
+      ]
+    }
+  }
+]
+JSON
+
+            IS_DEFAULT_RULE="$(aws elbv2 describe-rules \
+              --rule-arns "$ALB_RULE_ARN" \
+              --query "Rules[0].IsDefault" \
+              --output text)"
+
+            if [ "$IS_DEFAULT_RULE" = "True" ]; then
+              LISTENER_ARN="$(echo "$ALB_RULE_ARN" | sed 's#listener-rule/#listener/#' | sed 's#/[^/]*$##')"
+              aws elbv2 modify-listener \
+                --listener-arn "$LISTENER_ARN" \
+                --default-actions file://.alb-actions.json >/dev/null
+            else
+              aws elbv2 modify-rule \
+                --rule-arn "$ALB_RULE_ARN" \
+                --actions file://.alb-actions.json >/dev/null
+            fi
+            rm -f .alb-actions.json
+
+            echo "ALB traffic switched: blue=${BLUE_NEW_WEIGHT}, green=${GREEN_NEW_WEIGHT}"
+
+            ssh -i "$SSH_KEY" "${SSH_USER}@${AWS_HOST}" \
+              "ACTIVE_NAME='${ACTIVE_NAME}' bash -se" <<'EOSSH'
+              set -eu
+              command -v docker >/dev/null 2>&1 || { echo "docker is required on target host"; exit 1; }
+              docker rm -f "$ACTIVE_NAME" >/dev/null 2>&1 || true
+EOSSH
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      script {
+        def hasWorkspace = (env.WORKSPACE ?: "").trim()
+
+        if (hasWorkspace) {
+          sh '''
+            set +e
+            if [ -f .cd-meta.env ]; then
+              . ./.cd-meta.env
+              [ -n "${IMAGE_URI:-}" ] && docker image rm "$IMAGE_URI" >/dev/null 2>&1 || true
+              [ -n "${IMAGE_ARCHIVE:-}" ] && rm -f "$IMAGE_ARCHIVE" || true
+            fi
+          '''
+        } else {
+          echo "Skip workspace cleanup: no workspace context"
+        }
+
+        def statusText = currentBuild.currentResult == "SUCCESS" ? "✅ CD 성공" : "🚨 CD 실패"
+        if (hasWorkspace) {
+          try {
+            withCredentials([string(credentialsId: "discord-webhook-url", variable: "DISCORD_WEBHOOK_URL")]) {
+              sh """
+                set +e
+                SHORT_SHA=\$(git rev-parse --short HEAD || echo unknown)
+                curl -X POST "\$DISCORD_WEBHOOK_URL" \\
+                  -H "Content-Type: application/json" \\
+                  -d "{\\"content\\": \\\"${statusText}\\\\nRepo: ${env.JOB_NAME}\\\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\\\nCommit: \$SHORT_SHA\\\\nRun: ${env.BUILD_URL}\\\"}" || true
+              """
+            }
+          } catch (err) {
+            echo "Skip Discord notification: ${err}"
+          }
+        } else {
+          echo "Skip Discord notification: no workspace context"
+        }
+      }
+    }
+  }
+}

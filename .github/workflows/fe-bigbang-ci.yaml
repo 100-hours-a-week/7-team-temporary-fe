@@ -6,84 +6,180 @@ on:
       - develop
       - main
       - 'release/**'
-  push:
-    branches:
-      - develop
-      - main
-      - 'release/**'
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fe-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   fe:
-    name: Frontend CI (Next.js)
+    name: Frontend CI (Next.js + Docker)
     runs-on: ubuntu-latest
+    if: ${{ !(github.event.action == 'closed' && github.event.pull_request.merged == true && github.base_ref == 'develop') }}
 
-    # 공통
     steps:
-      # 체크아웃
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Node.js 설치 (LTS 권장)
       - name: Setup Node.js
+        if: github.event.action != 'closed'
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      # Corepack 활성화 / pnpm 설치
       - name: Enable Corepack (pnpm)
+        if: github.event.action != 'closed'
         run: |
           corepack enable
           corepack prepare pnpm@9.15.1 --activate
 
-      # 의존성 설치
       - name: Install dependencies
+        if: github.event.action != 'closed'
         run: |
           set -euo pipefail
           pnpm install --frozen-lockfile
 
-      # PR : develop/main/release(린트)
       - name: Lint (PR)
-        if: github.event_name == 'pull_request'
+        if: github.event.action != 'closed'
         run: pnpm run lint
 
-      # PR/Merge : develop/main/release(빌드)
       - name: Build (Next.js)
+        if: github.event.action != 'closed'
         run: pnpm run build
 
-      # Merge : main/release(보안)
-      - name: Security Audit (deps)
-        if: >
-          github.event_name == 'push' &&
-          (
-            github.ref == 'refs/heads/main' ||
-            startsWith(github.ref, 'refs/heads/release/')
-          )
-        run: pnpm audit --audit-level=high
+      - name: Resolve build metadata
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event.action }}" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ] && [ -n "${{ github.event.pull_request.merge_commit_sha }}" ]; then
+            SOURCE_SHA="${{ github.event.pull_request.merge_commit_sha }}"
+          else
+            SOURCE_SHA="${GITHUB_SHA}"
+          fi
+          SHORT_SHA="$(echo "${SOURCE_SHA}" | cut -c1-7)"
 
-      # 디스코드 알림
-      - name: Notify CI result (PR + push)
+          TARGET_BRANCH="${{ github.base_ref }}"
+
+          TARGET_SLUG="$(echo "${TARGET_BRANCH}" | tr '/:' '--' | tr -cd '[:alnum:]._-')"
+          [ -n "${TARGET_SLUG}" ] || TARGET_SLUG="detached"
+
+          echo "SHORT_SHA=${SHORT_SHA}" >> "$GITHUB_ENV"
+          echo "TARGET_BRANCH=${TARGET_BRANCH}" >> "$GITHUB_ENV"
+          echo "TARGET_SLUG=${TARGET_SLUG}" >> "$GITHUB_ENV"
+          echo "LOCAL_IMAGE=molip-fe:${SHORT_SHA}" >> "$GITHUB_ENV"
+
+      - name: Select API base url by target branch
+        run: |
+          set -euo pipefail
+          if [ "${TARGET_BRANCH}" = "main" ]; then
+            echo "NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL_PRODUCTION }}" >> "$GITHUB_ENV"
+          else
+            echo "NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL_STAGING }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build Docker image
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/'))
+        env:
+          NEXT_PUBLIC_ENABLE_SW: ${{ secrets.NEXT_PUBLIC_ENABLE_SW }}
+          NEXT_PUBLIC_ENABLE_MIDDLEWARE: ${{ secrets.NEXT_PUBLIC_ENABLE_MIDDLEWARE }}
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_VAPID_KEY }}
+        run: |
+          set -euo pipefail
+          DOCKER_BUILDKIT=1 docker build \
+            --build-arg NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL}" \
+            --build-arg NEXT_PUBLIC_ENABLE_SW="${NEXT_PUBLIC_ENABLE_SW}" \
+            --build-arg NEXT_PUBLIC_ENABLE_MIDDLEWARE="${NEXT_PUBLIC_ENABLE_MIDDLEWARE}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY="${NEXT_PUBLIC_FIREBASE_API_KEY}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="${NEXT_PUBLIC_FIREBASE_PROJECT_ID}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID="${NEXT_PUBLIC_FIREBASE_APP_ID}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="${NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_VAPID_KEY="${NEXT_PUBLIC_FIREBASE_VAPID_KEY}" \
+            -t "${LOCAL_IMAGE}" .
+
+      - name: Configure AWS credentials
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')) && github.event.pull_request.head.repo.full_name == github.repository
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Push image to ECR
+        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')) && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          ECR_REPO: ${{ secrets.ECR_REPO }}
+        run: |
+          set -euo pipefail
+
+          REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+          IMAGE_URI="${REGISTRY}/${ECR_REPO}:${SHORT_SHA}"
+          BRANCH_LATEST_URI="${REGISTRY}/${ECR_REPO}:${TARGET_SLUG}-latest"
+
+          aws ecr describe-repositories --repository-names "${ECR_REPO}" --region "${AWS_REGION}" >/dev/null 2>&1 || \
+            aws ecr create-repository --repository-name "${ECR_REPO}" --region "${AWS_REGION}" >/dev/null
+
+          aws ecr get-login-password --region "${AWS_REGION}" | \
+            docker login --username AWS --password-stdin "${REGISTRY}"
+
+          docker tag "${LOCAL_IMAGE}" "${IMAGE_URI}"
+          docker tag "${LOCAL_IMAGE}" "${BRANCH_LATEST_URI}"
+
+          docker push "${IMAGE_URI}"
+          docker push "${BRANCH_LATEST_URI}"
+
+          echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
+
+      - name: Notify success (develop PR)
+        if: success() && github.event.action != 'closed' && github.base_ref == 'develop'
+        run: |
+          set -euo pipefail
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\":\"✅ FE CI 성공 (develop PR)\\nRepo: ${{ github.repository }}\\nPR: #${{ github.event.pull_request.number }} (${{ github.head_ref }} -> ${{ github.base_ref }})\\nCommit: ${SHORT_SHA}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
+
+      - name: Notify success (merged PR to release/main + ECR)
+        if: success() && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/'))
+        run: |
+          set -euo pipefail
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\":\"✅ FE CI + ECR 업로드 성공\\nRepo: ${{ github.repository }}\\nPR: #${{ github.event.pull_request.number }} (${{ github.head_ref }} -> ${{ github.base_ref }})\\nCommit: ${SHORT_SHA}\\nImage: ${IMAGE_URI}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          set +e
+          SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-7)"
+          CONTEXT="PR #${{ github.event.pull_request.number }} (${{ github.head_ref }} -> ${{ github.base_ref }})"
+
+          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\":\"🚨 FE CI 실패\\nRepo: ${{ github.repository }}\\n${CONTEXT}\\nCommit: ${SHORT_SHA}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
+
+      - name: Cleanup local docker artifacts
         if: always()
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            PREFIX="PR CI"
-            CONTEXT="PR #${{ github.event.pull_request.number }} (${{ github.head_ref }} → ${{ github.base_ref }})"
-          else
-            PREFIX="CI"
-            CONTEXT="Branch: ${{ github.ref_name }}"
+          set +e
+          if [ -n "${LOCAL_IMAGE:-}" ]; then
+            docker image rm "${LOCAL_IMAGE}" >/dev/null 2>&1 || true
           fi
-          
-          ACTOR="${{ github.actor }}"
-          SHA="${{ github.sha }}"
-          SHORT_SHA=$(echo "$SHA" | cut -c1-7)
-
-          if [ "${{ job.status }}" = "success" ]; then
-            STATUS="✅ ${PREFIX} 성공"
-          else
-            STATUS="🚨 ${PREFIX} 실패"
-          fi
-
-          curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"content\": \"$STATUS\nRepo: ${{ github.repository }}\n$CONTEXT\nActor: $ACTOR\nCommit: $SHORT_SHA\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
-            }" || true
+          docker builder prune -af --filter "until=24h" >/dev/null 2>&1 || true

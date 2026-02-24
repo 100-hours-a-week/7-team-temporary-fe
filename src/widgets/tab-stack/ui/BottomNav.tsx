@@ -1,13 +1,20 @@
 "use client";
 
 import { Icon } from "@/shared/ui/icon";
+import type { IconName } from "@/shared/ui/icon";
 
 import { useTab } from "../model/tabContext";
 import type { AppTab } from "../model/types";
 
-const TAB_ITEMS: Array<{ id: AppTab; label: string }> = [
-  { id: "home", label: "홈" },
-  { id: "profile", label: "프로필" },
+const TAB_ITEMS: Array<{
+  id: AppTab;
+  label: string;
+  activeIcon: IconName;
+  inactiveIcon: IconName;
+}> = [
+  { id: "home", label: "홈", activeIcon: "home_filled", inactiveIcon: "home_outline" },
+  { id: "retro", label: "회고", activeIcon: "retro_filled", inactiveIcon: "retro" },
+  { id: "profile", label: "프로필", activeIcon: "user_filled", inactiveIcon: "user_outline" },
 ];
 
 export function BottomNav() {
@@ -18,10 +25,7 @@ export function BottomNav() {
       <ul className="flex items-center justify-center gap-[19px]">
         {TAB_ITEMS.map((item) => {
           const isActive = activeTab === item.id;
-          const iconName = (() => {
-            if (item.id === "home") return isActive ? "home_filled" : "home_outline";
-            return isActive ? "user_filled" : "user_outline";
-          })();
+          const iconName = isActive ? item.activeIcon : item.inactiveIcon;
           const iconClassName = item.id === "profile" ? "h-[37px] w-[37px]" : "h-[37px] w-[37px]";
 
           return (

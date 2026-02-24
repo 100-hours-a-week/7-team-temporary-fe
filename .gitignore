@@ -48,3 +48,19 @@ next-env.d.ts
 .npmrc
 *storybook.log
 storybook-static
+
+# test results
+test-results/
+playwright-report/
+
+docs/issue-drafts/
+docs/
+scripts/
+
+.agents/
+
+tmp/
+
+.github/issue
+# Sentry Config File
+.env.sentry-build-plugin

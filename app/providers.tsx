@@ -1,14 +1,18 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useEffect, useRef, useState } from "react";
 import { ToastProvider } from "@/shared/ui/toast";
-import { AuthRouteWatcher } from "@/shared/auth/ui/AuthRouteWatcher";
-import { useAuthStore } from "@/shared/auth";
+import { ApiError } from "@/shared/api";
+import { AuthRouteWatcher } from "@/features/auth";
+import { AuthService, configureAuthHandlers } from "@/shared/auth";
+import { useAuthStore } from "@/entities/user";
 import { registerFcmToken } from "@/shared/firebase/registerFcmToken";
 import { registerServiceWorker } from "@/shared/pwa/registerServiceWorker";
 import { FcmForegroundListener } from "@/shared/firebase/FcmForegroundListener";
-import { useHomePlanStore, useAiArrangeNoticeStore } from "@/features/home";
+import { useAiArrangeNoticeStore } from "@/features/home";
+import { useHomePlanStore } from "@/entities/day-plan";
 import { useUserPreferencesStore } from "@/entities/user";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -24,12 +28,45 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }),
   );
 
+  useEffect(() => {
+    configureAuthHandlers({
+      getAccessToken: () => useAuthStore.getState().accessToken,
+      setAuthenticated: (token) => useAuthStore.getState().setAuthenticated(token),
+      clearAuth: () => useAuthStore.getState().clearAuth(),
+    });
+  }, []);
+
   const accessToken = useAuthStore((state) => state.accessToken);
+  const setAuthChecking = useAuthStore((state) => state.setAuthChecking);
   const prevAccessTokenRef = useRef<string | undefined>(accessToken);
 
   useEffect(() => {
     registerServiceWorker();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrapAuth = async () => {
+      try {
+        await AuthService.refresh();
+      } catch (error) {
+        if (!(error instanceof ApiError && error.httpStatus === 401)) {
+          console.warn("[AuthBootstrap] refresh skipped or failed", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthChecking(false);
+        }
+      }
+    };
+
+    void bootstrapAuth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setAuthChecking]);
 
   useEffect(() => {
     const prevAccessToken = prevAccessTokenRef.current;
@@ -50,6 +87,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     if (!("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
+    // FCM 토큰 등록은 AppShell 탭 마운트 정책과 분리된 전역 세션 정책으로 유지한다.
 
     let cancelled = false;
     const run = async () => {
@@ -76,6 +114,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <FcmForegroundListener />
         {children}
       </ToastProvider>
+      {process.env.NODE_ENV === "development" ? <ReactQueryDevtools initialIsOpen={false} /> : null}
     </QueryClientProvider>
   );
 }

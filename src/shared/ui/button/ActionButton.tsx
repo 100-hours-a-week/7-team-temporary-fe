@@ -1,20 +1,25 @@
+import type { ButtonHTMLAttributes } from "react";
+
 import { cn } from "@/shared/lib";
 
-interface ActionButtonProps {
+interface ActionButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {
   buttonText: string;
-  onClick: () => void;
-  className?: string;
 }
 
-export function ActionButton({ buttonText, onClick, className }: ActionButtonProps) {
+export function ActionButton({
+  buttonText,
+  className,
+  type = "button",
+  ...props
+}: ActionButtonProps) {
   return (
     <button
-      type="button"
+      type={type}
       className={cn(
         "my-[5px] inline-flex items-end justify-center rounded-[90px] border border-[color:var(--color-primary-700)] px-[19px] py-0 text-base font-semibold text-[color:var(--color-primary-700)]",
         className,
       )}
-      onClick={onClick}
+      {...props}
     >
       {buttonText}
     </button>

@@ -2,15 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { TaskSplitGroup, TaskSplitItem, TodoCartTaskItemModel } from "@/features/home";
+import type { TaskSplitGroup, TaskSplitItem } from "@/features/home";
+import type { TodoCartTaskItemModel } from "@/entities/day-plan";
+import { TaskBasketAddSheet, TaskSplitSheetContent } from "@/features/home";
 import {
-  TaskBasketAddSheet,
-  TaskSplitSheetContent,
-  TodoList,
-  homeQueryKeys,
+  dayPlanQueryKeys,
   useDayPlanScheduleByIdQuery,
   useHomePlanStore,
-} from "@/features/home";
+} from "@/entities/day-plan";
 import { ApiError, Endpoint } from "@/shared/api";
 import { useApiMutation } from "@/shared/query";
 import { BottomSheet, ConfirmDialog } from "@/shared/ui";
@@ -18,6 +17,7 @@ import { Icon } from "@/shared/ui/icon";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useStackPage } from "@/widgets/stack";
 import { useToast } from "@/shared/ui/toast";
+import { TodoList } from "@/widgets/planner-edit";
 import { AiArrangeSheetContent } from "./AiArrangeSheet";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
@@ -88,16 +88,16 @@ export function TaskBasketStackPage() {
     const parsed = new Date(dayPlanDate);
     return Number.isNaN(parsed.getTime()) ? today : parsed;
   }, [dayPlanDate, today]);
-  const invalidateScheduleKeys = useMemo(() => {
-    const keys: Array<readonly unknown[]> = [];
-    if (dayPlanId) {
-      keys.push(homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10));
-    }
-    if (dayPlanDate) {
-      keys.push(homeQueryKeys.dayPlanSchedule(dayPlanDate, 1, 10));
-    }
-    return keys;
-  }, [dayPlanDate, dayPlanId]);
+  const invalidateScheduleKeys = useMemo(
+    () =>
+      dayPlanQueryKeys.dayPlanScheduleCacheKeys({
+        dayPlanId,
+        dayPlanDate,
+        page: 1,
+        size: 10,
+      }),
+    [dayPlanDate, dayPlanId],
+  );
 
   const deleteScheduleMutation = useApiMutation<number, void, void>({
     url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),
@@ -214,12 +214,12 @@ export function TaskBasketStackPage() {
   useEffect(() => {
     if (flowStep !== "loading") return;
     if (scheduleQuery.isLoading) return;
-    if (shouldShowAiStep) {
-      setFlowStep("ai");
-      return;
-    }
     if (shouldShowTaskSplitStep) {
       setFlowStep("taskSplit");
+      return;
+    }
+    if (shouldShowAiStep) {
+      setFlowStep("ai");
       return;
     }
     setFlowStep("idle");
@@ -349,12 +349,12 @@ export function TaskBasketStackPage() {
       setFlowStep("loading");
       return;
     }
-    if (shouldShowAiStep) {
-      setFlowStep("ai");
-      return;
-    }
     if (shouldShowTaskSplitStep) {
       setFlowStep("taskSplit");
+      return;
+    }
+    if (shouldShowAiStep) {
+      setFlowStep("ai");
       return;
     }
     setFlowStep("loading");

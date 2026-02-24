@@ -1,68 +1,44 @@
 "use client";
 
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  DndContext,
-  DragOverlay,
-  useDraggable,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragOverEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
+import { useQueryClient } from "@tanstack/react-query";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
 
+import { END_HOUR, START_HOUR, TaskBasketAddSheet } from "@/features/home";
 import {
-  END_HOUR,
+  dayPlanQueryKeys,
   EditableTaskItem,
   ExcludedTaskItem,
-  START_HOUR,
-  TaskBasketAddSheet,
-  TaskBasketButton,
   type EditableTaskItemModel,
   type TodoCartTaskItemModel,
-  homeQueryKeys,
   useDayPlanScheduleByIdQuery,
-  TimeSlotGrid,
-  useDayPlanSchedulesQuery,
   useHomePlanStore,
-} from "@/features/home";
-import type {
-  DayPlanScheduleResponseDto,
-  UpdateDayPlanSchedulePatchRequestDto,
-} from "@/features/home/api";
-import { updateDayPlanSchedule } from "@/features/home/api";
+  type DayPlanScheduleResponseDto,
+} from "@/entities/day-plan";
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
 import { Icon } from "@/shared/ui/icon";
 import { Endpoint } from "@/shared/api";
+import { buildTimeRange, isAfterDayEnd, parseTimeToMinutes } from "@/shared/lib";
 import { useApiMutation } from "@/shared/query";
 import { ConfirmDialog } from "@/shared/ui";
 import { useToast } from "@/shared/ui/toast";
-import { ExcludedListBottomSheet } from "./ExcludedListBottomSheet";
 import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
 import { TaskBasketStackPage } from "./TaskBasketStackPage";
+import {
+  ExcludedTasksSheet,
+  TimeSlotGrid,
+  capturePlannerEditScrollPosition,
+  removeScheduleCache,
+  restorePlannerEditScrollPosition,
+  type PlannerEditInsertPreview,
+  type PlannerEditPreviewSlot,
+  usePlannerEditDnD,
+  useExcludedTasksSheetState,
+  usePlannerEditOptimisticUpdate,
+  updateScheduleCache,
+} from "@/widgets/planner-edit";
 
-type DraggedTask = {
-  type: "excluded" | "task";
-  id: string;
-  task: EditableTaskItemModel;
-};
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
-type PreviewSlot = { hour: number; minute: number };
-type InsertPreview = {
-  scheduleId: number;
-  position: "above" | "below";
-  targetStartAt: string;
-  targetEndAt: string;
-  startAt: string;
-  endAt: string;
-};
-
-const DEFAULT_DROP_DURATION_MINUTES = 30;
 
 export function PlannerEditStackPage() {
   const { push, setHeaderContent, stack } = useStackPage();
@@ -77,52 +53,36 @@ export function PlannerEditStackPage() {
   const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
   const dayPlanDate = useHomePlanStore((state) => state.date);
   const [droppedTasks, setDroppedTasks] = useState<EditableTaskItemModel[]>([]);
-  const [activeDrag, setActiveDrag] = useState<DraggedTask | null>(null);
-  const [draggingType, setDraggingType] = useState<DraggedTask["type"] | null>(null);
-  const [previewSlot, setPreviewSlot] = useState<PreviewSlot | null>(null);
-  const previewKeyRef = useRef<string | null>(null);
-  const [insertPreview, setInsertPreview] = useState<InsertPreview | null>(null);
-  const insertKeyRef = useRef<string | null>(null);
-  const dragDurationRef = useRef(DEFAULT_DROP_DURATION_MINUTES);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<EditableTaskItemModel | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [resizePreviewMap, setResizePreviewMap] = useState<Record<number, string>>({});
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { delay: 200, tolerance: 5 },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 5 },
-    }),
-  );
-  const [isSheetOpen, setIsSheetOpen] = useState(true);
-  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
+  const {
+    isExcludedSheetOpen,
+    setIsExcludedSheetOpen,
+    isExcludedSheetExpanded,
+    setIsExcludedSheetExpanded,
+    openExcludedTasksSheet,
+  } = useExcludedTasksSheetState();
   const scheduleQuery = useDayPlanScheduleByIdQuery({
     dayPlanId: dayPlanId ?? 0,
     page: 1,
     size: 10,
     enabled: Boolean(dayPlanId),
   });
-  const schedulesQuery = useDayPlanSchedulesQuery({
-    dayPlanId: dayPlanId ?? 0,
-    status: "EXCLUDED",
-    page: 1,
-    size: 10,
-    enabled: Boolean(dayPlanId) && isSheetOpen,
-  });
   const { data: myProfile } = useMyProfileQuery();
-  const invalidateScheduleKeys = useMemo(() => {
-    const keys: Array<readonly unknown[]> = [];
-    if (dayPlanId) {
-      keys.push(homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10));
-    }
-    if (dayPlanDate) {
-      keys.push(homeQueryKeys.dayPlanSchedule(dayPlanDate, 1, 10));
-    }
-    return keys;
-  }, [dayPlanDate, dayPlanId]);
+  const scheduleKeys = useMemo(
+    () =>
+      dayPlanQueryKeys.dayPlanScheduleCacheKeys({
+        dayPlanId,
+        dayPlanDate,
+        page: 1,
+        size: 10,
+      }),
+    [dayPlanDate, dayPlanId],
+  );
+  const invalidateScheduleKeys = scheduleKeys;
 
   const dayEndMinutes = useMemo(
     () => getDayEndLimitMinutes(myProfile?.dayEndTime),
@@ -165,7 +125,6 @@ export function PlannerEditStackPage() {
     if (!editingTask) return mergedTasks;
     return mergedTasks.filter((task) => task.scheduleId !== editingTask.scheduleId);
   }, [editingTask, mergedTasks]);
-  const previewDurationMinutes = dragDurationRef.current;
   const statusMessage = scheduleQuery.isLoading
     ? { text: "일정을 불러오는 중...", className: "text-neutral-500" }
     : scheduleQuery.isError
@@ -178,10 +137,6 @@ export function PlannerEditStackPage() {
     setHeaderContent(<span className="text-xl font-semibold text-black">플래너 수정</span>);
     return () => setHeaderContent(null);
   }, [setHeaderContent]);
-
-  useEffect(() => {
-    scrollParentRef.current = getScrollParent(pageRef.current);
-  }, []);
 
   useEffect(() => {
     if (!dayPlanId) return;
@@ -208,12 +163,6 @@ export function PlannerEditStackPage() {
     push(<TaskBasketStackPage />);
   };
 
-  const handleOpenExcludedList = () => {
-    setIsSheetOpen(true);
-    setIsSheetExpanded(false);
-  };
-
-  const excludedTasks = schedulesQuery.data?.content ?? [];
   const isTop = useMemo(() => {
     const topKey = stack[stack.length - 1]?.key ?? null;
     if (!entry?.entryKey) return stack.length === 0;
@@ -221,96 +170,37 @@ export function PlannerEditStackPage() {
   }, [entry?.entryKey, stack]);
 
   useEffect(() => {
-    if (isTop && isSheetOpen) {
-      schedulesQuery.refetch();
-    }
-  }, [isTop, isSheetOpen, schedulesQuery]);
-
-  useEffect(() => {
     const prevDepth = prevDepthRef.current;
     const nextDepth = stack.length;
     prevDepthRef.current = nextDepth;
 
-    if (prevDepth > nextDepth && isTop && dayPlanId) {
-      queryClient.invalidateQueries({
-        queryKey: homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
+    if (prevDepth > nextDepth && isTop && scheduleKeys.length > 0) {
+      scheduleKeys.forEach((queryKey) => {
+        queryClient.invalidateQueries({ queryKey });
       });
     }
-  }, [dayPlanId, isTop, queryClient, stack.length]);
+  }, [isTop, queryClient, scheduleKeys, stack.length]);
 
-  const captureScrollPosition = () => {
-    if (!scrollParentRef.current) {
-      scrollParentRef.current = getScrollParent(pageRef.current);
-    }
-    const element = scrollParentRef.current;
-    if (!element) return;
-    lastScrollTopRef.current = element.scrollTop;
-  };
-
-  const restoreScrollPosition = () => {
-    if (!scrollParentRef.current) {
-      scrollParentRef.current = getScrollParent(pageRef.current);
-    }
-    const element = scrollParentRef.current;
-    if (!element) return;
-    const scrollTop = lastScrollTopRef.current;
-    requestAnimationFrame(() => {
-      element.scrollTop = scrollTop;
+  const captureScrollPosition = useCallback(() => {
+    capturePlannerEditScrollPosition({
+      pageRef,
+      scrollParentRef,
+      lastScrollTopRef,
     });
-  };
+  }, []);
 
-  const updateScheduleMutation = useMutation({
-    mutationFn: async (variables: {
-      scheduleId: number;
-      payload: UpdateDayPlanSchedulePatchRequestDto;
-      task: EditableTaskItemModel;
-    }) => updateDayPlanSchedule(variables.scheduleId, variables.payload),
-    onMutate: async (variables) => {
-      captureScrollPosition();
-      if (!dayPlanId) return undefined;
-      const scheduleKey = homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10);
-      const excludedKey = homeQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
-      const prevSchedules = queryClient.getQueryData<DayPlanScheduleResponseDto>(scheduleKey);
-      const prevExcluded = queryClient.getQueryData<DayPlanScheduleResponseDto>(excludedKey);
-
-      queryClient.setQueryData(scheduleKey, (prev: DayPlanScheduleResponseDto | undefined) =>
-        updateScheduleCache(
-          prev,
-          variables.scheduleId,
-          variables.payload.startAt,
-          variables.payload.endAt,
-          variables.task,
-        ),
-      );
-      queryClient.setQueryData(excludedKey, (prev: DayPlanScheduleResponseDto | undefined) =>
-        removeScheduleCache(prev, variables.scheduleId),
-      );
-
-      requestAnimationFrame(() => {
-        restoreScrollPosition();
-      });
-
-      return { prevSchedules, prevExcluded };
-    },
-    onError: (_error, _variables, context) => {
-      if (!dayPlanId || !context) return;
-      const scheduleKey = homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10);
-      const excludedKey = homeQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
-      if (context.prevSchedules) {
-        queryClient.setQueryData(scheduleKey, context.prevSchedules);
-      }
-      if (context.prevExcluded) {
-        queryClient.setQueryData(excludedKey, context.prevExcluded);
-      }
-      requestAnimationFrame(() => {
-        restoreScrollPosition();
-      });
-    },
-    onSuccess: () => {
-      requestAnimationFrame(() => {
-        restoreScrollPosition();
-      });
-    },
+  const restoreScrollPosition = useCallback(() => {
+    restorePlannerEditScrollPosition({
+      pageRef,
+      scrollParentRef,
+      lastScrollTopRef,
+    });
+  }, []);
+  const updateScheduleMutation = usePlannerEditOptimisticUpdate({
+    dayPlanId,
+    scheduleKeys,
+    captureScrollPosition,
+    restoreScrollPosition,
   });
 
   const hasResizeConflict = useCallback(
@@ -369,10 +259,9 @@ export function PlannerEditStackPage() {
       map.set(resolvedTask.scheduleId, resolvedTask);
       return Array.from(map.values());
     });
-    if (!dayPlanId) return;
-    queryClient.setQueryData(
-      homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
-      (prev: DayPlanScheduleResponseDto | undefined) =>
+    if (!dayPlanId || scheduleKeys.length === 0) return;
+    scheduleKeys.forEach((key) => {
+      queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
         updateScheduleCache(
           prev,
           resolvedTask.scheduleId,
@@ -380,7 +269,8 @@ export function PlannerEditStackPage() {
           resolvedTask.endAt,
           resolvedTask,
         ),
-    );
+      );
+    });
   };
 
   const handleResizePreview = (scheduleId: number, endAt: string) => {
@@ -438,12 +328,12 @@ export function PlannerEditStackPage() {
     deleteScheduleMutation.mutate(deleteTargetId, {
       onSuccess: () => {
         setDroppedTasks((prev) => prev.filter((task) => task.scheduleId !== deleteTargetId));
-        if (dayPlanId) {
-          queryClient.setQueryData(
-            homeQueryKeys.dayPlanScheduleById(dayPlanId, 1, 10),
-            (prev: DayPlanScheduleResponseDto | undefined) =>
+        if (dayPlanId && scheduleKeys.length > 0) {
+          scheduleKeys.forEach((key) => {
+            queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
               removeScheduleCache(prev, deleteTargetId),
-          );
+            );
+          });
         }
         setIsDeleteDialogOpen(false);
         setDeleteTargetId(null);
@@ -451,194 +341,61 @@ export function PlannerEditStackPage() {
     });
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const payload = event.active.data.current as DraggedTask | undefined;
-    const dropData = event.over?.data.current as
-      | { type?: string; hour?: number; minute?: number }
-      | undefined;
-    if (!payload) {
-      setActiveDrag(null);
-      setDraggingType(null);
-      setPreviewSlot(null);
-      previewKeyRef.current = null;
-      setInsertPreview(null);
-      insertKeyRef.current = null;
-      dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
-      restoreScrollPosition();
-      return;
-    }
-    let startAt: string | null = null;
-    let endAt: string | null = null;
-    const durationMinutes = dragDurationRef.current;
-
-    if (insertPreview) {
-      startAt = insertPreview.startAt;
-      endAt = insertPreview.endAt;
-    } else if (
-      dropData?.type === "slot" &&
-      dropData.hour !== undefined &&
-      dropData.minute !== undefined
-    ) {
-      const range = buildTimeRange(dropData.hour, dropData.minute, durationMinutes);
-      startAt = range.startAt;
-      endAt = range.endAt;
-    }
-
-    if (!startAt || !endAt) {
-      setActiveDrag(null);
-      setPreviewSlot(null);
-      previewKeyRef.current = null;
-      setInsertPreview(null);
-      insertKeyRef.current = null;
-      dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
-      restoreScrollPosition();
-      return;
-    }
-
-    if (isAfterDayEnd(startAt, endAt, dayEndMinutes)) {
-      showToast("하루 마무리 시간 이후에는 배정할 수 없습니다.", "error");
-      setActiveDrag(null);
-      setPreviewSlot(null);
-      previewKeyRef.current = null;
-      setInsertPreview(null);
-      insertKeyRef.current = null;
-      dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
-      restoreScrollPosition();
-      return;
-    }
-
-    const nextTask: EditableTaskItemModel = {
-      ...payload.task,
-      startAt,
-      endAt,
-    };
-    setDroppedTasks((prev) => {
-      const map = new Map(prev.map((task) => [task.scheduleId, task]));
-      map.set(nextTask.scheduleId, nextTask);
-      return Array.from(map.values());
-    });
-    if (!dayPlanId) return;
-    updateScheduleMutation.mutate({
-      scheduleId: payload.task.scheduleId,
-      payload: {
-        targetDayPlanId: dayPlanId,
+  const handleDropTask = useCallback(
+    ({ task, startAt, endAt }: { task: EditableTaskItemModel; startAt: string; endAt: string }) => {
+      const nextTask: EditableTaskItemModel = {
+        ...task,
         startAt,
         endAt,
-      },
-      task: nextTask,
-    });
-    setActiveDrag(null);
-    setDraggingType(null);
-    setPreviewSlot(null);
-    previewKeyRef.current = null;
-    setInsertPreview(null);
-    insertKeyRef.current = null;
-    dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
-    restoreScrollPosition();
-  };
+      };
+      setDroppedTasks((prev) => {
+        const map = new Map(prev.map((droppedTask) => [droppedTask.scheduleId, droppedTask]));
+        map.set(nextTask.scheduleId, nextTask);
+        return Array.from(map.values());
+      });
+      if (!dayPlanId) return;
+      updateScheduleMutation.mutate({
+        scheduleId: task.scheduleId,
+        payload: {
+          targetDayPlanId: dayPlanId,
+          startAt,
+          endAt,
+        },
+        task: nextTask,
+      });
+    },
+    [dayPlanId, updateScheduleMutation],
+  );
 
-  const handleDragOver = (event: DragOverEvent) => {
-    const data = event.over?.data.current as
-      | {
-          type?: string;
-          hour?: number;
-          minute?: number;
-          scheduleId?: number;
-          startAt?: string;
-          endAt?: string;
-        }
-      | undefined;
-    if (data?.type === "item" && data.scheduleId && data.startAt && data.endAt) {
-      const overRect = event.over?.rect;
-      const activeRect = event.active.rect.current.translated ?? event.active.rect.current.initial;
-      const activeCenterY = activeRect ? activeRect.top + activeRect.height / 2 : 0;
-      const overMidY = overRect ? overRect.top + overRect.height / 2 : 0;
-      const position: "above" | "below" = activeCenterY <= overMidY ? "above" : "below";
-      const previewStart =
-        position === "above"
-          ? buildTimeRangeFromEnd(data.startAt, dragDurationRef.current)
-          : data.endAt;
-      const previewEnd =
-        position === "above"
-          ? data.startAt
-          : buildTimeRangeFromStart(previewStart, dragDurationRef.current);
-      if (isAfterDayEnd(previewStart, previewEnd, dayEndMinutes)) {
-        if (insertPreview) {
-          setInsertPreview(null);
-          insertKeyRef.current = null;
-        }
-        if (previewSlot) {
-          setPreviewSlot(null);
-          previewKeyRef.current = null;
-        }
-        return;
-      }
-      const key = `${data.scheduleId}-${position}`;
-      if (insertKeyRef.current !== key) {
-        insertKeyRef.current = key;
-        setInsertPreview({
-          scheduleId: data.scheduleId,
-          position,
-          targetStartAt: data.startAt,
-          targetEndAt: data.endAt,
-          startAt: previewStart,
-          endAt: previewEnd,
-        });
-      }
-      if (previewSlot) {
-        setPreviewSlot(null);
-        previewKeyRef.current = null;
-      }
-      return;
-    }
-
-    if (data?.type === "slot" && data.hour !== undefined && data.minute !== undefined) {
-      const key = `${data.hour}-${data.minute}`;
-      if (previewKeyRef.current !== key) {
-        previewKeyRef.current = key;
-        setPreviewSlot({ hour: data.hour, minute: data.minute });
-      }
-      if (insertPreview) {
-        setInsertPreview(null);
-        insertKeyRef.current = null;
-      }
-      return;
-    }
-
-    if (previewSlot) {
-      setPreviewSlot(null);
-      previewKeyRef.current = null;
-    }
-    if (insertPreview) {
-      setInsertPreview(null);
-      insertKeyRef.current = null;
-    }
-  };
+  const {
+    sensors,
+    activeDrag,
+    draggingType,
+    previewSlot,
+    insertPreview,
+    previewDurationMinutes,
+    onDragStart,
+    onDragOver,
+    onDragEnd,
+    onDragCancel,
+  } = usePlannerEditDnD({
+    dayEndMinutes,
+    captureScrollPosition,
+    restoreScrollPosition,
+    onInvalidDayEnd: () => {
+      showToast("하루 마무리 시간 이후에는 배정할 수 없습니다.", "error");
+    },
+    onDropTask: handleDropTask,
+  });
 
   return (
     <DndContext
       sensors={sensors}
       autoScroll={false}
-      onDragStart={(event: DragStartEvent) => {
-        const payload = event.active.data.current as DraggedTask | undefined;
-        captureScrollPosition();
-        dragDurationRef.current =
-          getTaskDurationMinutes(payload?.task) ?? DEFAULT_DROP_DURATION_MINUTES;
-        setDraggingType(payload?.type ?? null);
-        setActiveDrag(payload?.type === "excluded" ? payload : null);
-      }}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-      onDragCancel={() => {
-        setActiveDrag(null);
-        setDraggingType(null);
-        setPreviewSlot(null);
-        previewKeyRef.current = null;
-        setInsertPreview(null);
-        insertKeyRef.current = null;
-        dragDurationRef.current = DEFAULT_DROP_DURATION_MINUTES;
-        restoreScrollPosition();
-      }}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      onDragCancel={onDragCancel}
     >
       <>
         <div
@@ -653,7 +410,7 @@ export function PlannerEditStackPage() {
             <button
               type="button"
               className="text-ink-900 rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold"
-              onClick={handleOpenExcludedList}
+              onClick={openExcludedTasksSheet}
             >
               제외리스트
             </button>
@@ -726,32 +483,14 @@ export function PlannerEditStackPage() {
           </button>
         </div>
 
-        <ExcludedListBottomSheet
-          open={isSheetOpen}
-          onOpenChange={setIsSheetOpen}
-          expanded={isSheetExpanded}
-          onExpandedChange={setIsSheetExpanded}
-        >
-          {schedulesQuery.isLoading ? (
-            <div className="py-6 text-center text-sm text-neutral-400">
-              제외된 작업을 불러오는 중...
-            </div>
-          ) : null}
-          {schedulesQuery.isError ? (
-            <div className="py-6 text-center text-sm text-neutral-400">
-              제외된 작업을 불러오지 못했습니다.
-            </div>
-          ) : null}
-          {!schedulesQuery.isLoading && !schedulesQuery.isError && excludedTasks.length === 0 ? (
-            <div className="py-6 text-center text-sm text-neutral-400">제외된 작업이 없습니다.</div>
-          ) : null}
-          {excludedTasks.map((task) => (
-            <DraggableExcludedTaskItem
-              key={task.scheduleId}
-              task={task as EditableTaskItemModel}
-            />
-          ))}
-        </ExcludedListBottomSheet>
+        <ExcludedTasksSheet
+          dayPlanId={dayPlanId}
+          isTop={isTop}
+          open={isExcludedSheetOpen}
+          onOpenChange={setIsExcludedSheetOpen}
+          expanded={isExcludedSheetExpanded}
+          onExpandedChange={setIsExcludedSheetExpanded}
+        />
         <DragOverlay>
           {activeDrag ? (
             <div className="w-[240px]">
@@ -807,82 +546,6 @@ export function PlannerEditStackPage() {
   );
 }
 
-function DraggableExcludedTaskItem({ task }: { task: EditableTaskItemModel }) {
-  const id = `excluded-${task.scheduleId}`;
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id,
-    data: { id, task, type: "excluded" },
-  });
-  const baseTransform = CSS.Translate.toString(transform);
-  const style = {
-    transform: isDragging
-      ? `${baseTransform ? `${baseTransform} ` : ""}scale(1.03)`
-      : baseTransform,
-    opacity: isDragging ? 0.5 : 1,
-    boxShadow: isDragging ? "0 18px 36px rgba(15, 23, 42, 0.28)" : "none",
-    touchAction: "none",
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
-    >
-      <ExcludedTaskItem
-        task={task}
-        onRestore={() => undefined}
-      />
-    </div>
-  );
-}
-
-function buildTimeRange(hour: number, minute: number, durationMinutes: number) {
-  const startMinutes = hour * 60 + minute;
-  const endMinutes = (startMinutes + durationMinutes) % (24 * 60);
-  return {
-    startAt: formatTime(startMinutes),
-    endAt: formatTime(endMinutes),
-  };
-}
-
-function buildTimeRangeFromStart(startAt: string, durationMinutes: number) {
-  const [hourText, minuteText] = startAt.split(":");
-  const hour = Number(hourText);
-  const minute = Number(minuteText);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) {
-    return startAt;
-  }
-  const totalMinutes = hour * 60 + minute + durationMinutes;
-  return formatTime(totalMinutes);
-}
-
-function buildTimeRangeFromEnd(endAt: string, durationMinutes: number) {
-  const endMinutes = parseTimeToMinutes(endAt);
-  if (endMinutes === null) return endAt;
-  const startMinutes = endMinutes - durationMinutes;
-  return formatTime(startMinutes);
-}
-
-function parseTimeToMinutes(value: string | undefined | null) {
-  if (!value) return null;
-  const [hourText, minuteText] = value.split(":");
-  const hour = Number(hourText);
-  const minute = Number(minuteText);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
-  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-  return hour * 60 + minute;
-}
-
-function isAfterDayEnd(startAt: string, endAt: string, dayEndMinutes: number | null) {
-  if (dayEndMinutes === null) return false;
-  const startMinutes = parseTimeToMinutes(startAt);
-  const endMinutes = parseTimeToMinutes(endAt);
-  if (startMinutes === null || endMinutes === null) return false;
-  return startMinutes >= dayEndMinutes || endMinutes > dayEndMinutes;
-}
-
 function getDayEndLimitMinutes(dayEndTime?: string | null) {
   const parsed = parseTimeToMinutes(dayEndTime);
   if (parsed === null) return null;
@@ -923,101 +586,9 @@ function formatFocusTimeLabel(focusTimeZone?: UserFocusTimeZone | null) {
   }
 }
 
-function getTaskDurationMinutes(task: EditableTaskItemModel | undefined | null) {
-  if (!task) return null;
-  const startMinutes = parseTimeToMinutes(task.startAt);
-  const endMinutes = parseTimeToMinutes(task.endAt);
-  if (startMinutes === null || endMinutes === null) return null;
-  const duration = endMinutes - startMinutes;
-  return duration > 0 ? duration : null;
-}
-
-function formatTime(totalMinutes: number) {
-  const minutes = Math.max(0, totalMinutes);
-  const hour = Math.floor(minutes / 60) % 24;
-  const minute = minutes % 60;
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-}
-
-function updateScheduleCache(
-  prev: DayPlanScheduleResponseDto | undefined,
-  scheduleId: number,
-  startAt: string,
-  endAt: string,
-  task: EditableTaskItemModel,
-) {
-  if (!prev) return prev;
-  const exists = prev.content.some((item) => item.scheduleId === scheduleId);
-  const nextContent = exists
-    ? prev.content.map((item) =>
-        item.scheduleId === scheduleId
-          ? {
-              ...item,
-              title: task.title,
-              type: task.type ?? item.type,
-              startAt,
-              endAt,
-              estimatedTimeRange: task.estimatedTimeRange ?? item.estimatedTimeRange,
-              focusLevel: task.focusLevel ?? item.focusLevel,
-              isUrgent: task.isUrgent ?? item.isUrgent,
-              assignedBy: task.assignedBy ?? item.assignedBy,
-              status: task.status ?? item.status,
-              assignmentStatus: task.assignmentStatus ?? item.assignmentStatus,
-            }
-          : item,
-      )
-    : [
-        ...prev.content,
-        {
-          scheduleId,
-          parentTitle: null,
-          title: task.title,
-          status: task.status,
-          type: task.type,
-          assignedBy: task.assignedBy,
-          assignmentStatus: task.assignmentStatus,
-          startAt,
-          endAt,
-          estimatedTimeRange: task.estimatedTimeRange ?? null,
-          focusLevel: task.focusLevel ?? null,
-          isUrgent: task.isUrgent ?? false,
-        },
-      ];
-  return {
-    ...prev,
-    content: nextContent,
-  };
-}
-
-function removeScheduleCache(prev: DayPlanScheduleResponseDto | undefined, scheduleId: number) {
-  if (!prev) return prev;
-  return {
-    ...prev,
-    content: prev.content.filter((item) => item.scheduleId !== scheduleId),
-  };
-}
-
-function getScrollParent(element: HTMLElement | null) {
-  if (!element || typeof window === "undefined") return null;
-  let current: HTMLElement | null = element.parentElement;
-  while (current) {
-    const styles = window.getComputedStyle(current);
-    if (
-      styles.overflowY === "auto" ||
-      styles.overflowY === "scroll" ||
-      styles.overflow === "auto" ||
-      styles.overflow === "scroll"
-    ) {
-      return current;
-    }
-    current = current.parentElement;
-  }
-  return null;
-}
-
 function getPreviewTimeRange(
-  previewSlot: PreviewSlot | null,
-  insertPreview: InsertPreview | null,
+  previewSlot: PlannerEditPreviewSlot | null,
+  insertPreview: PlannerEditInsertPreview | null,
   durationMinutes: number,
 ) {
   if (insertPreview) {

@@ -1,5 +1,5 @@
 import { ApiError } from "./error";
-import { useAuthStore } from "@/shared/auth";
+import { getAccessToken } from "@/shared/auth";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -39,7 +39,7 @@ export async function apiFetch<TResponse, TBody = unknown>(
 
   //AToken 존재 시 Authorization 헤더 추가
   if (authRequired) {
-    const accessToken = useAuthStore.getState().accessToken;
+    const accessToken = getAccessToken();
     if (accessToken && !("Authorization" in (mergedHeaders as Record<string, string>))) {
       (mergedHeaders as Record<string, string>).Authorization = `Bearer ${accessToken}`;
     }
@@ -77,24 +77,6 @@ export async function apiFetch<TResponse, TBody = unknown>(
 
   // HTTP 실패
   if (!res.ok) {
-    if (res.status === 401) {
-      useAuthStore.getState().clearAuth();
-      const shouldRedirectOnUnauthorized = process.env.NODE_ENV !== "development";
-      if (shouldRedirectOnUnauthorized && typeof window !== "undefined") {
-        const { pathname } = window.location;
-        if (pathname !== "/login") {
-          window.dispatchEvent(
-            new CustomEvent("app:toast", {
-              detail: {
-                message: "로그인이 만료되었습니다. 다시 로그인해 주세요.",
-                type: "error",
-              },
-            }),
-          );
-          window.location.assign("/login");
-        }
-      }
-    }
     const fallbackCode = res.status === 401 ? "UNAUTHORIZED" : "HTTP_ERROR";
     throw new ApiError(
       res.status,

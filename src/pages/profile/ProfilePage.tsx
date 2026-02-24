@@ -2,23 +2,24 @@
 
 import type { UseFormRegisterReturn } from "react-hook-form";
 import { useCallback, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 
 import { FormField, ProfileImageKeyInput } from "@/shared/form/ui";
 import { useStackPage } from "@/widgets/stack";
 import { useMyProfileQuery, useUpdateMyProfileImageMutation } from "@/entities/user";
-import { useProfileImagePresign } from "@/features/image/model";
+import { useProfileImagePresign } from "@/features/image";
 import { ActionButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { AuthService } from "@/shared/auth";
-import { ApiError } from "@/shared/api";
 
 import { MyInfoStackPage } from "./MyInfoStackPage";
 
-export function ProfilePage() {
+interface ProfilePageProps {
+  enabled?: boolean;
+}
+
+export function ProfilePage({ enabled = true }: ProfilePageProps) {
   const { push } = useStackPage();
-  const router = useRouter();
-  const { data: myProfile, isLoading: isProfileLoading } = useMyProfileQuery();
+  const { data: myProfile, isLoading: isProfileLoading } = useMyProfileQuery({ enabled });
   const { handleFileSelect, previewUrl, imageKey, isUploading, loadImageViewUrl } =
     useProfileImagePresign();
   const updateImageMutation = useUpdateMyProfileImageMutation();
@@ -76,7 +77,6 @@ export function ProfilePage() {
 
   const handleLogout = async () => {
     await AuthService.logout();
-    // router.replace("/login");
   };
 
   const resolvedPreviewUrl = previewUrl ?? myProfile?.profileImageUrl ?? null;

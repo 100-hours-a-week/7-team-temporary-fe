@@ -1,0 +1,29 @@
+# VCS
+.git
+.gitignore
+
+# Dependency directories
+node_modules
+
+# Next build output / caches
+.next
+out
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Tooling / tests / docs not needed for image build
+.idea
+.cursor
+.storybook
+tests
+docs
+
+# OS / misc
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

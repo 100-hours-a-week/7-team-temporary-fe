@@ -1,10 +1,10 @@
 // pages/auth/sign-up/ui/useSignUpErrorEffect.ts
 import { useEffect, useRef } from "react";
-import { AuthError, AUTH_ERROR_CODE } from "@/features/auth/api";
+import { AuthError, AUTH_ERROR_CODE } from "@/features/auth";
 import type { UseMutationResult } from "@tanstack/react-query";
-import type { SignUpFormModel } from "@/features/auth/sign-up";
+import type { SignUpFormModel } from "@/features/auth";
 import type { UseFormReturn } from "react-hook-form";
-import type { SignUpResult } from "@/features/auth/sign-up/model";
+import type { SignUpResult } from "@/features/auth";
 
 export function useSignUpErrorEffect(
   mutation: UseMutationResult<SignUpResult, unknown, SignUpFormModel>,

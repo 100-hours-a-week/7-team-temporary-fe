@@ -1,4 +1,4 @@
-import type { UserEntity } from "@/entities/user/model";
+import type { UserEntity } from "@/entities/user";
 
 export interface SignUpFormModel {
   email: string;

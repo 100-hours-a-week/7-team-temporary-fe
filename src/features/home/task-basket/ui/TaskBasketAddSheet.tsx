@@ -2,19 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { TodoCartTaskItemModel } from "@/features/home/model/taskModels";
+import type { TodoCartTaskItemModel } from "@/entities/day-plan";
 import type { TaskDurationOption } from "@/shared/validation";
-import {
-  TASK_BASKET_FORM_DEFAULTS,
-  useTaskBasketForm,
-  type TaskBasketFormModel,
-} from "@/features/home/task-basket/model";
+import { TASK_BASKET_FORM_DEFAULTS, useTaskBasketForm, type TaskBasketFormModel } from "../model";
 import { TASK_DURATION_OPTIONS } from "@/shared/validation";
 import type {
   CreateDayPlanScheduleRequestDto,
   DayPlanScheduleDuration,
   DayPlanScheduleItemDto,
-} from "@/features/home/api";
+  DayPlanScheduleStatus,
+} from "@/entities/day-plan";
 import { Endpoint } from "@/shared/api";
 import { useApiMutation, useMutationErrorEffect } from "@/shared/query";
 import { BottomSheet } from "@/shared/ui";
@@ -23,7 +20,7 @@ import { PrimaryButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { useUserPreferencesStore } from "@/entities/user";
 
-type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
+type TodoTask = TodoCartTaskItemModel & { status?: DayPlanScheduleStatus };
 
 interface TaskBasketAddSheetProps {
   open: boolean;

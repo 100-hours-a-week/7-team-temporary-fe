@@ -1,0 +1,1 @@
+export { HorizontalImageAlbum } from "./HorizontalImageAlbum";

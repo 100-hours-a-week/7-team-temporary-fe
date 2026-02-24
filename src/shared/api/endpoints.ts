@@ -1,54 +1,82 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const configuredTaskApiBaseUrl = process.env.NEXT_PUBLIC_API_TASK_BASE_URL?.trim();
+const configuredChatApiBaseUrl = process.env.NEXT_PUBLIC_API_CHAT_BASE_URL?.trim();
+
+const TASK_API_BASE_URL = (
+  configuredTaskApiBaseUrl && configuredTaskApiBaseUrl.length > 0
+    ? configuredTaskApiBaseUrl
+    : "/api/task"
+).replace(/\/$/, "");
+
+const CHAT_API_BASE_URL = (
+  configuredChatApiBaseUrl && configuredChatApiBaseUrl.length > 0
+    ? configuredChatApiBaseUrl
+    : "/api/chat"
+).replace(/\/$/, "");
 
 /**
- * base url + endpoint path 결합 유틸
+ * task base url + endpoint path 결합 유틸
  */
-const path = (endpoint: string): string => `${API_BASE_URL}${endpoint}`;
+const taskPath = (endpoint: string): string => `${TASK_API_BASE_URL}${endpoint}`;
+const chatPath = (endpoint: string): string => `${CHAT_API_BASE_URL}${endpoint}`;
 
 export const Endpoint = {
   TOKEN: {
-    BASE: path("/token"),
-    REFRESH: path("/token"),
+    BASE: taskPath("/token"),
+    REFRESH: taskPath("/token"),
   },
   USER: {
-    BASE: path("/users"),
-    IMAGE: path("/users/image"),
+    BASE: taskPath("/users"),
+    IMAGE: taskPath("/users/image"),
     CHECK: {
-      NICKNAME: (nickname: string) => path(`/users?nickname=${encodeURIComponent(nickname)}`),
-      EMAIL: (email: string) => path(`/users/email?email=${encodeURIComponent(email)}`),
+      NICKNAME: (nickname: string) => taskPath(`/users?nickname=${encodeURIComponent(nickname)}`),
+      EMAIL: (email: string) => taskPath(`/users/email?email=${encodeURIComponent(email)}`),
     },
-    NICKNAME: path("/users/nickname"),
-    PASSWORD: path("/users/password"),
+    NICKNAME: taskPath("/users/nickname"),
+    PASSWORD: taskPath("/users/password"),
   },
   IMAGES: {
-    PRESIGNED_URL: path("/images"),
-    VIEW: (imageKey: string) => path(`/images/${imageKey}`), // GET
+    PRESIGNED_URL: taskPath("/images"),
+    VIEW: (imageKey: string) => taskPath(`/images/${imageKey}`), // GET
   },
   TERMS: {
-    LIST: path("/terms"),
+    LIST: taskPath("/terms"),
   },
   TERMS_SIGN: {
-    LIST: path("/terms-sign"),
-    UPDATE: (termsId: number) => path(`/terms-sign/${termsId}`),
+    LIST: taskPath("/terms-sign"),
+    UPDATE: (termsId: number) => taskPath(`/terms-sign/${termsId}`),
   },
   DAY_PLAN: {
-    SCHEDULE: path("/day-plan/schedule"),
-    SCHEDULE_BY_ID: (dayPlanId: number) => path(`/day-plan/${dayPlanId}/schedule`),
-    AI_ARRANGEMENT: (dayPlanId: number) => path(`/day-plan/${dayPlanId}/schedules/ai-arrangement`),
-    SCHEDULES_BY_ID: (dayPlanId: number) => path(`/day-plan/${dayPlanId}/schedules`),
+    SCHEDULE: taskPath("/day-plan/schedule"),
+    PERIOD_SCHEDULES: taskPath("/day-plan/period/schedules"),
+    SCHEDULE_BY_ID: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/schedule`),
+    REFLECTION: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/reflection`),
+    AI_ARRANGEMENT: (dayPlanId: number) =>
+      chatPath(`/day-plan/${dayPlanId}/schedules/ai-arrangement`),
+    SCHEDULES_BY_ID: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/schedules`),
   },
   SCHEDULE: {
-    BASE: path("/schedule"),
-    BY_ID: (scheduleId: number) => path(`/schedule/${scheduleId}`),
-    CHILDREN: path("/schedule/children"),
+    BASE: taskPath("/schedule"),
+    BY_ID: (scheduleId: number) => taskPath(`/schedule/${scheduleId}`),
+    CHILDREN: taskPath("/schedule/children"),
   },
   FCM: {
-    TOKENS: path("/fcm-tokens"),
+    TOKENS: taskPath("/fcm-tokens"),
   },
   NOTIFICATIONS: {
-    LIST: path("/notifications"),
+    LIST: taskPath("/notifications"),
+  },
+  FRIENDS: {
+    LIST: chatPath("/friends"),
+    DELETE: (friendUserId: number) => chatPath(`/friends/${friendUserId}`),
+  },
+  FRIEND_REQUESTS: {
+    DELETE: (requestId: number) => chatPath(`/friend-requests/${requestId}`),
   },
   ISSUE: {
-    BASE: path("/issue"),
+    BASE: taskPath("/issue"),
+  },
+  RETRO: {
+    BASE: chatPath("/reflections"),
+    LIKES: (reflectionId: number) => chatPath(`/reflections/${reflectionId}/likes`),
   },
 } as const;

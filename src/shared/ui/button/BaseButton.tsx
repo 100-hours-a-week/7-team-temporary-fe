@@ -26,7 +26,6 @@ export function BaseButton({
       className={cn(
         "inline-flex items-center justify-center gap-2",
         "rounded-md px-4 py-2 text-sm font-medium",
-        "focus:ring-2 focus:ring-[var(--color-red-400)]/30 focus:outline-none",
         "disabled:bg-primary-300 disabled:cursor-not-allowed",
         className,
       )}

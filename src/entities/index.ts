@@ -1,4 +1,4 @@
-export { useAuthStore } from "../shared/auth";
+export { useAuthStore } from "./user";
 export type {
   UserEntity,
   UserEmail,
@@ -10,3 +10,5 @@ export type {
   UserProfileImageKey,
 } from "./user";
 export * from "./issue";
+export * from "./retro";
+export * from "./friend";
