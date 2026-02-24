@@ -23,6 +23,7 @@ jobs:
   fe:
     name: Frontend CI (Next.js + Docker)
     runs-on: ubuntu-latest
+    if: ${{ !(github.event.action == 'closed' && github.event.pull_request.merged == true && github.base_ref == 'develop') }}
 
     steps:
       - name: Checkout
