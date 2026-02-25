@@ -24,6 +24,7 @@ export interface FriendSearchItemResponseDto {
   nickname?: string;
   email?: string;
   profileImage?: FriendProfileImageResponseDto | null;
+  isFriend?: boolean;
 }
 
 export interface FriendSearchResponseDto {
@@ -32,4 +33,8 @@ export interface FriendSearchResponseDto {
   size: number;
   totalElements: number;
   totalPages: number;
+}
+
+export interface CreateFriendRequestResponseDto {
+  requestId: number;
 }

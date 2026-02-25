@@ -2,10 +2,10 @@
 
 import { useEffect, useRef } from "react";
 
-import { FriendBaseItem, type FriendListItemVM } from "@/entities/friend";
+import { FriendBaseItem } from "@/entities/friend";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { BottomSheet } from "@/shared/ui";
-import { useFriendSearchSection } from "../model";
+import { type FriendSearchResultVM, useFriendSearchSection } from "../model";
 
 interface FriendAddSheetProps {
   open: boolean;
@@ -19,12 +19,14 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
     setKeyword,
     shouldSearch,
     friends,
+    requestFriend,
+    requestingFriendId,
     isLoading,
     isError,
     isFetching,
     hasMore,
     loadMore,
-  } = useFriendSearchSection();
+  } = useFriendSearchSection({ enabled: open });
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled: shouldSearch,
     hasMore,
@@ -91,7 +93,11 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
             <ul className="flex flex-col gap-3">
               {friends.map((friend) => (
                 <li key={`candidate-${friend.id}`}>
-                  <FriendSearchResultItem vm={friend} />
+                  <FriendSearchResultItem
+                    vm={friend}
+                    onAdd={requestFriend}
+                    isAdding={requestingFriendId === friend.id}
+                  />
                 </li>
               ))}
             </ul>
@@ -109,7 +115,22 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
   );
 }
 
-function FriendSearchResultItem({ vm }: { vm: FriendListItemVM }) {
+interface FriendSearchResultItemProps {
+  vm: FriendSearchResultVM;
+  onAdd: (targetUserId: number) => void;
+  isAdding: boolean;
+}
+
+function FriendSearchResultItem({ vm, onAdd, isAdding }: FriendSearchResultItemProps) {
+  const isAddDisabled = vm.isFriend || vm.isRequested || isAdding;
+  const buttonLabel = vm.isFriend
+    ? "추가됨"
+    : vm.isRequested
+      ? "요청됨"
+      : isAdding
+        ? "요청 중"
+        : "추가";
+
   return (
     <FriendBaseItem
       vm={vm}
@@ -117,9 +138,11 @@ function FriendSearchResultItem({ vm }: { vm: FriendListItemVM }) {
         <button
           type="button"
           aria-label={`${vm.nickname} 친구 추가`}
-          className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white"
+          disabled={isAddDisabled}
+          onClick={() => onAdd(vm.id)}
+          className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-neutral-300"
         >
-          추가
+          {buttonLabel}
         </button>
       }
     />

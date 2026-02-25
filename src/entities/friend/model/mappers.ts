@@ -16,6 +16,7 @@ function toFriendListItemVM(item: FriendItemResponseDto): FriendListItemVM {
     nickname: item.friendNickname?.trim() || DEFAULT_NICKNAME,
     email: item.friendEmail?.trim() || DEFAULT_EMAIL,
     profileImageUrl: item.profileImage?.url?.trim() || null,
+    isFriend: true,
   };
 }
 
@@ -25,6 +26,7 @@ function toFriendSearchListItemVM(item: FriendSearchItemResponseDto): FriendList
     nickname: item.nickname?.trim() || DEFAULT_NICKNAME,
     email: item.email?.trim() || DEFAULT_EMAIL,
     profileImageUrl: item.profileImage?.url?.trim() || null,
+    isFriend: Boolean(item.isFriend),
   };
 }
 

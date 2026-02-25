@@ -1,8 +1,12 @@
 import { apiFetch, Endpoint } from "@/shared/api";
 import { AuthService } from "@/shared/auth";
 
-import { getMockFriendsResponse } from "./mock";
-import type { FriendListResponseDto, FriendSearchResponseDto } from "./types";
+import { getMockCreateFriendRequestResponse, getMockFriendsResponse } from "./mock";
+import type {
+  CreateFriendRequestResponseDto,
+  FriendListResponseDto,
+  FriendSearchResponseDto,
+} from "./types";
 
 interface FetchFriendsParams {
   page?: number;
@@ -25,7 +29,12 @@ interface DeleteFriendParams {
   friendUserId: number;
 }
 
+interface CreateFriendRequestParams {
+  targetUserId: number;
+}
+
 const FRIEND_LIST_ENABLE_MOCK_FALLBACK = true;
+const FRIEND_REQUEST_ENABLE_MOCK_FALLBACK = true;
 
 function toFriendListSearchParams({ page = 1, size = 10 }: { page?: number; size?: number }) {
   return new URLSearchParams({
@@ -105,4 +114,23 @@ export async function deleteFriend({ friendUserId }: DeleteFriendParams): Promis
       authRequired: true,
     }),
   );
+}
+
+export async function createFriendRequest({
+  targetUserId,
+}: CreateFriendRequestParams): Promise<CreateFriendRequestResponseDto> {
+  try {
+    return await AuthService.refreshAndRetry(() =>
+      apiFetch<CreateFriendRequestResponseDto>(Endpoint.FRIEND_REQUESTS.CREATE(targetUserId), {
+        method: "POST",
+        authRequired: true,
+      }),
+    );
+  } catch (error) {
+    if (!FRIEND_REQUEST_ENABLE_MOCK_FALLBACK) {
+      throw error;
+    }
+
+    return getMockCreateFriendRequestResponse(targetUserId);
+  }
 }
