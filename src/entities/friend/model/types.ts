@@ -3,6 +3,7 @@ export interface FriendListItemVM {
   nickname: string;
   email: string;
   profileImageUrl: string | null;
+  isFriend: boolean;
 }
 
 export interface FriendRequestItemVM extends FriendListItemVM {
