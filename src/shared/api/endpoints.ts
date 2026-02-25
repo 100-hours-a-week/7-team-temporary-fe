@@ -70,6 +70,7 @@ export const Endpoint = {
     DELETE: (friendUserId: number) => chatPath(`/friends/${friendUserId}`),
   },
   FRIEND_REQUESTS: {
+    CREATE: (targetUserId: number) => chatPath(`/friend-requests/${targetUserId}`),
     DELETE: (requestId: number) => chatPath(`/friend-requests/${requestId}`),
   },
   ISSUE: {

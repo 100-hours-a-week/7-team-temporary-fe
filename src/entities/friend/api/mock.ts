@@ -125,3 +125,9 @@ export function getMockFriendsResponse({
     totalPages: Math.ceil(FRIEND_MOCK_ITEMS.length / safeSize),
   };
 }
+
+export function getMockCreateFriendRequestResponse(targetUserId: number) {
+  return {
+    requestId: Number(`${targetUserId}${Date.now()}`.slice(-9)),
+  };
+}
