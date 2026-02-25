@@ -18,3 +18,11 @@ export interface FriendListModel {
   totalElements: number;
   totalPages: number;
 }
+
+export interface FriendRequestListModel {
+  content: FriendRequestItemVM[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}

@@ -35,6 +35,23 @@ export interface FriendSearchResponseDto {
   totalPages: number;
 }
 
+export interface FriendRequestItemResponseDto {
+  requestId: number;
+  fromUserId: number;
+  fromUserEmail?: string;
+  fromUserNickname?: string;
+  profileImage?: FriendProfileImageResponseDto | null;
+  createdAt?: string;
+}
+
+export interface FriendRequestListResponseDto {
+  content: FriendRequestItemResponseDto[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
 export interface CreateFriendRequestResponseDto {
   requestId: number;
 }
