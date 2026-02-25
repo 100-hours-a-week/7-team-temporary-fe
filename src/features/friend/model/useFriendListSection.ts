@@ -3,25 +3,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
-  FRIEND_REQUEST_MOCKS,
   type FriendListItemVM,
-  type FriendRequestItemVM,
   useDeleteFriendMutation,
   useDeleteFriendRequestMutation,
+  useFriendRequestsQuery,
   useFriendsQuery,
 } from "@/entities/friend";
 
 const FRIEND_LIST_PAGE = 1;
 const FRIEND_LIST_SIZE = 10;
+const FRIEND_REQUEST_LIST_PAGE = 1;
+const FRIEND_REQUEST_LIST_SIZE = 10;
 
 export function useFriendListSection() {
   const [currentPage, setCurrentPage] = useState(FRIEND_LIST_PAGE);
   const [fetchedFriends, setFetchedFriends] = useState<FriendListItemVM[]>([]);
-  const [friendRequests, setFriendRequests] = useState<FriendRequestItemVM[]>(() =>
-    [...FRIEND_REQUEST_MOCKS].sort(
-      (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
-    ),
-  );
+  const [rejectedRequestIds, setRejectedRequestIds] = useState<Set<number>>(new Set());
   const [totalPages, setTotalPages] = useState<number | null>(null);
   const deleteFriendMutation = useDeleteFriendMutation();
   const deleteFriendRequestMutation = useDeleteFriendRequestMutation();
@@ -29,6 +26,10 @@ export function useFriendListSection() {
   const friendsQuery = useFriendsQuery({
     page: currentPage,
     size: FRIEND_LIST_SIZE,
+  });
+  const friendRequestsQuery = useFriendRequestsQuery({
+    page: FRIEND_REQUEST_LIST_PAGE,
+    size: FRIEND_REQUEST_LIST_SIZE,
   });
 
   useEffect(() => {
@@ -55,6 +56,14 @@ export function useFriendListSection() {
   }, [friendsQuery.isFetching, hasMore]);
 
   const friends = useMemo(() => fetchedFriends, [fetchedFriends]);
+  const friendRequests = useMemo(
+    () =>
+      (friendRequestsQuery.data?.content ?? []).filter(
+        (request) => !rejectedRequestIds.has(request.requestId),
+      ),
+    [friendRequestsQuery.data?.content, rejectedRequestIds],
+  );
+
   const handleDeleteFriend = useCallback(
     (friendUserId: number) => {
       if (deleteFriendMutation.isPending) return;
@@ -74,7 +83,11 @@ export function useFriendListSection() {
 
       deleteFriendRequestMutation.mutate(requestId, {
         onSuccess: () => {
-          setFriendRequests((prev) => prev.filter((request) => request.requestId !== requestId));
+          setRejectedRequestIds((prev) => {
+            const next = new Set(prev);
+            next.add(requestId);
+            return next;
+          });
         },
       });
     },
@@ -90,9 +103,9 @@ export function useFriendListSection() {
     friends,
     deleteFriend: handleDeleteFriend,
     deletingFriendId: deleteFriendMutation.isPending ? deleteFriendMutation.variables : null,
-    isLoading: friendsQuery.isLoading,
-    isError: friendsQuery.isError,
-    isFetching: friendsQuery.isFetching,
+    isLoading: friendsQuery.isLoading || friendRequestsQuery.isLoading,
+    isError: friendsQuery.isError || friendRequestsQuery.isError,
+    isFetching: friendsQuery.isFetching || friendRequestsQuery.isFetching,
     hasMore,
     loadMore,
   };

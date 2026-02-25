@@ -3,6 +3,7 @@ export {
   deleteFriend,
   deleteFriendRequest,
   fetchFriendSearchByNickname,
+  fetchFriendRequests,
   fetchFriends,
 } from "./friends.api";
 export type {
@@ -10,6 +11,8 @@ export type {
   FriendItemResponseDto,
   FriendListResponseDto,
   FriendProfileImageResponseDto,
+  FriendRequestItemResponseDto,
+  FriendRequestListResponseDto,
   FriendSearchItemResponseDto,
   FriendSearchResponseDto,
 } from "./types";
