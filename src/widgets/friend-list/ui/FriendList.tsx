@@ -4,10 +4,20 @@ import { FriendListItem, FriendRequestItem } from "@/entities/friend";
 import { useFriendListSection } from "@/features/friend";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { EmptyStateCard } from "@/shared/ui/empty";
+import {
+  FRIEND_LIST_EMPTY_MESSAGE,
+  FRIEND_LIST_ERROR_MESSAGE,
+  FRIEND_LIST_FETCHING_MESSAGE,
+  FRIEND_LIST_SECTION_TITLE,
+  FRIEND_REQUEST_SECTION_TITLE,
+} from "../model/constants";
+import { FriendListSkeleton } from "./FriendListSkeleton";
 
 export function FriendList() {
   const {
     friendRequests,
+    acceptFriendRequest,
+    acceptingRequestId,
     rejectFriendRequest,
     rejectingRequestId,
     friends,
@@ -29,33 +39,29 @@ export function FriendList() {
 
   return (
     <section className="px-6 pt-[13px] pb-32">
-      {isLoading ? (
-        <div className="rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
-          친구 목록을 불러오는 중...
-        </div>
-      ) : null}
+      {isLoading ? <FriendListSkeleton /> : null}
 
       {isError ? (
         <div className="rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
-          친구 목록을 불러오지 못했습니다.
+          {FRIEND_LIST_ERROR_MESSAGE}
         </div>
-      ) : null}
-
-      {!isLoading && !isError && friends.length === 0 && friendRequests.length === 0 ? (
-        <EmptyStateCard message="아직 친구 목록이 비어 있어요. 새 친구를 만들어볼까요?" />
       ) : null}
 
       {!isLoading && !isError ? (
         <div className="flex flex-col gap-4">
           {friendRequests.length > 0 ? (
             <section>
-              <h2 className="mb-2 text-[14px] font-semibold text-neutral-500">친구 요청</h2>
+              <h2 className="mb-2 text-[14px] font-semibold text-neutral-500">
+                {FRIEND_REQUEST_SECTION_TITLE}
+              </h2>
               <ul className="flex flex-col gap-3">
                 {friendRequests.map((friendRequest) => (
                   <li key={`request-${friendRequest.requestId}`}>
                     <FriendRequestItem
                       vm={friendRequest}
+                      onAccept={acceptFriendRequest}
                       onReject={rejectFriendRequest}
+                      isAccepting={acceptingRequestId === friendRequest.requestId}
                       isRejecting={rejectingRequestId === friendRequest.requestId}
                     />
                   </li>
@@ -65,18 +71,24 @@ export function FriendList() {
           ) : null}
 
           <section>
-            <h2 className="mb-2 text-[14px] font-semibold text-neutral-500">친구 목록</h2>
-            <ul className="flex flex-col gap-3">
-              {friends.map((friend) => (
-                <li key={friend.id}>
-                  <FriendListItem
-                    vm={friend}
-                    onDelete={deleteFriend}
-                    isDeleting={deletingFriendId === friend.id}
-                  />
-                </li>
-              ))}
-            </ul>
+            <h2 className="mb-2 text-[14px] font-semibold text-neutral-500">
+              {FRIEND_LIST_SECTION_TITLE}
+            </h2>
+            {friends.length === 0 ? (
+              <EmptyStateCard message={FRIEND_LIST_EMPTY_MESSAGE} />
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {friends.map((friend) => (
+                  <li key={friend.id}>
+                    <FriendListItem
+                      vm={friend}
+                      onDelete={deleteFriend}
+                      isDeleting={deletingFriendId === friend.id}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </div>
       ) : null}
@@ -88,7 +100,9 @@ export function FriendList() {
             className="h-px"
           />
           {isFetching && hasMore ? (
-            <div className="pt-2 text-center text-xs text-neutral-400">불러오는 중...</div>
+            <div className="pt-2 text-center text-xs text-neutral-400">
+              {FRIEND_LIST_FETCHING_MESSAGE}
+            </div>
           ) : null}
         </>
       ) : null}
