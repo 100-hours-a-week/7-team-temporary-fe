@@ -9,11 +9,14 @@ import {
   useFriendsQuery,
 } from "@/entities/friend";
 import { useToast } from "@/shared/ui/toast";
-
-const FRIEND_SEARCH_PAGE = 1;
-const FRIEND_SEARCH_SIZE = 10;
-const FRIEND_EXISTENCE_CHECK_PAGE = 1;
-const FRIEND_EXISTENCE_CHECK_SIZE = 100;
+import {
+  FRIEND_EXISTENCE_CHECK_PAGE,
+  FRIEND_EXISTENCE_CHECK_SIZE,
+  FRIEND_REQUEST_FAILURE_MESSAGE,
+  FRIEND_REQUEST_SUCCESS_MESSAGE,
+  FRIEND_SEARCH_PAGE,
+  FRIEND_SEARCH_SIZE,
+} from "./constants";
 
 interface UseFriendSearchSectionOptions {
   enabled?: boolean;
@@ -22,9 +25,6 @@ interface UseFriendSearchSectionOptions {
 export interface FriendSearchResultVM extends FriendListItemVM {
   isRequested: boolean;
 }
-
-const FRIEND_REQUEST_SUCCESS_MESSAGE = "친구 요청을 성공적으로 보냈습니다.";
-const FRIEND_REQUEST_FAILURE_MESSAGE = "친구 요청 전송에 실패했습니다. 잠시 후 다시 시도해주세요.";
 
 export function useFriendSearchSection({ enabled = true }: UseFriendSearchSectionOptions = {}) {
   const { showToast } = useToast();

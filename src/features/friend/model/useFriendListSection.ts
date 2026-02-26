@@ -4,22 +4,33 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   type FriendListItemVM,
+  type FriendRequestItemVM,
+  useAcceptFriendRequestMutation,
   useDeleteFriendMutation,
   useDeleteFriendRequestMutation,
   useFriendRequestsQuery,
   useFriendsQuery,
 } from "@/entities/friend";
+import { useToast } from "@/shared/ui/toast";
 
-const FRIEND_LIST_PAGE = 1;
-const FRIEND_LIST_SIZE = 10;
-const FRIEND_REQUEST_LIST_PAGE = 1;
-const FRIEND_REQUEST_LIST_SIZE = 10;
+import {
+  FRIEND_LIST_PAGE,
+  FRIEND_LIST_SIZE,
+  FRIEND_REQUEST_ACCEPT_FAILURE_MESSAGE,
+  FRIEND_REQUEST_ACCEPT_SUCCESS_MESSAGE,
+  FRIEND_REQUEST_REJECT_FAILURE_MESSAGE,
+  FRIEND_REQUEST_REJECT_SUCCESS_MESSAGE,
+  FRIEND_REQUEST_LIST_PAGE,
+  FRIEND_REQUEST_LIST_SIZE,
+} from "./constants";
 
 export function useFriendListSection() {
+  const { showToast } = useToast();
   const [currentPage, setCurrentPage] = useState(FRIEND_LIST_PAGE);
   const [fetchedFriends, setFetchedFriends] = useState<FriendListItemVM[]>([]);
-  const [rejectedRequestIds, setRejectedRequestIds] = useState<Set<number>>(new Set());
+  const [handledRequestIds, setHandledRequestIds] = useState<Set<number>>(new Set());
   const [totalPages, setTotalPages] = useState<number | null>(null);
+  const acceptFriendRequestMutation = useAcceptFriendRequestMutation();
   const deleteFriendMutation = useDeleteFriendMutation();
   const deleteFriendRequestMutation = useDeleteFriendRequestMutation();
 
@@ -59,9 +70,9 @@ export function useFriendListSection() {
   const friendRequests = useMemo(
     () =>
       (friendRequestsQuery.data?.content ?? []).filter(
-        (request) => !rejectedRequestIds.has(request.requestId),
+        (request) => !handledRequestIds.has(request.requestId),
       ),
-    [friendRequestsQuery.data?.content, rejectedRequestIds],
+    [friendRequestsQuery.data?.content, handledRequestIds],
   );
 
   const handleDeleteFriend = useCallback(
@@ -77,25 +88,82 @@ export function useFriendListSection() {
     [deleteFriendMutation],
   );
 
+  const markHandledRequest = useCallback((requestId: number) => {
+    setHandledRequestIds((prev) => {
+      const next = new Set(prev);
+      next.add(requestId);
+      return next;
+    });
+  }, []);
+
+  const addFriendFromRequest = useCallback((request: FriendRequestItemVM) => {
+    setFetchedFriends((prev) => {
+      if (prev.some((friend) => friend.id === request.id)) {
+        return prev;
+      }
+
+      const acceptedFriend: FriendListItemVM = {
+        id: request.id,
+        nickname: request.nickname,
+        email: request.email,
+        profileImageUrl: request.profileImageUrl,
+        isFriend: true,
+      };
+
+      return [acceptedFriend, ...prev];
+    });
+  }, []);
+
+  const handleAcceptFriendRequest = useCallback(
+    (requestId: number) => {
+      if (acceptFriendRequestMutation.isPending) return;
+
+      const targetRequest = friendRequests.find((request) => request.requestId === requestId);
+      if (!targetRequest) return;
+
+      acceptFriendRequestMutation.mutate(requestId, {
+        onSuccess: () => {
+          markHandledRequest(requestId);
+          addFriendFromRequest(targetRequest);
+          showToast(FRIEND_REQUEST_ACCEPT_SUCCESS_MESSAGE, "success");
+        },
+        onError: () => {
+          showToast(FRIEND_REQUEST_ACCEPT_FAILURE_MESSAGE, "error");
+        },
+      });
+    },
+    [
+      acceptFriendRequestMutation,
+      addFriendFromRequest,
+      friendRequests,
+      markHandledRequest,
+      showToast,
+    ],
+  );
+
   const handleRejectFriendRequest = useCallback(
     (requestId: number) => {
       if (deleteFriendRequestMutation.isPending) return;
 
       deleteFriendRequestMutation.mutate(requestId, {
         onSuccess: () => {
-          setRejectedRequestIds((prev) => {
-            const next = new Set(prev);
-            next.add(requestId);
-            return next;
-          });
+          markHandledRequest(requestId);
+          showToast(FRIEND_REQUEST_REJECT_SUCCESS_MESSAGE, "success");
+        },
+        onError: () => {
+          showToast(FRIEND_REQUEST_REJECT_FAILURE_MESSAGE, "error");
         },
       });
     },
-    [deleteFriendRequestMutation],
+    [deleteFriendRequestMutation, markHandledRequest, showToast],
   );
 
   return {
     friendRequests,
+    acceptFriendRequest: handleAcceptFriendRequest,
+    acceptingRequestId: acceptFriendRequestMutation.isPending
+      ? acceptFriendRequestMutation.variables
+      : null,
     rejectFriendRequest: handleRejectFriendRequest,
     rejectingRequestId: deleteFriendRequestMutation.isPending
       ? deleteFriendRequestMutation.variables
