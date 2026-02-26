@@ -51,7 +51,7 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
       closeOnOverlayClick
       peekHeight={55}
       expandHeight={70}
-      enableDragHandle
+      enableDragHandle={false}
       sheetClassName="overflow-hidden pb-[env(safe-area-inset-bottom)]"
     >
       <section className="flex h-full min-h-0 flex-col px-6 pt-3 pb-4">
