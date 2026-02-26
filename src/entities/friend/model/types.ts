@@ -1,9 +1,11 @@
+export type FriendRelationStatus = "NONE" | "PENDING" | "FRIEND" | "SELF";
+
 export interface FriendListItemVM {
   id: number;
   nickname: string;
   email: string;
   profileImageUrl: string | null;
-  isFriend: boolean;
+  relationStatus: FriendRelationStatus;
 }
 
 export interface FriendRequestItemVM extends FriendListItemVM {

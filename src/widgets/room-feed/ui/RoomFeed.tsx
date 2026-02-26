@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ChatRoomListItemVM } from "@/entities/chat-room";
 import { useChatRoomRealtimeMock, useGroupChatRoomListQuery } from "@/entities/chat-room";
-import { useInfiniteScrollTrigger } from "@/shared/hooks";
+import { usePaginatedAccumulator, useInfiniteScrollTrigger } from "@/shared/hooks";
 import { FloatingActionButton } from "@/shared/ui/button";
 import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
 
@@ -32,8 +32,6 @@ interface RoomFeedProps {
 export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }: RoomFeedProps) {
   const [activeSection, setActiveSection] = useState<RoomSection>(ROOM_SECTION.GROUP_CHAT);
   const [currentPage, setCurrentPage] = useState(CHAT_ROOM_LIST_PAGE);
-  const [fetchedRooms, setFetchedRooms] = useState<ChatRoomListItemVM[]>([]);
-  const [totalPages, setTotalPages] = useState<number | null>(null);
   const scrollRef = useRef<HTMLElement>(null);
 
   const isGroupChatSection = activeSection === ROOM_SECTION.GROUP_CHAT;
@@ -43,33 +41,33 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
     size: CHAT_ROOM_LIST_SIZE,
   });
 
+  const {
+    fetchedItems: fetchedRooms,
+    hasMore,
+    isInitialLoading,
+    isFetching,
+    isError,
+    reset,
+  } = usePaginatedAccumulator<ChatRoomListItemVM>({
+    data: groupChatQuery.data,
+    isLoading: groupChatQuery.isLoading,
+    isFetching: groupChatQuery.isFetching,
+    isError: groupChatQuery.isError,
+    currentPage,
+    initialPage: CHAT_ROOM_LIST_PAGE,
+    pageSize: CHAT_ROOM_LIST_SIZE,
+    getKey: (item) => item.roomId,
+    enabled: enabled && isGroupChatSection,
+  });
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });
   }, [activeSection]);
 
   useEffect(() => {
-    if (!isGroupChatSection) return;
     setCurrentPage(CHAT_ROOM_LIST_PAGE);
-    setFetchedRooms([]);
-    setTotalPages(null);
-  }, [isGroupChatSection]);
-
-  useEffect(() => {
-    if (!groupChatQuery.data) return;
-
-    setTotalPages(groupChatQuery.data.totalPages);
-    setFetchedRooms((prev) => {
-      const base = currentPage === CHAT_ROOM_LIST_PAGE ? [] : prev;
-      const merged = new Map(base.map((item) => [item.roomId, item]));
-      groupChatQuery.data.content.forEach((item) => merged.set(item.roomId, item));
-      return Array.from(merged.values());
-    });
-  }, [currentPage, groupChatQuery.data]);
-
-  const hasMore =
-    totalPages === null
-      ? (groupChatQuery.data?.content.length ?? 0) === CHAT_ROOM_LIST_SIZE
-      : currentPage < totalPages;
+    reset();
+  }, [isGroupChatSection, reset]);
 
   const loadMore = useCallback(() => {
     if (!enabled) return;
@@ -83,7 +81,7 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled: enabled && isGroupChatSection,
     hasMore,
-    isFetching: groupChatQuery.isFetching,
+    isFetching,
     onLoadMore: loadMore,
     rootRef: scrollRef,
   });
@@ -122,32 +120,32 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
         onChange={setActiveSection}
       />
 
-      {groupChatQuery.isLoading ? (
+      {isInitialLoading ? (
         <div className="mt-4 rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
           채팅방 목록을 불러오는 중...
         </div>
       ) : null}
 
-      {groupChatQuery.isError ? (
+      {isError ? (
         <div className="mt-4 rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
           채팅방 목록을 불러오지 못했습니다.
         </div>
       ) : null}
 
-      {!groupChatQuery.isLoading && !groupChatQuery.isError ? (
+      {!isInitialLoading && !isError ? (
         <ChatRoomList
           items={rooms}
           onChatRoomClick={onChatRoomClick ?? (() => undefined)}
         />
       ) : null}
 
-      {!groupChatQuery.isLoading && !groupChatQuery.isError && isGroupChatSection ? (
+      {!isInitialLoading && !isError && isGroupChatSection ? (
         <>
           <div
             ref={loadMoreRef}
             className="h-px"
           />
-          {groupChatQuery.isFetching && hasMore ? (
+          {isFetching && hasMore ? (
             <div className="pt-2 text-center text-xs text-neutral-400">불러오는 중...</div>
           ) : null}
         </>

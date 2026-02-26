@@ -60,7 +60,11 @@ export function useFriendListSection() {
       ? (friendsQuery.data?.content.length ?? 0) === FRIEND_LIST_SIZE
       : currentPage < totalPages;
 
+  const isInitialFriendListLoading = friendsQuery.isLoading && fetchedFriends.length === 0;
+  const isInitialFriendRequestLoading = friendRequestsQuery.isLoading && !friendRequestsQuery.data;
+
   const loadMore = useCallback(() => {
+    console.log("[loadMore]", { hasMore, isFetching: friendsQuery.isFetching, currentPage });
     if (!hasMore) return;
     if (friendsQuery.isFetching) return;
     setCurrentPage((prev) => prev + 1);
@@ -107,7 +111,7 @@ export function useFriendListSection() {
         nickname: request.nickname,
         email: request.email,
         profileImageUrl: request.profileImageUrl,
-        isFriend: true,
+        relationStatus: "FRIEND",
       };
 
       return [acceptedFriend, ...prev];
@@ -171,7 +175,7 @@ export function useFriendListSection() {
     friends,
     deleteFriend: handleDeleteFriend,
     deletingFriendId: deleteFriendMutation.isPending ? deleteFriendMutation.variables : null,
-    isLoading: friendsQuery.isLoading || friendRequestsQuery.isLoading,
+    isLoading: isInitialFriendListLoading || isInitialFriendRequestLoading,
     isError: friendsQuery.isError || friendRequestsQuery.isError,
     isFetching: friendsQuery.isFetching || friendRequestsQuery.isFetching,
     hasMore,

@@ -10,6 +10,7 @@ export { useFriendsQuery } from "./useFriendsQuery";
 export type {
   FriendListItemVM,
   FriendListModel,
+  FriendRelationStatus,
   FriendRequestItemVM,
   FriendRequestListModel,
 } from "./types";

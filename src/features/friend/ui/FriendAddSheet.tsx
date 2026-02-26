@@ -51,7 +51,7 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
       closeOnOverlayClick
       peekHeight={55}
       expandHeight={70}
-      enableDragHandle
+      enableDragHandle={false}
       sheetClassName="overflow-hidden pb-[env(safe-area-inset-bottom)]"
     >
       <section className="flex h-full min-h-0 flex-col px-6 pt-3 pb-4">
@@ -70,12 +70,12 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
           placeholder="닉네임 검색"
-          className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none"
+          className="text-md h-11 w-full shrink-0 rounded-xl border border-neutral-200 bg-white px-4 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none"
         />
 
         <div
           ref={scrollRootRef}
-          className="mt-4 max-h-[45vh] min-h-0 overflow-y-auto overscroll-contain pr-1"
+          className="scrollbar-hide mt-4 max-h-[45vh] min-h-0 overflow-y-auto overscroll-contain pr-1"
         >
           {!shouldSearch ? null : isLoading ? (
             <div className="rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
@@ -122,14 +122,16 @@ interface FriendSearchResultItemProps {
 }
 
 function FriendSearchResultItem({ vm, onAdd, isAdding }: FriendSearchResultItemProps) {
-  const isAddDisabled = vm.isFriend || vm.isRequested || isAdding;
-  const buttonLabel = vm.isFriend
-    ? "추가됨"
-    : vm.isRequested
-      ? "요청됨"
-      : isAdding
-        ? "요청 중"
-        : "추가";
+  const isAddDisabled = vm.relationStatus !== "NONE" || isAdding;
+  const buttonLabel = isAdding
+    ? "요청 중"
+    : vm.relationStatus === "FRIEND"
+      ? "추가됨"
+      : vm.relationStatus === "PENDING"
+        ? "요청됨"
+        : vm.relationStatus === "SELF"
+          ? "본인"
+          : "추가";
 
   return (
     <FriendBaseItem
