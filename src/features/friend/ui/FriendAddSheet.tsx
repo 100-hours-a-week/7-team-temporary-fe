@@ -75,7 +75,7 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
 
         <div
           ref={scrollRootRef}
-          className="mt-4 max-h-[45vh] min-h-0 overflow-y-auto overscroll-contain pr-1"
+          className="scrollbar-hide mt-4 max-h-[45vh] min-h-0 overflow-y-auto overscroll-contain pr-1"
         >
           {!shouldSearch ? null : isLoading ? (
             <div className="rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
