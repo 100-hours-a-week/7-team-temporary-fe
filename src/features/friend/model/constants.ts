@@ -12,8 +12,6 @@ export const FRIEND_REQUEST_REJECT_FAILURE_MESSAGE =
 
 export const FRIEND_SEARCH_PAGE = 1;
 export const FRIEND_SEARCH_SIZE = 10;
-export const FRIEND_EXISTENCE_CHECK_PAGE = 1;
-export const FRIEND_EXISTENCE_CHECK_SIZE = 100;
 
 export const FRIEND_REQUEST_SUCCESS_MESSAGE = "친구 요청을 성공적으로 보냈습니다.";
 export const FRIEND_REQUEST_FAILURE_MESSAGE =

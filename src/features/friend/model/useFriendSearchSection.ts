@@ -6,12 +6,9 @@ import {
   type FriendListItemVM,
   useCreateFriendRequestMutation,
   useFriendSearchQuery,
-  useFriendsQuery,
 } from "@/entities/friend";
 import { useToast } from "@/shared/ui/toast";
 import {
-  FRIEND_EXISTENCE_CHECK_PAGE,
-  FRIEND_EXISTENCE_CHECK_SIZE,
   FRIEND_REQUEST_FAILURE_MESSAGE,
   FRIEND_REQUEST_SUCCESS_MESSAGE,
   FRIEND_SEARCH_PAGE,
@@ -22,9 +19,7 @@ interface UseFriendSearchSectionOptions {
   enabled?: boolean;
 }
 
-export interface FriendSearchResultVM extends FriendListItemVM {
-  isRequested: boolean;
-}
+export type FriendSearchResultVM = FriendListItemVM;
 
 export function useFriendSearchSection({ enabled = true }: UseFriendSearchSectionOptions = {}) {
   const { showToast } = useToast();
@@ -43,17 +38,6 @@ export function useFriendSearchSection({ enabled = true }: UseFriendSearchSectio
     size: FRIEND_SEARCH_SIZE,
     enabled: enabled && shouldSearch,
   });
-
-  const friendsQuery = useFriendsQuery({
-    page: FRIEND_EXISTENCE_CHECK_PAGE,
-    size: FRIEND_EXISTENCE_CHECK_SIZE,
-    enabled: enabled && shouldSearch,
-  });
-
-  const existingFriendIdSet = useMemo(
-    () => new Set((friendsQuery.data?.content ?? []).map((friend) => friend.id)),
-    [friendsQuery.data?.content],
-  );
 
   useEffect(() => {
     setCurrentPage(FRIEND_SEARCH_PAGE);
@@ -93,17 +77,18 @@ export function useFriendSearchSection({ enabled = true }: UseFriendSearchSectio
     () =>
       fetchedFriends.map((friend) => ({
         ...friend,
-        isFriend: friend.isFriend || existingFriendIdSet.has(friend.id),
-        isRequested: requestedFriendIds.has(friend.id),
+        relationStatus: requestedFriendIds.has(friend.id) ? "PENDING" : friend.relationStatus,
       })),
-    [existingFriendIdSet, fetchedFriends, requestedFriendIds],
+    [fetchedFriends, requestedFriendIds],
   );
 
   const requestFriend = useCallback(
     (targetUserId: number) => {
+      const targetFriend = friends.find((friend) => friend.id === targetUserId);
+      if (!targetFriend) return;
+
       if (createFriendRequestMutation.isPending) return;
-      if (existingFriendIdSet.has(targetUserId)) return;
-      if (requestedFriendIds.has(targetUserId)) return;
+      if (targetFriend.relationStatus !== "NONE") return;
 
       createFriendRequestMutation.mutate(targetUserId, {
         onSuccess: () => {
@@ -119,7 +104,7 @@ export function useFriendSearchSection({ enabled = true }: UseFriendSearchSectio
         },
       });
     },
-    [createFriendRequestMutation, existingFriendIdSet, requestedFriendIds, showToast],
+    [createFriendRequestMutation, friends, showToast],
   );
 
   return {

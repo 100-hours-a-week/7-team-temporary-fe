@@ -122,14 +122,16 @@ interface FriendSearchResultItemProps {
 }
 
 function FriendSearchResultItem({ vm, onAdd, isAdding }: FriendSearchResultItemProps) {
-  const isAddDisabled = vm.isFriend || vm.isRequested || isAdding;
-  const buttonLabel = vm.isFriend
-    ? "추가됨"
-    : vm.isRequested
-      ? "요청됨"
-      : isAdding
-        ? "요청 중"
-        : "추가";
+  const isAddDisabled = vm.relationStatus !== "NONE" || isAdding;
+  const buttonLabel = isAdding
+    ? "요청 중"
+    : vm.relationStatus === "FRIEND"
+      ? "추가됨"
+      : vm.relationStatus === "PENDING"
+        ? "요청됨"
+        : vm.relationStatus === "SELF"
+          ? "본인"
+          : "추가";
 
   return (
     <FriendBaseItem
