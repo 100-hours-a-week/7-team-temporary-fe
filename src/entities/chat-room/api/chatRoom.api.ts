@@ -1,5 +1,4 @@
 import { apiFetch, Endpoint } from "@/shared/api";
-import { AuthService } from "@/shared/auth";
 
 import {
   getMockChatRoomListResponse,
@@ -45,11 +44,9 @@ export async function fetchChatRoomList({
   const searchParams = toChatRoomListSearchParams({ type, page, size });
 
   try {
-    return await AuthService.refreshAndRetry(() =>
-      apiFetch<ChatRoomListResponseDto>(
-        `${Endpoint.CHAT_ROOMS.PARTICIPANTS}?${searchParams.toString()}`,
-        { signal, authRequired: true },
-      ),
+    return await apiFetch<ChatRoomListResponseDto>(
+      `${Endpoint.CHAT_ROOMS.PARTICIPANTS}?${searchParams.toString()}`,
+      { signal, authRequired: true },
     );
   } catch {
     if (!CHAT_ROOM_LIST_ENABLE_MOCK_FALLBACK) throw new Error("채팅방 목록 조회 실패");
@@ -65,12 +62,10 @@ export async function fetchChatRoomOwnerStatus({
   signal?: AbortSignal;
 }): Promise<ChatRoomOwnerStatusDto> {
   try {
-    return await AuthService.refreshAndRetry(() =>
-      apiFetch<ChatRoomOwnerStatusDto>(Endpoint.CHAT_ROOMS.OWNER_STATUS(ownerId), {
-        signal,
-        authRequired: true,
-      }),
-    );
+    return await apiFetch<ChatRoomOwnerStatusDto>(Endpoint.CHAT_ROOMS.OWNER_STATUS(ownerId), {
+      signal,
+      authRequired: true,
+    });
   } catch {
     if (!CHAT_ROOM_OWNER_STATUS_ENABLE_MOCK_FALLBACK) {
       throw new Error("방장 여부 조회 실패");
@@ -99,12 +94,10 @@ export async function fetchChatRoomMessages({
     : Endpoint.CHAT_ROOMS.MESSAGES(roomId);
 
   try {
-    return await AuthService.refreshAndRetry(() =>
-      apiFetch<ChatMessageListResponseDto>(url, {
-        signal,
-        authRequired: true,
-      }),
-    );
+    return await apiFetch<ChatMessageListResponseDto>(url, {
+      signal,
+      authRequired: true,
+    });
   } catch {
     if (!CHAT_ROOM_MESSAGES_ENABLE_MOCK_FALLBACK) {
       throw new Error("채팅 메시지 목록 조회 실패");
