@@ -6,6 +6,7 @@ import type {
   FriendListResponseDto,
   FriendRequestListResponseDto,
   FriendSearchResponseDto,
+  UpdateFriendRequestStatusRequestDto,
 } from "./types";
 
 interface FetchFriendsParams {
@@ -29,6 +30,11 @@ interface FetchFriendRequestsParams {
 
 interface DeleteFriendRequestParams {
   requestId: number;
+}
+
+interface UpdateFriendRequestStatusParams {
+  requestId: number;
+  status: UpdateFriendRequestStatusRequestDto["status"];
 }
 
 interface DeleteFriendParams {
@@ -61,6 +67,8 @@ function toFriendSearchByNicknameSearchParams({
     size: String(size),
   });
 }
+
+//---------------실제 api 호출-----------------
 
 export async function fetchFriends({
   page = 1,
@@ -117,6 +125,22 @@ export async function deleteFriendRequest({ requestId }: DeleteFriendRequestPara
       method: "DELETE",
       authRequired: true,
     }),
+  );
+}
+
+export async function updateFriendRequestStatus({
+  requestId,
+  status,
+}: UpdateFriendRequestStatusParams): Promise<void> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<void, UpdateFriendRequestStatusRequestDto>(
+      Endpoint.FRIEND_REQUESTS.UPDATE(requestId),
+      {
+        method: "PATCH",
+        authRequired: true,
+        body: { status },
+      },
+    ),
   );
 }
 
