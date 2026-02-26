@@ -10,6 +10,7 @@ import {
   usePublicRetrosQuery,
   type RetroSection,
 } from "@/entities/retro";
+import { usePaginatedAccumulator } from "@/shared/hooks";
 
 const RETRO_LIST_PAGE = 1;
 const RETRO_LIST_SIZE = 10;
@@ -31,8 +32,6 @@ export function useRetroSection(
 ) {
   const [activeSection, setActiveSection] = useState<RetroSection>(initialSection);
   const [currentPage, setCurrentPage] = useState(RETRO_LIST_PAGE);
-  const [fetchedRetros, setFetchedRetros] = useState<Array<MyRetroCardVM | PublicRetroCardVM>>([]);
-  const [totalPages, setTotalPages] = useState<number | null>(null);
   const isMyPage = activeSection === RETRO_SECTION.MY_PAGE;
 
   const myRetrosQuery = useMyRetrosQuery({
@@ -50,28 +49,23 @@ export function useRetroSection(
 
   const currentQuery = isMyPage ? myRetrosQuery : publicRetrosQuery;
 
+  const { fetchedItems, hasMore, isInitialLoading, isFetching, isError, reset } =
+    usePaginatedAccumulator<MyRetroCardVM | PublicRetroCardVM>({
+      data: currentQuery.data,
+      isLoading: currentQuery.isLoading,
+      isFetching: currentQuery.isFetching,
+      isError: currentQuery.isError,
+      currentPage,
+      initialPage: RETRO_LIST_PAGE,
+      pageSize: RETRO_LIST_SIZE,
+      getKey: (item) => item.id,
+      enabled,
+    });
+
   useEffect(() => {
     setCurrentPage(RETRO_LIST_PAGE);
-    setFetchedRetros([]);
-    setTotalPages(null);
-  }, [activeSection]);
-
-  useEffect(() => {
-    if (!currentQuery.data) return;
-
-    setTotalPages(currentQuery.data.totalPages);
-    setFetchedRetros((prev) => {
-      const base = currentPage === RETRO_LIST_PAGE ? [] : prev;
-      const merged = new Map(base.map((item) => [item.id, item]));
-      currentQuery.data.content.forEach((item) => merged.set(item.id, item));
-      return Array.from(merged.values());
-    });
-  }, [currentPage, currentQuery.data]);
-
-  const hasMore =
-    totalPages === null
-      ? (currentQuery.data?.content.length ?? 0) === RETRO_LIST_SIZE
-      : currentPage < totalPages;
+    reset();
+  }, [activeSection, reset]);
 
   const loadMore = useCallback(() => {
     if (!enabled) return;
@@ -80,16 +74,16 @@ export function useRetroSection(
     setCurrentPage((prev) => prev + 1);
   }, [currentQuery.isFetching, enabled, hasMore]);
 
-  const retros = useMemo(() => fetchedRetros, [fetchedRetros]);
+  const retros = useMemo(() => fetchedItems, [fetchedItems]);
 
   return {
     activeSection,
     setActiveSection,
     retros,
     isMyPage,
-    isLoading: currentQuery.isLoading,
-    isError: currentQuery.isError,
-    isFetching: currentQuery.isFetching,
+    isLoading: isInitialLoading,
+    isError,
+    isFetching,
     hasMore,
     loadMore,
   };
