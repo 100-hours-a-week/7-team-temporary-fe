@@ -14,6 +14,7 @@ export type {
   FriendProfileImageResponseDto,
   FriendRequestItemResponseDto,
   FriendRequestListResponseDto,
+  FriendRelationStatusDto,
   FriendRequestStatus,
   FriendSearchItemResponseDto,
   FriendSearchResponseDto,

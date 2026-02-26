@@ -24,7 +24,7 @@ export interface FriendSearchItemResponseDto {
   nickname?: string;
   email?: string;
   profileImage?: FriendProfileImageResponseDto | null;
-  isFriend?: boolean;
+  relationStatus?: FriendRelationStatusDto;
 }
 
 export interface FriendSearchResponseDto {
@@ -51,6 +51,8 @@ export interface FriendRequestListResponseDto {
   totalElements: number;
   totalPages: number;
 }
+
+export type FriendRelationStatusDto = "NONE" | "PENDING" | "FRIEND" | "SELF";
 
 export type FriendRequestStatus = "ACCEPTED";
 

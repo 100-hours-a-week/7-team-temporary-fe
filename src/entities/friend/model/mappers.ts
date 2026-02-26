@@ -1,4 +1,5 @@
 import type {
+  FriendRelationStatusDto,
   FriendItemResponseDto,
   FriendListResponseDto,
   FriendRequestItemResponseDto,
@@ -10,6 +11,7 @@ import type {
 import type {
   FriendListItemVM,
   FriendListModel,
+  FriendRelationStatus,
   FriendRequestItemVM,
   FriendRequestListModel,
 } from "./types";
@@ -17,23 +19,33 @@ import type {
 const DEFAULT_NICKNAME = "이름 미설정";
 const DEFAULT_EMAIL = "이메일 정보 없음";
 
+function toFriendRelationStatus(status?: FriendRelationStatusDto): FriendRelationStatus {
+  if (status === "NONE" || status === "PENDING" || status === "FRIEND" || status === "SELF") {
+    return status;
+  }
+
+  return "NONE";
+}
+
 function toFriendListItemVM(item: FriendItemResponseDto): FriendListItemVM {
   return {
     id: item.friendUserId,
     nickname: item.friendNickname?.trim() || DEFAULT_NICKNAME,
     email: item.friendEmail?.trim() || DEFAULT_EMAIL,
     profileImageUrl: item.profileImage?.url?.trim() || null,
-    isFriend: true,
+    relationStatus: "FRIEND",
   };
 }
 
 function toFriendSearchListItemVM(item: FriendSearchItemResponseDto): FriendListItemVM {
+  const relationStatus = toFriendRelationStatus(item.relationStatus);
+
   return {
     id: item.userId,
     nickname: item.nickname?.trim() || DEFAULT_NICKNAME,
     email: item.email?.trim() || DEFAULT_EMAIL,
     profileImageUrl: item.profileImage?.url?.trim() || null,
-    isFriend: Boolean(item.isFriend),
+    relationStatus,
   };
 }
 
@@ -44,7 +56,7 @@ function toFriendRequestItemVM(item: FriendRequestItemResponseDto): FriendReques
     nickname: item.fromUserNickname?.trim() || DEFAULT_NICKNAME,
     email: item.fromUserEmail?.trim() || DEFAULT_EMAIL,
     profileImageUrl: item.profileImage?.url?.trim() || null,
-    isFriend: false,
+    relationStatus: "PENDING",
     requestedAt: item.createdAt ?? "",
   };
 }

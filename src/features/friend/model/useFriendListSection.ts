@@ -107,7 +107,7 @@ export function useFriendListSection() {
         nickname: request.nickname,
         email: request.email,
         profileImageUrl: request.profileImageUrl,
-        isFriend: true,
+        relationStatus: "FRIEND",
       };
 
       return [acceptedFriend, ...prev];
