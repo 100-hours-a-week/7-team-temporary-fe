@@ -52,6 +52,12 @@ export interface FriendRequestListResponseDto {
   totalPages: number;
 }
 
+export type FriendRequestStatus = "ACCEPTED";
+
+export interface UpdateFriendRequestStatusRequestDto {
+  status: FriendRequestStatus;
+}
+
 export interface CreateFriendRequestResponseDto {
   requestId: number;
 }

@@ -5,6 +5,7 @@ export {
   fetchFriendSearchByNickname,
   fetchFriendRequests,
   fetchFriends,
+  updateFriendRequestStatus,
 } from "./friends.api";
 export type {
   CreateFriendRequestResponseDto,
@@ -13,6 +14,8 @@ export type {
   FriendProfileImageResponseDto,
   FriendRequestItemResponseDto,
   FriendRequestListResponseDto,
+  FriendRequestStatus,
   FriendSearchItemResponseDto,
   FriendSearchResponseDto,
+  UpdateFriendRequestStatusRequestDto,
 } from "./types";

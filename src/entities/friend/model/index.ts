@@ -1,5 +1,6 @@
 export { toFriendListModel, toFriendRequestListModel } from "./mappers";
 export { friendQueryKeys } from "./queryKeys";
+export { useAcceptFriendRequestMutation } from "./useAcceptFriendRequestMutation";
 export { useCreateFriendRequestMutation } from "./useCreateFriendRequestMutation";
 export { useDeleteFriendMutation } from "./useDeleteFriendMutation";
 export { useDeleteFriendRequestMutation } from "./useDeleteFriendRequestMutation";

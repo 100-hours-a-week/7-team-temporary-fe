@@ -51,7 +51,7 @@ export const Endpoint = {
     SCHEDULE_BY_ID: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/schedule`),
     REFLECTION: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/reflection`),
     AI_ARRANGEMENT: (dayPlanId: number) =>
-      chatPath(`/day-plan/${dayPlanId}/schedules/ai-arrangement`),
+      taskPath(`/day-plan/${dayPlanId}/schedules/ai-arrangement`),
     SCHEDULES_BY_ID: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/schedules`),
   },
   SCHEDULE: {
@@ -66,20 +66,21 @@ export const Endpoint = {
     LIST: taskPath("/notifications"),
   },
   FRIENDS: {
-    LIST: chatPath("/friends"),
-    DELETE: (friendUserId: number) => chatPath(`/friends/${friendUserId}`),
+    LIST: taskPath("/friends"),
+    DELETE: (friendUserId: number) => taskPath(`/friends/${friendUserId}`),
   },
   FRIEND_REQUESTS: {
-    LIST: chatPath("/friend-requests"),
-    CREATE: (targetUserId: number) => chatPath(`/friend-requests/${targetUserId}`),
-    DELETE: (requestId: number) => chatPath(`/friend-requests/${requestId}`),
+    LIST: taskPath("/friend-requests"),
+    CREATE: (targetUserId: number) => taskPath(`/friend-requests/${targetUserId}`),
+    UPDATE: (requestId: number) => taskPath(`/friend-requests/${requestId}`),
+    DELETE: (requestId: number) => taskPath(`/friend-requests/${requestId}`),
   },
   ISSUE: {
     BASE: taskPath("/issue"),
   },
   RETRO: {
-    BASE: chatPath("/reflections"),
-    LIKES: (reflectionId: number) => chatPath(`/reflections/${reflectionId}/likes`),
+    BASE: taskPath("/reflections"),
+    LIKES: (reflectionId: number) => taskPath(`/reflections/${reflectionId}/likes`),
   },
   CHAT_ROOMS: {
     PARTICIPANTS: chatPath("/chat-rooms/participants"),
