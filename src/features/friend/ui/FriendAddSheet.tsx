@@ -70,7 +70,7 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
           placeholder="닉네임 검색"
-          className="text-md h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none"
+          className="text-md h-11 w-full shrink-0 rounded-xl border border-neutral-200 bg-white px-4 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none"
         />
 
         <div
