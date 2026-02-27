@@ -9,6 +9,7 @@ import {
   type MyRetroCardVM,
   type PublicRetroCardVM,
   useRetroLikeMutation,
+  useRetroDeleteMutation,
   retroQueryKeys,
 } from "@/entities/retro";
 import { MoreActionSheet } from "@/shared/ui/bottom-sheet";
@@ -39,6 +40,7 @@ export function RetroListItemCard({
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const likeMutation = useRetroLikeMutation();
+  const deleteMutation = useRetroDeleteMutation();
   const [isLiked, setIsLiked] = useState(vm.defaultLiked ?? false);
   const [displayLikeCount, setDisplayLikeCount] = useState(vm.likeCount);
   const [isActionSheetOpen, setIsActionSheetOpen] = useState(false);
@@ -116,9 +118,15 @@ export function RetroListItemCard({
     onEditClick?.();
   };
 
-  const handleDeleteClick = () => {
+  const handleDeleteClick = async () => {
+    if (deleteMutation.isPending) return;
     setIsActionSheetOpen(false);
-    onDeleteClick?.();
+    try {
+      await deleteMutation.mutateAsync(vm.id);
+      onDeleteClick?.();
+    } catch {
+      showToast("회고 삭제에 실패했습니다.", "error");
+    }
   };
 
   const handleShareClick = () => {
@@ -161,7 +169,7 @@ export function RetroListItemCard({
                 </button>
                 <button
                   type="button"
-                  onClick={handleDeleteClick}
+                  onClick={() => void handleDeleteClick()}
                   className="h-12 w-full rounded-xl bg-[#541e0f] text-[16px] font-semibold text-white"
                 >
                   삭제

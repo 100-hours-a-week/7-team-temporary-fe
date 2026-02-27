@@ -16,3 +16,4 @@ export { retroQueryKeys } from "./queryKeys";
 export { useMyRetrosQuery } from "./useMyRetrosQuery";
 export { usePublicRetrosQuery } from "./usePublicRetrosQuery";
 export { useRetroLikeMutation } from "./useRetroLikeMutation";
+export { useRetroDeleteMutation } from "./useRetroDeleteMutation";
