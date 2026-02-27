@@ -6,6 +6,7 @@ import type { MyRetroCardVM, PublicRetroCardVM } from "../model";
 import { MoreButton } from "@/shared/ui/button";
 import { HorizontalImageAlbum } from "@/shared/ui/image";
 import { Icon } from "@/shared/ui/icon";
+import { RetroVisibilityToggle } from "@/shared/ui/retro";
 
 import { RetroContentText } from "./RetroContentText";
 
@@ -16,6 +17,8 @@ interface RetroCardViewProps {
   onLikeClick: () => void;
   onMoreClick: () => void;
   actionSheet?: ReactNode;
+  onVisibilityToggle?: (checked: boolean) => void;
+  isOpenChecked?: boolean;
 }
 
 export function RetroCardView({
@@ -25,6 +28,8 @@ export function RetroCardView({
   onLikeClick,
   onMoreClick,
   actionSheet,
+  onVisibilityToggle,
+  isOpenChecked,
 }: RetroCardViewProps) {
   const authorNickname = "authorNickname" in vm ? vm.authorNickname : undefined;
   const visibilityText = "visibilityText" in vm ? vm.visibilityText : undefined;
@@ -76,7 +81,12 @@ export function RetroCardView({
               {likeCount}
             </span>
           </button>
-          {visibilityText ? (
+          {onVisibilityToggle !== undefined && isOpenChecked !== undefined ? (
+            <RetroVisibilityToggle
+              checked={isOpenChecked}
+              onCheckedChange={onVisibilityToggle}
+            />
+          ) : visibilityText ? (
             <span className="text-[14px] font-semibold text-black">{visibilityText}</span>
           ) : null}
         </div>

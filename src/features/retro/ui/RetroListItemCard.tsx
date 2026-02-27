@@ -7,9 +7,12 @@ import {
   type MyRetroCardVM,
   type PublicRetroCardVM,
   useRetroLikeMutation,
+  retroQueryKeys,
 } from "@/entities/retro";
 import { MoreActionSheet } from "@/shared/ui/bottom-sheet";
 import { useToast } from "@/shared/ui/toast";
+
+import { useRetroVisibilityMutation } from "../model";
 
 type RetroListItemCardProps = {
   vm: MyRetroCardVM | PublicRetroCardVM;
@@ -18,6 +21,7 @@ type RetroListItemCardProps = {
   onEditClick?: () => void;
   onDeleteClick?: () => void;
   onShareClick?: () => void;
+  invalidateKeys?: Array<readonly unknown[]>;
 };
 
 export function RetroListItemCard({
@@ -27,6 +31,7 @@ export function RetroListItemCard({
   onEditClick,
   onDeleteClick,
   onShareClick,
+  invalidateKeys,
 }: RetroListItemCardProps) {
   const isMine = vm.isMine;
   const { showToast } = useToast();
@@ -34,6 +39,11 @@ export function RetroListItemCard({
   const [isLiked, setIsLiked] = useState(vm.defaultLiked ?? false);
   const [displayLikeCount, setDisplayLikeCount] = useState(vm.likeCount);
   const [isActionSheetOpen, setIsActionSheetOpen] = useState(false);
+  const [localIsOpen, setLocalIsOpen] = useState<boolean | null>(null);
+
+  const visibilityMutation = useRetroVisibilityMutation({
+    invalidateKeys: invalidateKeys ?? [retroQueryKeys.myListAll(), retroQueryKeys.publicListAll()],
+  });
 
   useEffect(() => {
     setDisplayLikeCount(vm.likeCount);
@@ -42,6 +52,10 @@ export function RetroListItemCard({
   useEffect(() => {
     setIsLiked(vm.defaultLiked ?? false);
   }, [vm.defaultLiked]);
+
+  useEffect(() => {
+    setLocalIsOpen(null);
+  }, [vm]);
 
   const handleLikeClick = async () => {
     if (likeMutation.isPending) return;
@@ -62,6 +76,26 @@ export function RetroListItemCard({
       showToast("좋아요 처리에 실패했습니다.", "error");
     }
   };
+
+  const isMyRetro = isMine && "isOpen" in vm;
+  const isOpenChecked = isMyRetro ? (localIsOpen ?? (vm as MyRetroCardVM).isOpen) : undefined;
+
+  const handleVisibilityToggle = isMyRetro
+    ? async (checked: boolean) => {
+        const myVm = vm as MyRetroCardVM;
+        const prev = localIsOpen ?? myVm.isOpen;
+        setLocalIsOpen(checked);
+        try {
+          await visibilityMutation.mutateAsync({
+            reflectionId: myVm.id,
+            isOpen: checked,
+          });
+        } catch {
+          setLocalIsOpen(prev);
+          showToast("공개 설정 변경에 실패했습니다.", "error");
+        }
+      }
+    : undefined;
 
   const handleMoreClick = () => {
     setIsActionSheetOpen(true);
@@ -90,6 +124,10 @@ export function RetroListItemCard({
       likeCount={displayLikeCount}
       onLikeClick={() => void handleLikeClick()}
       onMoreClick={handleMoreClick}
+      onVisibilityToggle={
+        handleVisibilityToggle ? (checked) => void handleVisibilityToggle(checked) : undefined
+      }
+      isOpenChecked={isOpenChecked}
       actionSheet={
         isActionSheetOpen ? (
           <MoreActionSheet
