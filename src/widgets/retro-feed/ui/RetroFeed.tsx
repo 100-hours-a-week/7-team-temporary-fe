@@ -1,7 +1,14 @@
 "use client";
 
-import { RetroListItemCard, useRetroSection } from "@/features/retro";
-import { RETRO_SECTION, type RetroSection } from "@/entities/retro";
+import { useState } from "react";
+
+import {
+  RETRO_SECTION,
+  type RetroSection,
+  type MyRetroCardVM,
+  retroQueryKeys,
+} from "@/entities/retro";
+import { RetroListItemCard, RetroEditSheet, useRetroSection } from "@/features/retro";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { EmptyStateCard } from "@/shared/ui/empty";
 import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
@@ -16,6 +23,8 @@ interface RetroFeedProps {
 }
 
 export function RetroFeed({ enabled = true }: RetroFeedProps) {
+  const [editingRetro, setEditingRetro] = useState<MyRetroCardVM | null>(null);
+
   const {
     activeSection,
     setActiveSection,
@@ -66,7 +75,14 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
         <ul>
           {retros.map((retro) => (
             <li key={retro.id}>
-              <RetroListItemCard vm={retro} />
+              <RetroListItemCard
+                vm={retro}
+                onEditClick={
+                  retro.isMine && "isOpen" in retro
+                    ? () => setEditingRetro(retro as MyRetroCardVM)
+                    : undefined
+                }
+              />
             </li>
           ))}
         </ul>
@@ -83,6 +99,15 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
           ) : null}
         </>
       ) : null}
+
+      <RetroEditSheet
+        open={editingRetro !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingRetro(null);
+        }}
+        retro={editingRetro}
+        invalidateKeys={[retroQueryKeys.myListAll(), retroQueryKeys.publicListAll()]}
+      />
     </section>
   );
 }
