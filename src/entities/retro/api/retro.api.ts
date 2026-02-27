@@ -95,9 +95,18 @@ export async function patchRetroVisibility(reflectionId: number, isOpen: boolean
   );
 }
 
+export async function deleteRetro(reflectionId: number): Promise<void> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<void>(Endpoint.RETRO.DELETE(reflectionId), {
+      method: "DELETE",
+      authRequired: true,
+    }),
+  );
+}
+
 export async function likeRetro(reflectionId: number): Promise<void> {
   return AuthService.refreshAndRetry(() =>
-    apiFetch<void>(Endpoint.RETRO.LIKES(reflectionId), {
+    apiFetch<void>(Endpoint.RETRO.LIKE(reflectionId), {
       method: "POST",
       authRequired: true,
     }),
@@ -106,7 +115,7 @@ export async function likeRetro(reflectionId: number): Promise<void> {
 
 export async function unlikeRetro(reflectionId: number): Promise<void> {
   return AuthService.refreshAndRetry(() =>
-    apiFetch<void>(Endpoint.RETRO.LIKES(reflectionId), {
+    apiFetch<void>(Endpoint.RETRO.LIKE(reflectionId), {
       method: "DELETE",
       authRequired: true,
     }),
