@@ -97,7 +97,7 @@ export const Endpoint = {
     BASE: taskPath("/reflections"),
     UPDATE: (reflectionId: number) => taskPath(`/reflections/${reflectionId}`),
     UPDATE_VISIBILITY: (reflectionId: number) => taskPath(`/reflections/${reflectionId}`),
-    LIKES: (reflectionId: number) => taskPath(`/reflections/${reflectionId}/likes`),
+    LIKE: (reflectionId: number) => taskPath(`/reflections/${reflectionId}/like`),
   },
 
   FRIENDS: {
