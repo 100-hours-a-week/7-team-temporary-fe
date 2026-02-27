@@ -22,8 +22,14 @@ export function useRetroLikeMutation() {
       await unlikeRetro(reflectionId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: retroQueryKeys.myListAll() });
-      queryClient.invalidateQueries({ queryKey: retroQueryKeys.publicListAll() });
+      queryClient.invalidateQueries({
+        queryKey: retroQueryKeys.myListAll(),
+        refetchType: "none",
+      });
+      queryClient.invalidateQueries({
+        queryKey: retroQueryKeys.publicListAll(),
+        refetchType: "none",
+      });
     },
   });
 }

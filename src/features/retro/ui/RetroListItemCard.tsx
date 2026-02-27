@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import {
   RetroCardView,
   type MyRetroCardVM,
@@ -35,6 +37,7 @@ export function RetroListItemCard({
 }: RetroListItemCardProps) {
   const isMine = vm.isMine;
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const likeMutation = useRetroLikeMutation();
   const [isLiked, setIsLiked] = useState(vm.defaultLiked ?? false);
   const [displayLikeCount, setDisplayLikeCount] = useState(vm.likeCount);
@@ -42,7 +45,13 @@ export function RetroListItemCard({
   const [localIsOpen, setLocalIsOpen] = useState<boolean | null>(null);
 
   const visibilityMutation = useRetroVisibilityMutation({
-    invalidateKeys: invalidateKeys ?? [retroQueryKeys.myListAll(), retroQueryKeys.publicListAll()],
+    invalidateKeys: [],
+    onSuccess: () => {
+      const keys = invalidateKeys ?? [retroQueryKeys.myListAll(), retroQueryKeys.publicListAll()];
+      keys.forEach((key) => {
+        queryClient.invalidateQueries({ queryKey: key, refetchType: "none" });
+      });
+    },
   });
 
   useEffect(() => {
