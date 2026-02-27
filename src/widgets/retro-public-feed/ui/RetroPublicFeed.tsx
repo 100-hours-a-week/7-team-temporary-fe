@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { PublicRetroCardVM, PublicRetroListModel } from "@/entities/retro";
 import { usePublicRetrosQuery } from "@/entities/retro";
@@ -20,36 +20,48 @@ function mergeRetros(prev: PublicRetroCardVM[], next: PublicRetroCardVM[]): Publ
 }
 
 export function RetroPublicFeed({ initialList }: RetroPublicFeedProps) {
-  const [retros, setRetros] = useState<PublicRetroCardVM[]>(initialList.content);
+  const [extraRetros, setExtraRetros] = useState<PublicRetroCardVM[]>([]);
   const [currentPage, setCurrentPage] = useState(initialList.page);
   const [totalPages, setTotalPages] = useState(initialList.totalPages);
 
-  const publicRetrosQuery = usePublicRetrosQuery({
+  // 1페이지: 항상 활성화 → React Query 기본 refetchOnWindowFocus로 탭 복귀 시 자동 갱신
+  const page1Query = usePublicRetrosQuery({
+    isOpen: true,
+    page: initialList.page,
+    size: initialList.size,
+  });
+
+  // 2페이지 이상: 무한 스크롤 페이지네이션
+  const paginationQuery = usePublicRetrosQuery({
     isOpen: true,
     page: currentPage,
     size: initialList.size,
     enabled: currentPage > initialList.page,
   });
 
+  // 2페이지 이상 누적
   useEffect(() => {
-    if (!publicRetrosQuery.data) return;
+    if (!paginationQuery.data) return;
+    setTotalPages(paginationQuery.data.totalPages);
+    setExtraRetros((prev) => mergeRetros(prev, paginationQuery.data.content));
+  }, [paginationQuery.data]);
 
-    setTotalPages(publicRetrosQuery.data.totalPages);
-    setRetros((prev) => mergeRetros(prev, publicRetrosQuery.data.content));
-  }, [publicRetrosQuery.data]);
+  // 1페이지 최신 데이터(ISR 폴백 포함) + 누적된 2페이지 이상
+  const page1Content = page1Query.data?.content ?? initialList.content;
+  const retros = useMemo(() => mergeRetros(page1Content, extraRetros), [page1Content, extraRetros]);
 
   const hasMore = totalPages > 0 && currentPage < totalPages;
 
   const loadMore = useCallback(() => {
     if (!hasMore) return;
-    if (publicRetrosQuery.isFetching) return;
+    if (paginationQuery.isFetching) return;
     setCurrentPage((prev) => prev + 1);
-  }, [hasMore, publicRetrosQuery.isFetching]);
+  }, [hasMore, paginationQuery.isFetching]);
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled: true,
     hasMore,
-    isFetching: publicRetrosQuery.isFetching,
+    isFetching: paginationQuery.isFetching,
     onLoadMore: loadMore,
   });
 
@@ -75,12 +87,12 @@ export function RetroPublicFeed({ initialList }: RetroPublicFeedProps) {
           ref={loadMoreRef}
           className="h-px"
         />
-        {publicRetrosQuery.isFetching && hasMore ? (
+        {paginationQuery.isFetching && hasMore ? (
           <div className="pt-2 pb-2 text-center text-xs text-neutral-400">
             회고를 불러오는 중...
           </div>
         ) : null}
-        {publicRetrosQuery.isError ? (
+        {paginationQuery.isError ? (
           <div className="pt-2 pb-2 text-center text-xs text-neutral-400">
             추가 회고를 불러오지 못했습니다.
           </div>
