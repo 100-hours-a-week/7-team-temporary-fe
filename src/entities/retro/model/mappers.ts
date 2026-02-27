@@ -48,10 +48,14 @@ function toMyRetroCardVM(item: MyRetroItemResponseDto): MyRetroCardVM {
     dateLabel: formatDateLabel(item.createdAt, item.title),
     timeLabel: formatTimeLabel(item.createdAt),
     imageUrls: (item.images ?? []).map((image) => image.url).filter((url): url is string => !!url),
+    imageKeys: (item.images ?? [])
+      .map((image) => image.imageKey ?? image.key)
+      .filter((key): key is string => !!key),
     content: item.content ?? "",
     likeCount: item.likes ?? 0,
     defaultLiked: item.isLikedByMe ?? false,
     isMine: item.isMine ?? true,
+    isOpen: item.isOpen ?? false,
     visibilityText: item.isOpen ? PUBLIC_VISIBILITY_TEXT : DEFAULT_VISIBILITY_TEXT,
   };
 }
