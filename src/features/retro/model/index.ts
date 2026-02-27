@@ -3,6 +3,8 @@ export type { RetroCreateFormModel, RetroCreateRequestDto, UploadedRetroImage } 
 export { toRetroCreateRequestDto } from "./dto";
 export { RETRO_CREATE_FORM_DEFAULTS, useRetroCreateForm } from "./useRetroCreateForm";
 export { useRetroCreateMutation } from "./useRetroCreateMutation";
+export { useRetroUpdateMutation } from "./useRetroUpdateMutation";
+export { useRetroVisibilityMutation } from "./useRetroVisibilityMutation";
 export { useRetroSection } from "./useRetroSection";
 export { useRetroWriteImageUpload } from "./useRetroWriteImageUpload";
 export {
