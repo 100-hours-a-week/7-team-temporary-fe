@@ -65,6 +65,36 @@ export async function fetchPublicRetros({
   });
 }
 
+interface UpdateRetroParams {
+  reflectionId: number;
+  content: string;
+  isOpen: boolean;
+}
+
+export async function updateRetro({
+  reflectionId,
+  content,
+  isOpen,
+}: UpdateRetroParams): Promise<void> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<void>(Endpoint.RETRO.UPDATE(reflectionId), {
+      method: "PUT",
+      body: { content, isOpen },
+      authRequired: true,
+    }),
+  );
+}
+
+export async function patchRetroVisibility(reflectionId: number, isOpen: boolean): Promise<void> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<void>(Endpoint.RETRO.UPDATE_VISIBILITY(reflectionId), {
+      method: "PATCH",
+      body: { isOpen },
+      authRequired: true,
+    }),
+  );
+}
+
 export async function likeRetro(reflectionId: number): Promise<void> {
   return AuthService.refreshAndRetry(() =>
     apiFetch<void>(Endpoint.RETRO.LIKES(reflectionId), {
