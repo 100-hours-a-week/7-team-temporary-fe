@@ -1,7 +1,11 @@
 import { apiFetch, Endpoint } from "@/shared/api";
 import { AuthService } from "@/shared/auth";
 
-import type { MyRetroListResponseDto, PublicRetroListResponseDto } from "./types";
+import type {
+  MyRetroItemResponseDto,
+  MyRetroListResponseDto,
+  PublicRetroListResponseDto,
+} from "./types";
 
 interface FetchMyRetrosParams {
   page?: number;
@@ -50,6 +54,13 @@ export async function fetchMyRetros({
       authRequired: true,
     }),
   );
+}
+
+export async function fetchPublicRetroById(
+  reflectionId: number,
+  signal?: AbortSignal,
+): Promise<MyRetroItemResponseDto> {
+  return apiFetch<MyRetroItemResponseDto>(Endpoint.RETRO.BY_ID(reflectionId), { signal });
 }
 
 export async function fetchPublicRetros({
