@@ -37,6 +37,7 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
     hasMore,
     loadMore,
   } = useRetroSection(RETRO_SECTION.MY_PAGE, { enabled });
+  const showInitialSkeleton = !isError && retros.length === 0 && (isLoading || isFetching);
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled,
@@ -53,7 +54,7 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
         onChange={setActiveSection}
       />
 
-      {isLoading ? (
+      {showInitialSkeleton ? (
         <ul
           aria-busy
           aria-label="회고를 불러오는 중"
@@ -72,7 +73,14 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
         </div>
       ) : null}
 
-      {!isLoading && !isError ? (
+      {!showInitialSkeleton && !isError && retros.length === 0 ? (
+        <EmptyStateCard
+          message={isMyPage ? "아직 작성한 회고가 없습니다." : "공개된 회고가 없습니다."}
+          className="mt-4"
+        />
+      ) : null}
+
+      {!showInitialSkeleton && !isError && retros.length > 0 ? (
         <ul>
           {retros.map((retro) => (
             <li key={retro.id}>
@@ -89,14 +97,7 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
         </ul>
       ) : null}
 
-      {!isLoading && !isError && retros.length === 0 ? (
-        <EmptyStateCard
-          message={isMyPage ? "아직 작성한 회고가 없습니다." : "공개된 회고가 없습니다."}
-          className="mt-4"
-        />
-      ) : null}
-
-      {!isLoading && !isError ? (
+      {!showInitialSkeleton && !isError ? (
         <>
           <div
             ref={loadMoreRef}
