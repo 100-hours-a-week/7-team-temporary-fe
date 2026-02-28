@@ -18,3 +18,4 @@ export { useMyRetrosQuery } from "./useMyRetrosQuery";
 export { usePublicRetrosQuery } from "./usePublicRetrosQuery";
 export { useRetroLikeMutation } from "./useRetroLikeMutation";
 export { useRetroDeleteMutation } from "./useRetroDeleteMutation";
+export { usePublicRetroByIdQuery } from "./usePublicRetroByIdQuery";
