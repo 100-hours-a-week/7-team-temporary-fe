@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { PublicRetroCardVM, PublicRetroListModel } from "@/entities/retro";
-import { usePublicRetrosQuery } from "@/entities/retro";
+import { usePublicRetrosQuery, RetroCardSkeleton } from "@/entities/retro";
 import { RetroListItemCard } from "@/features/retro";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { EmptyStateCard } from "@/shared/ui";
@@ -97,7 +97,16 @@ export function RetroPublicFeedList({ initialList }: RetroPublicFeedListProps) {
         className="h-px"
       />
       {paginationQuery.isFetching && hasMore ? (
-        <div className="pt-2 pb-2 text-center text-xs text-neutral-400">회고를 불러오는 중...</div>
+        <ul
+          aria-busy
+          aria-label="회고를 불러오는 중"
+        >
+          {Array.from({ length: 3 }, (_, i) => (
+            <li key={i}>
+              <RetroCardSkeleton />
+            </li>
+          ))}
+        </ul>
       ) : null}
       {paginationQuery.isError ? (
         <div className="pt-2 pb-2 text-center text-xs text-neutral-400">
