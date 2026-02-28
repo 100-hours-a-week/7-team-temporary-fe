@@ -71,9 +71,12 @@ export async function fetchPublicRetros({
 }: FetchPublicRetrosParams = {}): Promise<PublicRetroListResponseDto> {
   const searchParams = toRetroListSearchParams({ isOpen, page, size });
 
-  return apiFetch<PublicRetroListResponseDto>(`${Endpoint.RETRO.BASE}?${searchParams.toString()}`, {
-    signal,
-  });
+  return apiFetch<PublicRetroListResponseDto>(
+    `${Endpoint.RETRO.PUBLIC_LIST}?${searchParams.toString()}`,
+    {
+      signal,
+    },
+  );
 }
 
 interface UpdateRetroParams {
