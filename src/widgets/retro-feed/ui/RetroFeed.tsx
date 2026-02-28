@@ -7,6 +7,7 @@ import {
   type RetroSection,
   type MyRetroCardVM,
   retroQueryKeys,
+  RetroCardSkeleton,
 } from "@/entities/retro";
 import { RetroListItemCard, RetroEditSheet, useRetroSection } from "@/features/retro";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
@@ -53,22 +54,22 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
       />
 
       {isLoading ? (
-        <div className="mt-4 rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
-          회고를 불러오는 중...
-        </div>
+        <ul
+          aria-busy
+          aria-label="회고를 불러오는 중"
+        >
+          {Array.from({ length: 5 }, (_, i) => (
+            <li key={i}>
+              <RetroCardSkeleton />
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {isError ? (
         <div className="mt-4 rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
           회고를 불러오지 못했습니다.
         </div>
-      ) : null}
-
-      {!isLoading && !isError && retros.length === 0 ? (
-        <EmptyStateCard
-          message={isMyPage ? "아직 작성한 회고가 없습니다." : "공개된 회고가 없습니다."}
-          className="mt-4"
-        />
       ) : null}
 
       {!isLoading && !isError ? (
@@ -88,6 +89,13 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
         </ul>
       ) : null}
 
+      {!isLoading && !isError && retros.length === 0 ? (
+        <EmptyStateCard
+          message={isMyPage ? "아직 작성한 회고가 없습니다." : "공개된 회고가 없습니다."}
+          className="mt-4"
+        />
+      ) : null}
+
       {!isLoading && !isError ? (
         <>
           <div
@@ -95,7 +103,16 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
             className="h-px"
           />
           {isFetching && hasMore ? (
-            <div className="pt-2 text-center text-xs text-neutral-400">불러오는 중...</div>
+            <ul
+              aria-busy
+              aria-label="회고를 불러오는 중"
+            >
+              {Array.from({ length: 3 }, (_, i) => (
+                <li key={i}>
+                  <RetroCardSkeleton />
+                </li>
+              ))}
+            </ul>
           ) : null}
         </>
       ) : null}
