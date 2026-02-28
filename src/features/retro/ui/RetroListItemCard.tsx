@@ -24,6 +24,7 @@ type RetroListItemCardProps = {
   onEditClick?: () => void;
   onDeleteClick?: () => void;
   onShareClick?: () => void;
+  onCardClick?: () => void;
   invalidateKeys?: Array<readonly unknown[]>;
 };
 
@@ -34,6 +35,7 @@ export function RetroListItemCard({
   onEditClick,
   onDeleteClick,
   onShareClick,
+  onCardClick,
   invalidateKeys,
 }: RetroListItemCardProps) {
   const isMine = vm.isMine;
@@ -134,51 +136,63 @@ export function RetroListItemCard({
     onShareClick?.();
   };
 
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onCardClick) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button") ?? target.closest("a")) return;
+    onCardClick();
+  };
+
   return (
-    <RetroCardView
-      vm={vm}
-      isLiked={isLiked}
-      likeCount={displayLikeCount}
-      onLikeClick={() => void handleLikeClick()}
-      onMoreClick={handleMoreClick}
-      onVisibilityToggle={
-        handleVisibilityToggle ? (checked) => void handleVisibilityToggle(checked) : undefined
-      }
-      isOpenChecked={isOpenChecked}
-      actionSheet={
-        isActionSheetOpen ? (
-          <MoreActionSheet
-            open={isActionSheetOpen}
-            onOpenChange={setIsActionSheetOpen}
-          >
-            <button
-              type="button"
-              onClick={handleShareClick}
-              className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
+    <div
+      onClick={handleCardClick}
+      className={onCardClick ? "cursor-pointer" : undefined}
+    >
+      <RetroCardView
+        vm={vm}
+        isLiked={isLiked}
+        likeCount={displayLikeCount}
+        onLikeClick={() => void handleLikeClick()}
+        onMoreClick={handleMoreClick}
+        onVisibilityToggle={
+          handleVisibilityToggle ? (checked) => void handleVisibilityToggle(checked) : undefined
+        }
+        isOpenChecked={isOpenChecked}
+        actionSheet={
+          isActionSheetOpen ? (
+            <MoreActionSheet
+              open={isActionSheetOpen}
+              onOpenChange={setIsActionSheetOpen}
             >
-              공유하기
-            </button>
-            {isMine ? (
-              <>
-                <button
-                  type="button"
-                  onClick={handleEditClick}
-                  className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
-                >
-                  수정
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteClick()}
-                  className="h-12 w-full rounded-xl bg-[#541e0f] text-[16px] font-semibold text-white"
-                >
-                  삭제
-                </button>
-              </>
-            ) : null}
-          </MoreActionSheet>
-        ) : null
-      }
-    />
+              <button
+                type="button"
+                onClick={handleShareClick}
+                className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
+              >
+                공유하기
+              </button>
+              {isMine ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleEditClick}
+                    className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
+                  >
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDeleteClick()}
+                    className="h-12 w-full rounded-xl bg-[#541e0f] text-[16px] font-semibold text-white"
+                  >
+                    삭제
+                  </button>
+                </>
+              ) : null}
+            </MoreActionSheet>
+          ) : null
+        }
+      />
+    </div>
   );
 }
