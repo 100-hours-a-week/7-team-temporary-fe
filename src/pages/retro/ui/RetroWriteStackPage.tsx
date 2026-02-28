@@ -32,6 +32,7 @@ export function RetroWriteStackPage({ baseDate, dayPlanId = null }: RetroWriteSt
         dayPlanId,
         dayPlanDate: baseDate,
       }),
+      ...(dayPlanId !== null ? [dayPlanQueryKeys.reflectionStatus(dayPlanId)] : []),
       retroQueryKeys.myListAll(),
     ],
     [baseDate, dayPlanId],
