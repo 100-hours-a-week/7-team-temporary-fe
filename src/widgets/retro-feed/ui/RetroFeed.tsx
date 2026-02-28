@@ -61,7 +61,7 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
         >
           {Array.from({ length: 5 }, (_, i) => (
             <li key={i}>
-              <RetroCardSkeleton />
+              <RetroCardSkeleton tone="strong" />
             </li>
           ))}
         </ul>
@@ -110,7 +110,7 @@ export function RetroFeed({ enabled = true }: RetroFeedProps) {
             >
               {Array.from({ length: 3 }, (_, i) => (
                 <li key={i}>
-                  <RetroCardSkeleton />
+                  <RetroCardSkeleton tone="strong" />
                 </li>
               ))}
             </ul>
