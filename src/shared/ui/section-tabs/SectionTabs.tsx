@@ -23,7 +23,7 @@ export function SectionTabs<T extends string>({
   return (
     <div
       role="tablist"
-      className={cn("scrollbar-hide overflow-x-auto", className)}
+      className={cn("scrollbar-hide overflow-x-auto pb-3", className)}
     >
       <div className="flex w-max items-center gap-2">
         {tabs.map((tab) => {

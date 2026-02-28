@@ -24,6 +24,7 @@ type RetroListItemCardProps = {
   onEditClick?: () => void;
   onDeleteClick?: () => void;
   onShareClick?: () => void;
+  onCardClick?: () => void;
   invalidateKeys?: Array<readonly unknown[]>;
 };
 
@@ -34,6 +35,7 @@ export function RetroListItemCard({
   onEditClick,
   onDeleteClick,
   onShareClick,
+  onCardClick,
   invalidateKeys,
 }: RetroListItemCardProps) {
   const isMine = vm.isMine;
@@ -64,9 +66,14 @@ export function RetroListItemCard({
     setIsLiked(vm.defaultLiked ?? false);
   }, [vm.defaultLiked]);
 
+  // vm 객체 전체가 아닌 isOpen 값만 추적한다.
+  // setQueriesData로 likes만 패치해도 vm 객체 참조가 바뀌므로
+  // [vm] 의존성이면 좋아요 클릭 때마다 localIsOpen이 초기화돼 공개 여부가 튀는 버그가 발생한다.
+  const serverIsOpen = "isOpen" in vm ? (vm as MyRetroCardVM).isOpen : undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setLocalIsOpen(null);
-  }, [vm]);
+  }, [serverIsOpen]);
 
   const handleLikeClick = async () => {
     if (likeMutation.isPending) return;
@@ -134,51 +141,63 @@ export function RetroListItemCard({
     onShareClick?.();
   };
 
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onCardClick) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("button") ?? target.closest("a")) return;
+    onCardClick();
+  };
+
   return (
-    <RetroCardView
-      vm={vm}
-      isLiked={isLiked}
-      likeCount={displayLikeCount}
-      onLikeClick={() => void handleLikeClick()}
-      onMoreClick={handleMoreClick}
-      onVisibilityToggle={
-        handleVisibilityToggle ? (checked) => void handleVisibilityToggle(checked) : undefined
-      }
-      isOpenChecked={isOpenChecked}
-      actionSheet={
-        isActionSheetOpen ? (
-          <MoreActionSheet
-            open={isActionSheetOpen}
-            onOpenChange={setIsActionSheetOpen}
-          >
-            <button
-              type="button"
-              onClick={handleShareClick}
-              className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
+    <div
+      onClick={handleCardClick}
+      className={onCardClick ? "cursor-pointer" : undefined}
+    >
+      <RetroCardView
+        vm={vm}
+        isLiked={isLiked}
+        likeCount={displayLikeCount}
+        onLikeClick={() => void handleLikeClick()}
+        onMoreClick={handleMoreClick}
+        onVisibilityToggle={
+          handleVisibilityToggle ? (checked) => void handleVisibilityToggle(checked) : undefined
+        }
+        isOpenChecked={isOpenChecked}
+        actionSheet={
+          isActionSheetOpen ? (
+            <MoreActionSheet
+              open={isActionSheetOpen}
+              onOpenChange={setIsActionSheetOpen}
             >
-              공유하기
-            </button>
-            {isMine ? (
-              <>
-                <button
-                  type="button"
-                  onClick={handleEditClick}
-                  className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
-                >
-                  수정
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteClick()}
-                  className="h-12 w-full rounded-xl bg-[#541e0f] text-[16px] font-semibold text-white"
-                >
-                  삭제
-                </button>
-              </>
-            ) : null}
-          </MoreActionSheet>
-        ) : null
-      }
-    />
+              <button
+                type="button"
+                onClick={handleShareClick}
+                className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
+              >
+                공유하기
+              </button>
+              {isMine ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleEditClick}
+                    className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
+                  >
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDeleteClick()}
+                    className="h-12 w-full rounded-xl bg-[#541e0f] text-[16px] font-semibold text-white"
+                  >
+                    삭제
+                  </button>
+                </>
+              ) : null}
+            </MoreActionSheet>
+          ) : null
+        }
+      />
+    </div>
   );
 }

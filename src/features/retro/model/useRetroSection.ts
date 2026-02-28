@@ -48,11 +48,18 @@ export function useRetroSection(
   });
 
   const currentQuery = isMyPage ? myRetrosQuery : publicRetrosQuery;
+  const isBootstrapLoading =
+    enabled &&
+    !currentQuery.isFetched &&
+    (currentQuery.status === "pending" ||
+      currentQuery.isLoading ||
+      currentQuery.isPending ||
+      currentQuery.isFetching);
 
   const { fetchedItems, hasMore, isInitialLoading, isFetching, isError, reset } =
     usePaginatedAccumulator<MyRetroCardVM | PublicRetroCardVM>({
       data: currentQuery.data,
-      isLoading: currentQuery.isLoading,
+      isLoading: isBootstrapLoading,
       isFetching: currentQuery.isFetching,
       isError: currentQuery.isError,
       currentPage,

@@ -1,5 +1,6 @@
 export { fetchMyRetros } from "./retro.api";
 export { fetchPublicRetros } from "./retro.api";
+export { fetchPublicRetroById } from "./retro.api";
 export { updateRetro } from "./retro.api";
 export { patchRetroVisibility } from "./retro.api";
 export { likeRetro, unlikeRetro, deleteRetro } from "./retro.api";
