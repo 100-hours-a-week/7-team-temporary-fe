@@ -66,9 +66,14 @@ export function RetroListItemCard({
     setIsLiked(vm.defaultLiked ?? false);
   }, [vm.defaultLiked]);
 
+  // vm 객체 전체가 아닌 isOpen 값만 추적한다.
+  // setQueriesData로 likes만 패치해도 vm 객체 참조가 바뀌므로
+  // [vm] 의존성이면 좋아요 클릭 때마다 localIsOpen이 초기화돼 공개 여부가 튀는 버그가 발생한다.
+  const serverIsOpen = "isOpen" in vm ? (vm as MyRetroCardVM).isOpen : undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setLocalIsOpen(null);
-  }, [vm]);
+  }, [serverIsOpen]);
 
   const handleLikeClick = async () => {
     if (likeMutation.isPending) return;
