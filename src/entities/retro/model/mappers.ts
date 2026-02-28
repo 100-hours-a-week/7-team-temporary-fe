@@ -60,7 +60,7 @@ function toMyRetroCardVM(item: MyRetroItemResponseDto): MyRetroCardVM {
   };
 }
 
-function toPublicRetroCardVM(item: PublicRetroItemResponseDto): PublicRetroCardVM {
+export function toPublicRetroCardVM(item: PublicRetroItemResponseDto): PublicRetroCardVM {
   return {
     id: item.reflectionId,
     dateLabel: formatDateLabel(item.createdAt, item.title),
