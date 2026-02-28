@@ -19,7 +19,7 @@ export function FloatingActionButton({
       type="button"
       aria-label={label}
       className={cn(
-        "bg-ink-900 hover:bg-primary-500 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg",
+        "bg-ink-900 hover:bg-primary-500 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-40",
         className,
       )}
       {...props}
