@@ -13,6 +13,7 @@ export const dayPlanQueryKeys = {
     baseKeys.by("day-plan-period-schedules", startDate, endDate),
   dayPlanSchedulesById: (dayPlanId: number, status: string, page: number, size: number) =>
     baseKeys.by("day-plan-schedules-by-id", dayPlanId, status, page, size),
+  reflectionStatus: (dayPlanId: number) => baseKeys.by("reflection-status", dayPlanId),
   dayPlanScheduleCacheKeys: ({
     dayPlanId,
     dayPlanDate,
