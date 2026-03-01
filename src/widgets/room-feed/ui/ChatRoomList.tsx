@@ -31,7 +31,7 @@ export function ChatRoomList({ items, onChatRoomClick }: ChatRoomListProps) {
   }
 
   return (
-    <ul className="mt-6 flex flex-col gap-2">
+    <ul className="flex flex-col gap-2">
       {sorted.map((item) => (
         <li key={item.roomId}>
           <ChatRoomListItem
