@@ -16,14 +16,12 @@ export const AuthService = {
     if (!refreshPromise) {
       refreshPromise = (async () => {
         try {
-          console.log("[AuthService] refresh start");
           const res = await apiFetch<{ accessToken: string }>(Endpoint.TOKEN.REFRESH, {
             method: "PUT",
             credentials: "include",
           });
 
           setAuthenticated(res.accessToken);
-          console.log("[AuthService] refresh success");
           return res.accessToken;
         } catch (e) {
           console.warn("[AuthService] refresh failed", e);
@@ -33,15 +31,9 @@ export const AuthService = {
           refreshPromise = null;
         }
       })();
-    } else {
-      console.log("[AuthService] refresh join in-flight request");
     }
 
     return refreshPromise;
-  },
-
-  async ensureRefreshed() {
-    return AuthService.refresh();
   },
 
   async refreshAndRetry<T>(request: () => Promise<T>) {
@@ -52,11 +44,9 @@ export const AuthService = {
         throw error;
       }
 
-      console.log("[AuthService] 401 detected, try refresh");
-      await AuthService.ensureRefreshed();
+      await AuthService.refresh();
 
       try {
-        console.log("[AuthService] retry after refresh");
         return await request();
       } catch (retryError) {
         if (isUnauthorizedError(retryError)) {
