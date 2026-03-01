@@ -16,7 +16,7 @@ import {
   type DayPlanScheduleResponseDto,
 } from "@/entities/day-plan";
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
-import { Icon } from "@/shared/ui/icon";
+import { FloatingActionButton } from "@/shared/ui/button";
 import { Endpoint } from "@/shared/api";
 import { buildTimeRange, isAfterDayEnd, parseTimeToMinutes } from "@/shared/lib";
 import { useApiMutation } from "@/shared/query";
@@ -469,18 +469,12 @@ export function PlannerEditStackPage() {
         </div>
 
         <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
-          <button
-            type="button"
-            aria-label="플래너 수정"
+          <FloatingActionButton
+            icon="basket"
+            label="태스크 바스켓"
             onClick={handleOpenTaskBasket}
-            className="bg-ink-900 hover:bg-primary-500 pointer-events-auto absolute right-5 bottom-[calc(env(safe-area-inset-bottom)+110px)] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg"
-          >
-            <Icon
-              name="basket"
-              className="h-8 w-8"
-              aria-hidden
-            />
-          </button>
+            className="pointer-events-auto absolute right-5 bottom-[calc(env(safe-area-inset-bottom)+110px)]"
+          />
         </div>
 
         <ExcludedTasksSheet

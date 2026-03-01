@@ -9,4 +9,5 @@ export const retroQueryKeys = {
   publicListAll: () => baseKeys.by("public-list"),
   publicList: (isOpen: boolean, page: number, size: number) =>
     baseKeys.by("public-list", isOpen, page, size),
+  detail: (reflectionId: number) => baseKeys.by("detail", reflectionId),
 };

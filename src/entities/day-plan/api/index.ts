@@ -2,6 +2,7 @@ export {
   createDayPlanSchedule,
   fetchCurrentSchedule,
   fetchDayPlanPeriodSchedules,
+  fetchDayPlanReflectionStatus,
   fetchDayPlanSchedule,
   fetchDayPlanSchedules,
   fetchDayPlanScheduleById,

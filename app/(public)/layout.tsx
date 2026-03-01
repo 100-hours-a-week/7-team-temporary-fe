@@ -12,7 +12,7 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
   const pathname = usePathname();
-  const isRetroPublicRoute = pathname === "/retro/public";
+  const isRetroPublicRoute = pathname?.startsWith("/retro/public") ?? false;
 
   return (
     <StackPageRoot>

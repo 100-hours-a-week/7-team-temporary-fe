@@ -10,10 +10,12 @@ export type {
   PublicRetroCardVM,
   RetroListItem,
 } from "./list";
-export { MY_PAGE_RETRO_MOCKS, EXPLORE_RETRO_MOCKS } from "./mock";
 export { toMyRetroListModel } from "./mappers";
 export { toPublicRetroListModel } from "./mappers";
+export { toPublicRetroCardVM } from "./mappers";
 export { retroQueryKeys } from "./queryKeys";
 export { useMyRetrosQuery } from "./useMyRetrosQuery";
 export { usePublicRetrosQuery } from "./usePublicRetrosQuery";
 export { useRetroLikeMutation } from "./useRetroLikeMutation";
+export { useRetroDeleteMutation } from "./useRetroDeleteMutation";
+export { usePublicRetroByIdQuery } from "./usePublicRetroByIdQuery";

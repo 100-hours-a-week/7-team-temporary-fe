@@ -16,6 +16,6 @@ export const useHomePlanStore = create<HomePlanState>((set) => ({
   aiUsageRemainingCount: null,
   setHomePlan: (dayPlanId, date) => set({ dayPlanId, date }),
   setAiUsageRemainingCount: (count) => set({ aiUsageRemainingCount: count }),
-  setDate: (date) => set((state) => ({ ...state, date })),
+  setDate: (date) => set({ date, dayPlanId: null, aiUsageRemainingCount: null }),
   clearHomePlan: () => set({ dayPlanId: null, date: null, aiUsageRemainingCount: null }),
 }));

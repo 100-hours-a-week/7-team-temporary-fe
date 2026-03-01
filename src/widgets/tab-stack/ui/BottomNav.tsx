@@ -14,6 +14,7 @@ const TAB_ITEMS: Array<{
 }> = [
   { id: "home", label: "홈", activeIcon: "home_filled", inactiveIcon: "home_outline" },
   { id: "retro", label: "회고", activeIcon: "retro_filled", inactiveIcon: "retro" },
+  { id: "room", label: "방", activeIcon: "room_filled", inactiveIcon: "room" },
   { id: "profile", label: "프로필", activeIcon: "user_filled", inactiveIcon: "user_outline" },
 ];
 

@@ -12,10 +12,14 @@ export function useStackPageState(): StackPageContextValue {
   const [stack, setStack] = useState<StackEntry[]>([]);
   const [poppingKey, setPoppingKey] = useState<string | null>(null);
   const [baseHeaderContent, setBaseHeaderContent] = useState<ReactNode | null>(null);
+  const [baseHeaderRightContent, setBaseHeaderRightContent] = useState<ReactNode | null>(null);
 
   const push = useCallback((element: StackEntry["element"]) => {
     setStack((prev) => {
-      const next = [...prev, { key: createStackKey(), element, headerContent: null }];
+      const next = [
+        ...prev,
+        { key: createStackKey(), element, headerContent: null, headerRightContent: null },
+      ];
       window.history.pushState({ stackDepth: next.length }, "");
       return next;
     });
@@ -74,8 +78,30 @@ export function useStackPageState(): StackPageContextValue {
     );
   }, []);
 
+  const setHeaderRightContent = useCallback(
+    (content: ReactNode | null, entryKey: string | null) => {
+      if (!entryKey) {
+        setBaseHeaderRightContent((prev) => (prev === content ? prev : content));
+        return;
+      }
+
+      setStack((prev) =>
+        prev.map((entry) => {
+          if (entry.key !== entryKey) return entry;
+          if (entry.headerRightContent === content) return entry;
+          return { ...entry, headerRightContent: content };
+        }),
+      );
+    },
+    [],
+  );
+
   const headerContent =
     stack.length > 0 ? (stack[stack.length - 1]?.headerContent ?? null) : baseHeaderContent;
+  const headerRightContent =
+    stack.length > 0
+      ? (stack[stack.length - 1]?.headerRightContent ?? null)
+      : baseHeaderRightContent;
 
   return useMemo(
     () => ({
@@ -85,8 +111,19 @@ export function useStackPageState(): StackPageContextValue {
       stack,
       poppingKey,
       headerContent,
+      headerRightContent,
       setHeaderContent,
+      setHeaderRightContent,
     }),
-    [push, pop, stack, poppingKey, headerContent, setHeaderContent],
+    [
+      push,
+      pop,
+      stack,
+      poppingKey,
+      headerContent,
+      headerRightContent,
+      setHeaderContent,
+      setHeaderRightContent,
+    ],
   );
 }

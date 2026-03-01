@@ -1,14 +1,31 @@
 import type {
+  FriendRelationStatusDto,
   FriendItemResponseDto,
   FriendListResponseDto,
+  FriendRequestItemResponseDto,
+  FriendRequestListResponseDto,
   FriendSearchItemResponseDto,
   FriendSearchResponseDto,
 } from "../api";
 
-import type { FriendListItemVM, FriendListModel } from "./types";
+import type {
+  FriendListItemVM,
+  FriendListModel,
+  FriendRelationStatus,
+  FriendRequestItemVM,
+  FriendRequestListModel,
+} from "./types";
 
 const DEFAULT_NICKNAME = "이름 미설정";
 const DEFAULT_EMAIL = "이메일 정보 없음";
+
+function toFriendRelationStatus(status?: FriendRelationStatusDto): FriendRelationStatus {
+  if (status === "NONE" || status === "PENDING" || status === "FRIEND" || status === "SELF") {
+    return status;
+  }
+
+  return "NONE";
+}
 
 function toFriendListItemVM(item: FriendItemResponseDto): FriendListItemVM {
   return {
@@ -16,15 +33,31 @@ function toFriendListItemVM(item: FriendItemResponseDto): FriendListItemVM {
     nickname: item.friendNickname?.trim() || DEFAULT_NICKNAME,
     email: item.friendEmail?.trim() || DEFAULT_EMAIL,
     profileImageUrl: item.profileImage?.url?.trim() || null,
+    relationStatus: "FRIEND",
   };
 }
 
 function toFriendSearchListItemVM(item: FriendSearchItemResponseDto): FriendListItemVM {
+  const relationStatus = toFriendRelationStatus(item.relationStatus);
+
   return {
     id: item.userId,
     nickname: item.nickname?.trim() || DEFAULT_NICKNAME,
     email: item.email?.trim() || DEFAULT_EMAIL,
     profileImageUrl: item.profileImage?.url?.trim() || null,
+    relationStatus,
+  };
+}
+
+function toFriendRequestItemVM(item: FriendRequestItemResponseDto): FriendRequestItemVM {
+  return {
+    requestId: item.requestId,
+    id: item.fromUserId,
+    nickname: item.fromUserNickname?.trim() || DEFAULT_NICKNAME,
+    email: item.fromUserEmail?.trim() || DEFAULT_EMAIL,
+    profileImageUrl: item.profileImage?.url?.trim() || null,
+    relationStatus: "PENDING",
+    requestedAt: item.createdAt ?? "",
   };
 }
 
@@ -42,6 +75,24 @@ export function toFriendSearchModel(dto: FriendSearchResponseDto): FriendListMod
   const content = dto.content
     .map(toFriendSearchListItemVM)
     .sort((a, b) => a.nickname.localeCompare(b.nickname, "ko"));
+
+  return {
+    content,
+    page: dto.page,
+    size: dto.size,
+    totalElements: dto.totalElements,
+    totalPages: dto.totalPages,
+  };
+}
+
+export function toFriendRequestListModel(
+  dto: FriendRequestListResponseDto,
+): FriendRequestListModel {
+  const content = dto.content
+    .map(toFriendRequestItemVM)
+    .sort(
+      (a, b) => new Date(b.requestedAt || 0).getTime() - new Date(a.requestedAt || 0).getTime(),
+    );
 
   return {
     content,

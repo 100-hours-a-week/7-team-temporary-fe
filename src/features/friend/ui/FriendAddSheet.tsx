@@ -2,10 +2,10 @@
 
 import { useEffect, useRef } from "react";
 
-import { FriendBaseItem, type FriendListItemVM } from "@/entities/friend";
+import { FriendBaseItem } from "@/entities/friend";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { BottomSheet } from "@/shared/ui";
-import { useFriendSearchSection } from "../model";
+import { type FriendSearchResultVM, useFriendSearchSection } from "../model";
 
 interface FriendAddSheetProps {
   open: boolean;
@@ -19,12 +19,14 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
     setKeyword,
     shouldSearch,
     friends,
+    requestFriend,
+    requestingFriendId,
     isLoading,
     isError,
     isFetching,
     hasMore,
     loadMore,
-  } = useFriendSearchSection();
+  } = useFriendSearchSection({ enabled: open });
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled: shouldSearch,
     hasMore,
@@ -49,7 +51,7 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
       closeOnOverlayClick
       peekHeight={55}
       expandHeight={70}
-      enableDragHandle
+      enableDragHandle={false}
       sheetClassName="overflow-hidden pb-[env(safe-area-inset-bottom)]"
     >
       <section className="flex h-full min-h-0 flex-col px-6 pt-3 pb-4">
@@ -68,12 +70,12 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
           placeholder="닉네임 검색"
-          className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none"
+          className="text-md h-11 w-full shrink-0 rounded-xl border border-neutral-200 bg-white px-4 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none"
         />
 
         <div
           ref={scrollRootRef}
-          className="mt-4 max-h-[45vh] min-h-0 overflow-y-auto overscroll-contain pr-1"
+          className="scrollbar-hide mt-4 max-h-[45vh] min-h-0 overflow-y-auto overscroll-contain pr-1"
         >
           {!shouldSearch ? null : isLoading ? (
             <div className="rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
@@ -91,7 +93,11 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
             <ul className="flex flex-col gap-3">
               {friends.map((friend) => (
                 <li key={`candidate-${friend.id}`}>
-                  <FriendSearchResultItem vm={friend} />
+                  <FriendSearchResultItem
+                    vm={friend}
+                    onAdd={requestFriend}
+                    isAdding={requestingFriendId === friend.id}
+                  />
                 </li>
               ))}
             </ul>
@@ -109,7 +115,24 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
   );
 }
 
-function FriendSearchResultItem({ vm }: { vm: FriendListItemVM }) {
+interface FriendSearchResultItemProps {
+  vm: FriendSearchResultVM;
+  onAdd: (targetUserId: number) => void;
+  isAdding: boolean;
+}
+
+function FriendSearchResultItem({ vm, onAdd, isAdding }: FriendSearchResultItemProps) {
+  const isAddDisabled = vm.relationStatus !== "NONE" || isAdding;
+  const buttonLabel = isAdding
+    ? "요청 중"
+    : vm.relationStatus === "FRIEND"
+      ? "추가됨"
+      : vm.relationStatus === "PENDING"
+        ? "요청됨"
+        : vm.relationStatus === "SELF"
+          ? "본인"
+          : "추가";
+
   return (
     <FriendBaseItem
       vm={vm}
@@ -117,9 +140,11 @@ function FriendSearchResultItem({ vm }: { vm: FriendListItemVM }) {
         <button
           type="button"
           aria-label={`${vm.nickname} 친구 추가`}
-          className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white"
+          disabled={isAddDisabled}
+          onClick={() => onAdd(vm.id)}
+          className="rounded-full bg-black px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-neutral-300"
         >
-          추가
+          {buttonLabel}
         </button>
       }
     />
