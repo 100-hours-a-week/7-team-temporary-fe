@@ -32,17 +32,18 @@ export async function apiFetch<TResponse, TBody = unknown>(
   const { credentials } = options;
   const resolvedCredentials = authRequired && !credentials ? "include" : credentials;
 
-  const mergedHeaders: HeadersInit = {
-    "Content-Type": "application/json",
-    ...headers,
-  };
+  const mergedHeaders = new Headers(headers);
+  if (!mergedHeaders.has("Content-Type")) {
+    mergedHeaders.set("Content-Type", "application/json");
+  }
 
-  //AToken 존재 시 Authorization 헤더 추가
+  const accessToken = getAccessToken();
+  if (accessToken && !mergedHeaders.has("Authorization")) {
+    const bearerToken = accessToken.startsWith("Bearer ") ? accessToken : `Bearer ${accessToken}`;
+    mergedHeaders.set("Authorization", bearerToken);
+  }
+
   if (authRequired) {
-    const accessToken = getAccessToken();
-    if (accessToken && !("Authorization" in (mergedHeaders as Record<string, string>))) {
-      (mergedHeaders as Record<string, string>).Authorization = `Bearer ${accessToken}`;
-    }
     console.log("[apiFetch] authRequired request", {
       url,
       hasAccessToken: Boolean(accessToken),
