@@ -8,6 +8,7 @@ export interface LoginFormModel {
 export interface LoginRequestDto {
   email: UserEmail;
   password: string;
+  deviceId: string;
 }
 
 export interface LoginResponse {
