@@ -8,7 +8,7 @@ import type { ChatRoomListItemVM } from "@/entities/chat-room";
 import { chatRoomQueryKeys, useGroupChatRoomListQuery } from "@/entities/chat-room";
 import { usePaginatedAccumulator, useInfiniteScrollTrigger } from "@/shared/hooks";
 import { chatStompSession } from "@/shared/socket";
-import { FloatingActionButton } from "@/shared/ui/button";
+import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
 
 import { ChatRoomList } from "./ChatRoomList";
@@ -152,14 +152,13 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
       ) : null}
 
       {isGroupChatSection && (
-        <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
+        <FloatingActionDock>
           <FloatingActionButton
             icon="chat_single"
             label="채팅방 찾기"
             onClick={onChatSearchClick}
-            className="pointer-events-auto absolute right-5 bottom-[calc(env(safe-area-inset-bottom)+110px)]"
           />
-        </div>
+        </FloatingActionDock>
       )}
     </section>
   );
