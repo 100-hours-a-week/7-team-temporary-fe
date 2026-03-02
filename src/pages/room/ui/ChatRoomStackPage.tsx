@@ -6,7 +6,9 @@ import type { ChatMessageItemVM } from "@/entities/chat-room";
 import {
   useChatRoomMessagesInfiniteQuery,
   useChatRoomOwnerStatusQuery,
+  useChatRoomRealtime,
 } from "@/entities/chat-room";
+import { chatStompSession } from "@/shared/socket";
 import {
   CHAT_COMPOSER_MAX_LENGTH,
   ChatMessageComposer,
@@ -21,13 +23,17 @@ interface ChatRoomStackPageProps {
 export function ChatRoomStackPage({ roomId }: ChatRoomStackPageProps) {
   const [draftMessage, setDraftMessage] = useState("");
   const [isExtraMenuOpen, setIsExtraMenuOpen] = useState(false);
-  const [localMessages, setLocalMessages] = useState<ChatMessageItemVM[]>([]);
-  const nextLocalMessageIdRef = useRef(-1);
+  // pendingMessages: optimistic local messages keyed by idempotencyKey
+  const [pendingMessages, setPendingMessages] = useState<Map<string, ChatMessageItemVM>>(new Map());
   const objectUrlsRef = useRef<string[]>([]);
+  const nextPendingIdRef = useRef(-1);
+
+  const myUserId = chatStompSession.userId ?? 0;
 
   const chatMessagesQuery = useChatRoomMessagesInfiniteQuery({
     roomId,
     size: 50,
+    myUserId,
     enabled: roomId > 0,
   });
   const { data: ownerStatus } = useChatRoomOwnerStatusQuery({
@@ -38,23 +44,56 @@ export function ChatRoomStackPage({ roomId }: ChatRoomStackPageProps) {
 
   useChatRoomStackHeader({ roomId, isOwner });
 
-  const messages = useMemo(
-    () => [...chatMessagesQuery.messages, ...localMessages],
-    [chatMessagesQuery.messages, localMessages],
+  const { realtimeMessages } = useChatRoomRealtime({
+    roomId,
+    myUserId,
+    enabled: roomId > 0,
+  });
+
+  // Remove pending message when server confirms it via sendAccepted
+  useEffect(() => {
+    return chatStompSession.onMessageSendAccepted(({ idempotencyKey }) => {
+      setPendingMessages((prev) => {
+        const next = new Map(prev);
+        next.delete(idempotencyKey);
+        return next;
+      });
+    });
+  }, []);
+
+  // Filter realtime messages that overlap with already-loaded historical messages
+  const historicalIds = useMemo(
+    () => new Set(chatMessagesQuery.messages.map((m) => m.messageId)),
+    [chatMessagesQuery.messages],
   );
+
+  const newRealtimeMessages = useMemo(
+    () => realtimeMessages.filter((m) => !historicalIds.has(m.messageId)),
+    [realtimeMessages, historicalIds],
+  );
+
+  const messages = useMemo(
+    () => [
+      ...chatMessagesQuery.messages,
+      ...newRealtimeMessages,
+      ...Array.from(pendingMessages.values()),
+    ],
+    [chatMessagesQuery.messages, newRealtimeMessages, pendingMessages],
+  );
+
   const isSendDisabled = draftMessage.trim().length === 0;
 
-  const createLocalMessage = (
+  const createPendingMessage = (
     payload: Pick<ChatMessageItemVM, "messageType" | "content" | "imageUrls">,
   ): ChatMessageItemVM => {
-    const localMessageId = nextLocalMessageIdRef.current;
-    nextLocalMessageIdRef.current -= 1;
+    const id = nextPendingIdRef.current;
+    nextPendingIdRef.current -= 1;
     return {
-      messageId: localMessageId,
+      messageId: id,
       messageType: payload.messageType,
       senderType: "USER",
-      senderId: null,
-      senderName: "나",
+      senderId: myUserId || null,
+      senderName: null,
       senderProfileImageUrl: null,
       isMine: true,
       content: payload.content,
@@ -71,14 +110,19 @@ export function ChatRoomStackPage({ roomId }: ChatRoomStackPageProps) {
     const content = draftMessage.trim();
     if (!content) return;
 
-    const nextMessage = createLocalMessage({
+    const idempotencyKey = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const pendingVm = createPendingMessage({ messageType: "TEXT", content, imageUrls: [] });
+
+    setPendingMessages((prev) => new Map(prev).set(idempotencyKey, pendingVm));
+    setDraftMessage("");
+
+    chatStompSession.sendMessage({
+      idempotencyKey,
+      roomId,
       messageType: "TEXT",
       content,
-      imageUrls: [],
+      imageKeys: [],
     });
-
-    setLocalMessages((prev) => [...prev, nextMessage]);
-    setDraftMessage("");
   };
 
   const handleImageSelect = (file: File) => {
@@ -87,13 +131,24 @@ export function ChatRoomStackPage({ roomId }: ChatRoomStackPageProps) {
     const imageUrl = URL.createObjectURL(file);
     objectUrlsRef.current.push(imageUrl);
 
-    const nextMessage = createLocalMessage({
+    const idempotencyKey = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const pendingVm = createPendingMessage({
       messageType: "FILE",
       content: null,
       imageUrls: [imageUrl],
     });
 
-    setLocalMessages((prev) => [...prev, nextMessage]);
+    setPendingMessages((prev) => new Map(prev).set(idempotencyKey, pendingVm));
+
+    // Image upload flow: upload to S3 first, then send with imageKeys
+    // For now we send the message after getting the object URL (placeholder)
+    chatStompSession.sendMessage({
+      idempotencyKey,
+      roomId,
+      messageType: "FILE",
+      content: "",
+      imageKeys: [],
+    });
   };
 
   useEffect(() => {
