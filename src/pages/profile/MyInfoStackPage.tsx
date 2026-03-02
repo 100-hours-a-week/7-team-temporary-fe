@@ -22,6 +22,7 @@ import { BottomSheet, ConfirmDialog, Icon } from "@/shared/ui";
 import { useMutationErrorEffect } from "@/shared/query";
 import { apiFetch, Endpoint } from "@/shared/api";
 import { registerFcmToken } from "@/shared/firebase";
+import { chatStompSession } from "@/shared/socket";
 import {
   getBirthError,
   getDayEndTimeError,
@@ -169,6 +170,7 @@ export function MyInfoStackPage() {
     deleteMutation.mutate(undefined, {
       onSuccess: async () => {
         showToast("탈퇴가 완료되었습니다.", "success");
+        chatStompSession.stop();
         await AuthService.logout();
         setIsDeleteDialogOpen(false);
       },

@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 
 interface FormFieldProps {
   label: string;
+  labelDescription?: string;
   error?: string;
   helperText?: string;
   children: ReactNode;
@@ -20,6 +21,7 @@ interface FormFieldProps {
 
 export function FormField({
   label,
+  labelDescription,
   error,
   helperText,
   children,
@@ -32,10 +34,13 @@ export function FormField({
 
   return (
     <div className={cn("flex w-full flex-col gap-1", className)}>
-      <label className={cn("text-sm font-semibold text-neutral-900", labelClassName)}>
-        {label}
-        {labelAdornment}
-      </label>
+      <div className="flex flex-col gap-1">
+        <label className={cn("text-sm font-semibold text-neutral-900", labelClassName)}>
+          {label}
+          {labelAdornment}
+        </label>
+        {labelDescription ? <p className="text-xs text-neutral-400">{labelDescription}</p> : null}
+      </div>
 
       <div
         data-invalid={isError || undefined}
