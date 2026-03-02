@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { fetchChatRoomSearchList, type ChatRoomSummaryDto } from "@/entities/chat-room";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/shared/ui";
-import { FloatingActionButton } from "@/shared/ui/button";
+import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 import { Icon } from "@/shared/ui/icon";
 import { SearchBar } from "@/shared/ui/search";
 import { useStackPage } from "@/widgets/stack";
@@ -92,14 +92,13 @@ export function ChatSearchStackPage() {
         </ul>
       )}
 
-      <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
+      <FloatingActionDock offsetClassName="bottom-[30px]">
         <FloatingActionButton
           icon="plus"
           label="채팅방 생성"
           onClick={handleOpenCreateChatRoom}
-          className="pointer-events-auto absolute right-5 bottom-[30px]"
         />
-      </div>
+      </FloatingActionDock>
 
       <Dialog
         open={isJoinDialogOpen}
