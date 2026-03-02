@@ -1,6 +1,7 @@
 import { apiFetch, Endpoint } from "@/shared/api";
 
 import type {
+  ChatRoomDetailDto,
   ChatMessageListResponseDto,
   ChatRoomListResponseDto,
   ChatRoomType,
@@ -67,6 +68,19 @@ export async function fetchChatRoomOwnerStatus({
   signal?: AbortSignal;
 }): Promise<ChatRoomOwnerStatusDto> {
   return apiFetch<ChatRoomOwnerStatusDto>(Endpoint.CHAT_ROOMS.OWNER_STATUS(ownerId), {
+    signal,
+    authRequired: true,
+  });
+}
+
+export async function fetchChatRoomDetail({
+  roomId,
+  signal,
+}: {
+  roomId: number;
+  signal?: AbortSignal;
+}): Promise<ChatRoomDetailDto> {
+  return apiFetch<ChatRoomDetailDto>(Endpoint.CHAT_ROOMS.DETAIL(roomId), {
     signal,
     authRequired: true,
   });

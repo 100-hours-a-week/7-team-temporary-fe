@@ -29,6 +29,40 @@ export interface ChatRoomOwnerStatusDto {
   isOwner: boolean;
 }
 
+export interface ChatRoomProfileImageDto {
+  url: string;
+  expiresAt?: string | null;
+  key?: string;
+}
+
+export interface ChatRoomOwnerDto {
+  userId: number;
+  nickname: string;
+  cameraEnabled: boolean;
+  profileImage?: ChatRoomProfileImageDto | null;
+}
+
+export interface ChatRoomParticipantDto {
+  participantId: number;
+  userId: number;
+  nickname: string;
+  cameraEnabled: boolean;
+  profileImage?: ChatRoomProfileImageDto | null;
+  joinedAt: string;
+}
+
+/** GET /chat-rooms/{roomId} 응답 */
+export interface ChatRoomDetailDto {
+  roomId: number;
+  type: ChatRoomType;
+  title: string;
+  description: string;
+  maxParticipants: number;
+  owner: ChatRoomOwnerDto;
+  participants: ChatRoomParticipantDto[];
+  participantsCount: number;
+}
+
 export interface ChatMessageImageDto {
   url: string;
   expiresAt?: string | null;

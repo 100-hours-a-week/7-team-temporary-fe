@@ -40,3 +40,24 @@ export interface ChatMessageListModel {
   size: number;
   hasNext: boolean;
 }
+
+export interface ChatRoomMemberVM {
+  participantId: number | null;
+  userId: number;
+  nickname: string;
+  cameraEnabled: boolean;
+  profileImageUrl: string | null;
+  joinedAt: string | null;
+  role: "OWNER" | "PARTICIPANT";
+}
+
+export interface ChatRoomDetailModel {
+  roomId: number;
+  type: ChatRoomType;
+  title: string;
+  description: string;
+  maxParticipants: number;
+  participantsCount: number;
+  owner: ChatRoomMemberVM;
+  participants: ChatRoomMemberVM[];
+}
