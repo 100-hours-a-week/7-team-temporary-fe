@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-
+import { CreateChatRoomForm } from "@/features/chat-room-create";
 import { useStackPage } from "@/widgets/stack";
 
 export function CreateChatRoomStackPage() {
-  const { setHeaderContent, setHeaderRightContent } = useStackPage();
+  const { pop, setHeaderContent, setHeaderRightContent } = useStackPage();
 
   useEffect(() => {
     setHeaderContent(<span className="text-[18px] font-semibold text-black">채팅방 생성</span>);
@@ -16,5 +16,5 @@ export function CreateChatRoomStackPage() {
     };
   }, [setHeaderContent, setHeaderRightContent]);
 
-  return <div className="px-6 pt-4" />;
+  return <CreateChatRoomForm onCreated={pop} />;
 }

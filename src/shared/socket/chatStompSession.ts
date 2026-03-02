@@ -204,7 +204,9 @@ class ChatStompSession {
     });
 
     client.onConnect = () => {
-      this.connectedSubscription?.unsubscribe();
+      // STOMP 자동 재연결 시 이전 구독 객체는 이미 닫힌 WebSocket에 묶여 있으므로
+      // unsubscribe() 대신 참조만 초기화한다. STOMP 레이어가 세션 정리를 처리한다.
+      this.connectedSubscription = null;
       this.connectedSubscription = client.subscribe(CONNECTED_DESTINATION, (message) => {
         const code = parseConnectedErrorCode(message);
         if (!code) {
