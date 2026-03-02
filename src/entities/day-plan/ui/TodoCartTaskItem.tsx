@@ -1,4 +1,5 @@
 import styled from "@emotion/styled";
+import { formatHHmmRange } from "@/shared/lib";
 
 import { TaskItemActionRow } from "./TaskItemActionRow";
 import { toTaskItemModelFromTodoCart } from "../model/taskMappers";
@@ -104,7 +105,7 @@ function getTimeMeta(task: TaskItemModel): MetaItem {
   if (task.timeType === "FIXED") {
     return {
       label: "고정 시간",
-      value: formatTimeRange(task.startTime, task.endTime),
+      value: formatHHmmRange(task.startTime, task.endTime, EMPTY_TIME_TEXT),
     };
   }
 
@@ -118,13 +119,8 @@ function getTimeMeta(task: TaskItemModel): MetaItem {
 
   return {
     label: "배치 시간",
-    value: formatTimeRange(task.startTime, task.endTime),
+    value: formatHHmmRange(task.startTime, task.endTime, EMPTY_TIME_TEXT),
   };
-}
-
-function formatTimeRange(startTime: string, endTime: string) {
-  if (!startTime || !endTime) return EMPTY_TIME_TEXT;
-  return `${startTime} ~ ${endTime}`;
 }
 
 function formatEstimatedTimeRange(value?: string | null) {

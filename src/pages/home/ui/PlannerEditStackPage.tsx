@@ -18,7 +18,7 @@ import {
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
 import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 import { Endpoint } from "@/shared/api";
-import { buildTimeRange, isAfterDayEnd, parseTimeToMinutes } from "@/shared/lib";
+import { buildTimeRange, formatHHmmRange, isAfterDayEnd, parseHHmmToMinutes } from "@/shared/lib";
 import { useApiMutation } from "@/shared/query";
 import { ConfirmDialog } from "@/shared/ui";
 import { useToast } from "@/shared/ui/toast";
@@ -205,14 +205,14 @@ export function PlannerEditStackPage() {
 
   const hasResizeConflict = useCallback(
     (scheduleId: number, startAt: string, endAt: string) => {
-      const startMinutes = parseTimeToMinutes(startAt);
-      const endMinutes = parseTimeToMinutes(endAt);
+      const startMinutes = parseHHmmToMinutes(startAt);
+      const endMinutes = parseHHmmToMinutes(endAt);
       if (startMinutes === null || endMinutes === null) return true;
       if (endMinutes <= startMinutes) return true;
       return mergedTasks.some((task) => {
         if (task.scheduleId === scheduleId) return false;
-        const taskStart = parseTimeToMinutes(task.startAt);
-        const taskEnd = parseTimeToMinutes(task.endAt);
+        const taskStart = parseHHmmToMinutes(task.startAt);
+        const taskEnd = parseHHmmToMinutes(task.endAt);
         if (taskStart === null || taskEnd === null) return false;
         return startMinutes < taskEnd && endMinutes > taskStart;
       });
@@ -540,7 +540,7 @@ export function PlannerEditStackPage() {
 }
 
 function getDayEndLimitMinutes(dayEndTime?: string | null) {
-  const parsed = parseTimeToMinutes(dayEndTime);
+  const parsed = parseHHmmToMinutes(dayEndTime);
   if (parsed === null) return null;
   if (parsed < 12 * 60) return null;
   return Math.floor(parsed / 10) * 10;
@@ -585,11 +585,11 @@ function getPreviewTimeRange(
   durationMinutes: number,
 ) {
   if (insertPreview) {
-    return `${insertPreview.startAt} ~ ${insertPreview.endAt}`;
+    return formatHHmmRange(insertPreview.startAt, insertPreview.endAt, "");
   }
   if (previewSlot) {
     const range = buildTimeRange(previewSlot.hour, previewSlot.minute, durationMinutes);
-    return `${range.startAt} ~ ${range.endAt}`;
+    return formatHHmmRange(range.startAt, range.endAt, "");
   }
   return "";
 }

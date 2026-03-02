@@ -16,8 +16,8 @@ import {
   buildTimeRange,
   buildTimeRangeFromEnd,
   buildTimeRangeFromStart,
+  parseHHmmToMinutes,
   isAfterDayEnd,
-  parseTimeToMinutes,
 } from "@/shared/lib";
 
 import { resetDragState } from "../lib/resetDragState";
@@ -253,8 +253,8 @@ export function usePlannerEditDnD({
 
 function getTaskDurationMinutes(task: EditableTaskItemModel | undefined | null) {
   if (!task) return null;
-  const startMinutes = parseTimeToMinutes(task.startAt);
-  const endMinutes = parseTimeToMinutes(task.endAt);
+  const startMinutes = parseHHmmToMinutes(task.startAt);
+  const endMinutes = parseHHmmToMinutes(task.endAt);
   if (startMinutes === null || endMinutes === null) return null;
   const duration = endMinutes - startMinutes;
   return duration > 0 ? duration : null;

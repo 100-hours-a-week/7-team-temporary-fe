@@ -1,26 +1,25 @@
+import { formatMinutesToHHmm, parseHHmmToMinutes } from "./hhmm";
+
+export {
+  formatHHmmRange,
+  formatMinutesToHHmm,
+  isValidHHmmRange,
+  parseHHmmToMinutes,
+  splitHHmmToParts,
+} from "./hhmm";
+
 /**
- * "HH:mm" 형식 문자열을 분 단위 숫자로 변환한다.
- * 입력이 비어 있거나 포맷이 잘못되었거나 범위를 벗어나면 null을 반환한다.
+ * @deprecated parseHHmmToMinutes를 사용한다.
  */
 export function parseTimeToMinutes(value: string | undefined | null) {
-  if (!value) return null;
-  const [hourText, minuteText] = value.split(":");
-  const hour = Number(hourText);
-  const minute = Number(minuteText);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
-  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-  return hour * 60 + minute;
+  return parseHHmmToMinutes(value);
 }
 
 /**
- * 분 단위 값을 24시간제 "HH:mm" 문자열로 변환한다.
- * 음수는 0으로 보정하고, 24시간을 넘는 값은 하루 기준으로 순환시킨다.
+ * @deprecated formatMinutesToHHmm를 사용한다.
  */
 export function formatTime(totalMinutes: number) {
-  const minutes = Math.max(0, totalMinutes);
-  const hour = Math.floor(minutes / 60) % 24;
-  const minute = minutes % 60;
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  return formatMinutesToHHmm(totalMinutes);
 }
 
 /**
@@ -29,10 +28,10 @@ export function formatTime(totalMinutes: number) {
  */
 export function buildTimeRange(hour: number, minute: number, durationMinutes: number) {
   const startMinutes = hour * 60 + minute;
-  const endMinutes = (startMinutes + durationMinutes) % (24 * 60);
+  const endMinutes = startMinutes + durationMinutes;
   return {
-    startAt: formatTime(startMinutes),
-    endAt: formatTime(endMinutes),
+    startAt: formatMinutesToHHmm(startMinutes),
+    endAt: formatMinutesToHHmm(endMinutes),
   };
 }
 
@@ -41,14 +40,9 @@ export function buildTimeRange(hour: number, minute: number, durationMinutes: nu
  * 시작 시각 파싱이 실패하면 원본 시작 문자열을 그대로 반환한다.
  */
 export function buildTimeRangeFromStart(startAt: string, durationMinutes: number) {
-  const [hourText, minuteText] = startAt.split(":");
-  const hour = Number(hourText);
-  const minute = Number(minuteText);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) {
-    return startAt;
-  }
-  const totalMinutes = hour * 60 + minute + durationMinutes;
-  return formatTime(totalMinutes);
+  const startMinutes = parseHHmmToMinutes(startAt);
+  if (startMinutes === null) return startAt;
+  return formatMinutesToHHmm(startMinutes + durationMinutes);
 }
 
 /**
@@ -56,10 +50,9 @@ export function buildTimeRangeFromStart(startAt: string, durationMinutes: number
  * 종료 시각 파싱이 실패하면 원본 종료 문자열을 그대로 반환한다.
  */
 export function buildTimeRangeFromEnd(endAt: string, durationMinutes: number) {
-  const endMinutes = parseTimeToMinutes(endAt);
+  const endMinutes = parseHHmmToMinutes(endAt);
   if (endMinutes === null) return endAt;
-  const startMinutes = endMinutes - durationMinutes;
-  return formatTime(startMinutes);
+  return formatMinutesToHHmm(endMinutes - durationMinutes);
 }
 
 /**
@@ -68,8 +61,8 @@ export function buildTimeRangeFromEnd(endAt: string, durationMinutes: number) {
  */
 export function isAfterDayEnd(startAt: string, endAt: string, dayEndMinutes: number | null) {
   if (dayEndMinutes === null) return false;
-  const startMinutes = parseTimeToMinutes(startAt);
-  const endMinutes = parseTimeToMinutes(endAt);
+  const startMinutes = parseHHmmToMinutes(startAt);
+  const endMinutes = parseHHmmToMinutes(endAt);
   if (startMinutes === null || endMinutes === null) return false;
   return startMinutes >= dayEndMinutes || endMinutes > dayEndMinutes;
 }

@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 
 import type { EditableTaskItemModel } from "../model/taskModels";
+import { formatHHmmRange, formatMinutesToHHmm, parseHHmmToMinutes } from "@/shared/lib";
 import { TaskItemActionRow } from "./TaskItemActionRow";
 
 interface EditableTaskItemProps {
@@ -75,7 +76,7 @@ export function EditableTaskItem({
     endMinutes: number;
   } | null>(null);
   const effectiveEndAt = previewEndAt ?? localPreviewEndAt ?? task.endAt;
-  const timeValue = formatTimeRange(task.startAt, effectiveEndAt);
+  const timeValue = formatHHmmRange(task.startAt, effectiveEndAt, EMPTY_TIME_TEXT);
   const { setNodeRef: setDropNodeRef } = useDroppable({
     id: droppableId ?? `task-${task.scheduleId}`,
     data: droppableData,
@@ -101,8 +102,8 @@ export function EditableTaskItem({
 
   const handleResizePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
     if (isLocked) return;
-    const startMinutes = parseTimeToMinutes(task.startAt);
-    const endMinutes = parseTimeToMinutes(task.endAt);
+    const startMinutes = parseHHmmToMinutes(task.startAt);
+    const endMinutes = parseHHmmToMinutes(task.endAt);
     if (startMinutes === null || endMinutes === null) return;
     event.preventDefault();
     event.stopPropagation();
@@ -133,7 +134,7 @@ export function EditableTaskItem({
         nextEndMinutes = maxAllowed;
       }
     }
-    const nextEndAt = formatTime(nextEndMinutes);
+    const nextEndAt = formatMinutesToHHmm(nextEndMinutes);
     setLocalPreviewEndAt(nextEndAt);
     onResizePreview?.(task.scheduleId, nextEndAt);
   };
@@ -226,30 +227,8 @@ export function EditableTaskItem({
   );
 }
 
-function formatTimeRange(startAt: string, endAt: string) {
-  if (!startAt || !endAt) return EMPTY_TIME_TEXT;
-  return `${startAt} ~ ${endAt}`;
-}
-
-function parseTimeToMinutes(value: string | undefined | null) {
-  if (!value) return null;
-  const [hourText, minuteText] = value.split(":");
-  const hour = Number(hourText);
-  const minute = Number(minuteText);
-  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
-  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-  return hour * 60 + minute;
-}
-
 function clampMinutes(value: number) {
   return Math.min(24 * 60, Math.max(0, value));
-}
-
-function formatTime(totalMinutes: number) {
-  const minutes = clampMinutes(totalMinutes);
-  const hour = Math.floor(minutes / 60) % 24;
-  const minute = minutes % 60;
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 const Card = styled.article<{ $isLocked: boolean; $isHandleActive: boolean }>`
