@@ -109,6 +109,7 @@ export const Endpoint = {
   // ─────────────────────────────────────────────────────────────────────────
 
   CHAT_ROOMS: {
+    CREATE: chatPath("/chat-rooms"),
     PARTICIPANTS: chatPath("/chat-rooms/participants"),
     OWNER_STATUS: (ownerId: number) => chatPath(`/chat-rooms/participants/${ownerId}`),
     MESSAGES: (roomId: number) => chatPath(`/chat-rooms/${roomId}/message`),
