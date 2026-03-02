@@ -1,4 +1,5 @@
 import styled from "@emotion/styled";
+import { formatHHmmRange } from "@/shared/lib";
 import type { ExcludedTaskItemModel } from "../model/taskModels";
 
 type ExcludedTaskItemVariant = "DEFAULT" | "PENDING_SWAP" | "TIME_CONFLICT";
@@ -16,7 +17,7 @@ const EMPTY_TIME_TEXT = "시간 정보 없음";
  */
 export function ExcludedTaskItem({ task, onRestore, variant = "DEFAULT" }: ExcludedTaskItemProps) {
   const badge = getBadgeLabel(task.assignmentStatus, variant);
-  const timeValue = formatTimeRange(task.startAt, task.endAt);
+  const timeValue = formatHHmmRange(task.startAt, task.endAt, EMPTY_TIME_TEXT);
 
   return (
     <Card $variant={variant}>
@@ -40,11 +41,6 @@ function getBadgeLabel(
   if (variant === "PENDING_SWAP") return "교체 대기";
   if (variant === "TIME_CONFLICT") return "교체 불가";
   return assignmentStatus === "ASSIGNED" ? "배치됨" : "제외됨";
-}
-
-function formatTimeRange(startAt: string, endAt: string) {
-  if (!startAt || !endAt) return EMPTY_TIME_TEXT;
-  return `${startAt} ~ ${endAt}`;
 }
 
 const Card = styled.article<{ $variant: ExcludedTaskItemVariant }>`
