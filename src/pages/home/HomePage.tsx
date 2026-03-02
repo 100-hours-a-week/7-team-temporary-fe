@@ -41,7 +41,7 @@ export function HomePage({ enabled = true }: HomePageProps) {
         onWeeklyReportClick={handleOpenWeeklyReport}
       />
       <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
-        <div className="pointer-events-auto absolute right-5 flex flex-col items-end gap-3">
+        <div className="pointer-events-auto absolute right-5 bottom-[calc(env(safe-area-inset-bottom)+110px)] flex flex-col items-end gap-3">
           <FloatingActionButton
             icon="retro"
             label="회고 작성"
