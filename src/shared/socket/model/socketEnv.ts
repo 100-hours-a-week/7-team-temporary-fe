@@ -4,6 +4,16 @@ const SUBSCRIBE_USER_DESTINATION = process.env.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE
 const SUBSCRIBED_USER_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBED_USER_DEST?.trim();
 const DISCONNECT_DESTINATION = process.env.NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST?.trim();
+const PONG_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_PONG_DEST?.trim() ?? "/pub/handshake/pong";
+const SUBSCRIBE_ROOM_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_ROOM_DEST?.trim() ?? "/pub/room/subscribe";
+const UNSUBSCRIBE_ROOM_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_UNSUBSCRIBE_ROOM_DEST?.trim() ?? "/pub/room/unsubscribe";
+const MESSAGE_SEND_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_MESSAGE_SEND_DEST?.trim() ?? "/pub/room/message";
+const USER_QUEUE_ROOM_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST?.trim() ?? "/user/queue/room";
 const RECONNECT_DELAY_MS = Number(process.env.NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS ?? 5000);
 const CHAT_SOCKET_LOG_ENABLED =
   process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_CHAT_SOCKET_DEBUG === "true";
@@ -14,6 +24,11 @@ export interface ChatSocketStartConfig {
   connectedDestination: string;
   subscribeUserDestination: string;
   subscribedUserDestination: string;
+  pongDestination: string;
+  subscribeRoomDestination: string;
+  unsubscribeRoomDestination: string;
+  messageSendDestination: string;
+  userQueueRoomDestination: string;
   reconnectDelayMs: number;
 }
 
@@ -60,6 +75,11 @@ export function resolveChatSocketStartConfig(): ChatSocketStartConfig | null {
     connectedDestination: CONNECTED_DESTINATION,
     subscribeUserDestination: SUBSCRIBE_USER_DESTINATION,
     subscribedUserDestination: SUBSCRIBED_USER_DESTINATION,
+    pongDestination: PONG_DESTINATION,
+    subscribeRoomDestination: SUBSCRIBE_ROOM_DESTINATION,
+    unsubscribeRoomDestination: UNSUBSCRIBE_ROOM_DESTINATION,
+    messageSendDestination: MESSAGE_SEND_DESTINATION,
+    userQueueRoomDestination: USER_QUEUE_ROOM_DESTINATION,
     reconnectDelayMs: Number.isFinite(RECONNECT_DELAY_MS) ? RECONNECT_DELAY_MS : 5000,
   };
 }

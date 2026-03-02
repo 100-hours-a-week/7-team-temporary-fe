@@ -1,2 +1,3 @@
-export { toChatMessageListModel } from "./chatMessage.mapper";
+export { toChatMessageListModel, messageCreatedPayloadToVM } from "./chatMessage.mapper";
+export { toChatRoomDetailModel } from "./chatRoomDetail.mapper";
 export { toChatRoomListModel } from "./chatRoomList.mapper";

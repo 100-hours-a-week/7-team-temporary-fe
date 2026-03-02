@@ -2,7 +2,7 @@ export type ChatRoomType = "OPEN_CHAT" | "CAM_STUDY";
 export type ChatMessageType = "TEXT" | "FILE";
 export type ChatMessageSenderType = "USER" | "AI";
 
-/** GET /chat-rooms/participants?type=&page=&size= 응답 content 항목 */
+/** GET /chat-rooms?title=&page=&size= 응답 content 항목 (목록 임시 사용) */
 export interface ChatRoomSummaryDto {
   roomId: number;
   type: ChatRoomType;
@@ -10,6 +10,10 @@ export interface ChatRoomSummaryDto {
   description: string;
   maxParticipants: number;
   participantsCount: number;
+  lastMessage?: string | null;
+  lastMessageAt?: string | null;
+  unreadCount?: number | null;
+  unreadMessageCount?: number | null;
 }
 
 export interface ChatRoomListResponseDto {
@@ -23,6 +27,40 @@ export interface ChatRoomListResponseDto {
 /** GET /chat-rooms/participants/{ownerId} 응답 */
 export interface ChatRoomOwnerStatusDto {
   isOwner: boolean;
+}
+
+export interface ChatRoomProfileImageDto {
+  url: string;
+  expiresAt?: string | null;
+  key?: string;
+}
+
+export interface ChatRoomOwnerDto {
+  userId: number;
+  nickname: string;
+  cameraEnabled: boolean;
+  profileImage?: ChatRoomProfileImageDto | null;
+}
+
+export interface ChatRoomParticipantDto {
+  participantId: number;
+  userId: number;
+  nickname: string;
+  cameraEnabled: boolean;
+  profileImage?: ChatRoomProfileImageDto | null;
+  joinedAt: string;
+}
+
+/** GET /chat-rooms/{roomId} 응답 */
+export interface ChatRoomDetailDto {
+  roomId: number;
+  type: ChatRoomType;
+  title: string;
+  description: string;
+  maxParticipants: number;
+  owner: ChatRoomOwnerDto;
+  participants: ChatRoomParticipantDto[];
+  participantsCount: number;
 }
 
 export interface ChatMessageImageDto {

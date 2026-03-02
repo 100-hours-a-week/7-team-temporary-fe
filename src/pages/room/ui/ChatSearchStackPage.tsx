@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { fetchChatRoomList, type ChatRoomSummaryDto } from "@/entities/chat-room";
+import { fetchChatRoomSearchList, type ChatRoomSummaryDto } from "@/entities/chat-room";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/shared/ui";
 import { FloatingActionButton } from "@/shared/ui/button";
 import { Icon } from "@/shared/ui/icon";
@@ -31,17 +31,13 @@ export function ChatSearchStackPage() {
     push(<CreateChatRoomStackPage />);
   };
 
+  const normalizedKeyword = keyword.trim();
   const searchListQuery = useQuery({
-    queryKey: ["chat-room-search", "OPEN_CHAT", 1, 100],
-    queryFn: ({ signal }) => fetchChatRoomList({ type: "OPEN_CHAT", page: 1, size: 100, signal }),
+    queryKey: ["chat-room-search", normalizedKeyword, 1, 100],
+    queryFn: ({ signal }) =>
+      fetchChatRoomSearchList({ title: normalizedKeyword, page: 1, size: 100, signal }),
   });
-
-  const normalizedKeyword = keyword.trim().toLowerCase();
-  const filteredRooms = useMemo(() => {
-    const rooms = searchListQuery.data?.content ?? [];
-    if (!normalizedKeyword) return rooms;
-    return rooms.filter((room) => room.title.toLowerCase().includes(normalizedKeyword));
-  }, [normalizedKeyword, searchListQuery.data?.content]);
+  const filteredRooms = searchListQuery.data?.content ?? [];
 
   const handleOpenRoomDialog = (room: ChatRoomSummaryDto) => {
     setSelectedRoom(room);

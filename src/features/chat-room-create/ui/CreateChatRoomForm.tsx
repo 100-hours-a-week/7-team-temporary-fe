@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { ApiError, COMMON_ERROR_CODE, CommonError } from "@/shared/api";
 
 import { BaseInput, FormField } from "@/shared/form/ui";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
@@ -14,12 +15,37 @@ import {
 import type { CreateChatRoomFormModel } from "../model/types";
 import { useCreateChatRoomMutation } from "../model/useCreateChatRoomMutation";
 import { useCreateChatRoomForm } from "../model/useCreateChatRoomForm";
-
-const CHAT_ROOM_INPUT_TONE_CLASS_NAME = "bg-white text-neutral-700 placeholder:text-neutral-400";
-const CREATE_CHAT_ROOM_FAILURE_MESSAGE = "그룹 생성에 실패했습니다. 잠시 후 다시 시도해주세요.";
+import {
+  CHAT_ROOM_INPUT_TONE_CLASS_NAME,
+  CREATE_CHAT_ROOM_FAILURE_MESSAGE,
+  CREATE_CHAT_ROOM_NETWORK_ERROR_MESSAGE,
+  CREATE_CHAT_ROOM_SERVER_ERROR_MESSAGE,
+} from "./constants";
 
 interface CreateChatRoomFormProps {
-  onCreated?: () => void;
+  onCreated?: (roomId: number) => void;
+}
+
+function getCreateChatRoomErrorMessage(error: unknown) {
+  if (error instanceof CommonError) {
+    if (error.code === COMMON_ERROR_CODE.NETWORK_ERROR) {
+      return CREATE_CHAT_ROOM_NETWORK_ERROR_MESSAGE;
+    }
+    if (error.code === COMMON_ERROR_CODE.INTERNAL_SERVER_ERROR) {
+      return CREATE_CHAT_ROOM_SERVER_ERROR_MESSAGE;
+    }
+    return error.userMessage;
+  }
+
+  if (error instanceof ApiError && error.httpStatus >= 500) {
+    return CREATE_CHAT_ROOM_SERVER_ERROR_MESSAGE;
+  }
+
+  if (error instanceof TypeError) {
+    return CREATE_CHAT_ROOM_NETWORK_ERROR_MESSAGE;
+  }
+
+  return CREATE_CHAT_ROOM_FAILURE_MESSAGE;
 }
 
 export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
@@ -28,10 +54,13 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
   const handleCreateChatRoom = useCallback(
     async (values: CreateChatRoomFormModel) => {
       try {
-        await createChatRoomMutation.mutateAsync(values);
-        onCreated?.();
-      } catch {
-        showToast(CREATE_CHAT_ROOM_FAILURE_MESSAGE, "error");
+        const createdRoom = await createChatRoomMutation.mutateAsync(values);
+        if (typeof createdRoom?.roomId !== "number") {
+          throw new Error("생성된 채팅방 식별자가 없습니다.");
+        }
+        onCreated?.(createdRoom.roomId);
+      } catch (error) {
+        showToast(getCreateChatRoomErrorMessage(error), "error");
       }
     },
     [createChatRoomMutation, onCreated, showToast],

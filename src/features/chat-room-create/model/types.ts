@@ -5,7 +5,6 @@ export interface CreateChatRoomFormModel {
 }
 
 export interface CreateChatRoomRequestDto {
-  type: "OPEN_CHAT";
   title: string;
   description: string;
   maxParticipants: number;

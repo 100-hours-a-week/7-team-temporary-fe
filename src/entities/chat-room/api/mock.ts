@@ -236,6 +236,7 @@ export const MOCK_REALTIME_STATE: Record<number, MockRealtimeEntry> = {
 };
 
 export const CHAT_ROOM_WEBSOCKET_MOCK_ENABLED = true;
+export const CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED = true;
 
 export interface MockRealtimeMessage extends MockRealtimeEntry {
   roomId: number;

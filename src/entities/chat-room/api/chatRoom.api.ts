@@ -1,11 +1,8 @@
 import { apiFetch, Endpoint } from "@/shared/api";
+import { CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED, getMockChatRoomMessageListResponse } from "./mock";
 
-import {
-  getMockChatRoomListResponse,
-  getMockChatRoomMessageListResponse,
-  getMockChatRoomOwnerStatus,
-} from "./mock";
 import type {
+  ChatRoomDetailDto,
   ChatMessageListResponseDto,
   ChatRoomListResponseDto,
   ChatRoomType,
@@ -19,9 +16,12 @@ interface FetchChatRoomListParams {
   signal?: AbortSignal;
 }
 
-const CHAT_ROOM_LIST_ENABLE_MOCK_FALLBACK = true;
-const CHAT_ROOM_OWNER_STATUS_ENABLE_MOCK_FALLBACK = true;
-const CHAT_ROOM_MESSAGES_ENABLE_MOCK_FALLBACK = true;
+interface FetchChatRoomSearchListParams {
+  title?: string;
+  page?: number;
+  size?: number;
+  signal?: AbortSignal;
+}
 
 function toChatRoomListSearchParams({
   type,
@@ -43,15 +43,22 @@ export async function fetchChatRoomList({
 }: FetchChatRoomListParams): Promise<ChatRoomListResponseDto> {
   const searchParams = toChatRoomListSearchParams({ type, page, size });
 
-  try {
-    return await apiFetch<ChatRoomListResponseDto>(
-      `${Endpoint.CHAT_ROOMS.PARTICIPANTS}?${searchParams.toString()}`,
-      { signal, authRequired: true },
-    );
-  } catch {
-    if (!CHAT_ROOM_LIST_ENABLE_MOCK_FALLBACK) throw new Error("채팅방 목록 조회 실패");
-    return getMockChatRoomListResponse({ type, page, size });
-  }
+  return apiFetch<ChatRoomListResponseDto>(
+    `${Endpoint.CHAT_ROOMS.PARTICIPANTS}?${searchParams.toString()}`,
+    { signal, authRequired: true },
+  );
+}
+
+export async function fetchChatRoomSearchList({
+  title = "",
+  page = 1,
+  size = 10,
+  signal,
+}: FetchChatRoomSearchListParams): Promise<ChatRoomListResponseDto> {
+  return apiFetch<ChatRoomListResponseDto>(Endpoint.CHAT_ROOMS.SEARCH({ title, page, size }), {
+    signal,
+    authRequired: true,
+  });
 }
 
 export async function fetchChatRoomOwnerStatus({
@@ -61,17 +68,23 @@ export async function fetchChatRoomOwnerStatus({
   ownerId: number;
   signal?: AbortSignal;
 }): Promise<ChatRoomOwnerStatusDto> {
-  try {
-    return await apiFetch<ChatRoomOwnerStatusDto>(Endpoint.CHAT_ROOMS.OWNER_STATUS(ownerId), {
-      signal,
-      authRequired: true,
-    });
-  } catch {
-    if (!CHAT_ROOM_OWNER_STATUS_ENABLE_MOCK_FALLBACK) {
-      throw new Error("방장 여부 조회 실패");
-    }
-    return getMockChatRoomOwnerStatus(ownerId);
-  }
+  return apiFetch<ChatRoomOwnerStatusDto>(Endpoint.CHAT_ROOMS.OWNER_STATUS(ownerId), {
+    signal,
+    authRequired: true,
+  });
+}
+
+export async function fetchChatRoomDetail({
+  roomId,
+  signal,
+}: {
+  roomId: number;
+  signal?: AbortSignal;
+}): Promise<ChatRoomDetailDto> {
+  return apiFetch<ChatRoomDetailDto>(Endpoint.CHAT_ROOMS.DETAIL(roomId), {
+    signal,
+    authRequired: true,
+  });
 }
 
 export async function fetchChatRoomMessages({
@@ -85,6 +98,10 @@ export async function fetchChatRoomMessages({
   size?: number;
   signal?: AbortSignal;
 }): Promise<ChatMessageListResponseDto> {
+  if (CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED) {
+    return getMockChatRoomMessageListResponse({ roomId, cursor, size });
+  }
+
   const searchParams = new URLSearchParams();
   if (typeof cursor === "number") searchParams.set("cursor", String(cursor));
   if (typeof size === "number") searchParams.set("size", String(size));
@@ -93,15 +110,8 @@ export async function fetchChatRoomMessages({
     ? `${Endpoint.CHAT_ROOMS.MESSAGES(roomId)}?${query}`
     : Endpoint.CHAT_ROOMS.MESSAGES(roomId);
 
-  try {
-    return await apiFetch<ChatMessageListResponseDto>(url, {
-      signal,
-      authRequired: true,
-    });
-  } catch {
-    if (!CHAT_ROOM_MESSAGES_ENABLE_MOCK_FALLBACK) {
-      throw new Error("채팅 메시지 목록 조회 실패");
-    }
-    return getMockChatRoomMessageListResponse({ roomId, cursor, size });
-  }
+  return apiFetch<ChatMessageListResponseDto>(url, {
+    signal,
+    authRequired: true,
+  });
 }

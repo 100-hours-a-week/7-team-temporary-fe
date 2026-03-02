@@ -1,5 +1,15 @@
-export { fetchChatRoomList, fetchChatRoomMessages, fetchChatRoomOwnerStatus } from "./api";
+export {
+  fetchChatRoomDetail,
+  fetchChatRoomList,
+  fetchChatRoomMessages,
+  fetchChatRoomOwnerStatus,
+  fetchChatRoomSearchList,
+} from "./api";
 export type {
+  ChatRoomDetailDto,
+  ChatRoomOwnerDto,
+  ChatRoomParticipantDto,
+  ChatRoomProfileImageDto,
   ChatMessageDto,
   ChatMessageListResponseDto,
   ChatMessageSenderType,
@@ -15,11 +25,14 @@ export {
   chatRoomQueryKeys,
   useChatRoomMessagesInfiniteQuery,
   useChatRoomMessagesQuery,
+  useChatRoomDetailQuery,
   useChatRoomOwnerStatusQuery,
-  useChatRoomRealtimeMock,
+  useChatRoomRealtime,
   useGroupChatRoomListQuery,
 } from "./model";
 export type {
+  ChatRoomDetailModel,
+  ChatRoomMemberVM,
   ChatMessageItemVM,
   ChatMessageListModel,
   ChatRoomListItemVM,

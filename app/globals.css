@@ -263,7 +263,9 @@ body {
 }
 
 .stack-page-overlay {
-  animation: stack-page-slide-in 500ms cubic-bezier(0.1, 0.8, 0.2, 1);
+  animation: stack-page-slide-in 300ms ease-out;
+  animation-fill-mode: both;
+  will-change: transform;
 }
 
 @keyframes stack-page-slide-out {
