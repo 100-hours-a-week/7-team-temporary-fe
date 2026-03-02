@@ -1,10 +1,15 @@
 export {
+  fetchChatRoomDetail,
   fetchChatRoomList,
   fetchChatRoomMessages,
   fetchChatRoomOwnerStatus,
   fetchChatRoomSearchList,
 } from "./chatRoom.api";
 export type {
+  ChatRoomDetailDto,
+  ChatRoomOwnerDto,
+  ChatRoomParticipantDto,
+  ChatRoomProfileImageDto,
   ChatMessageDto,
   ChatMessageImageDto,
   ChatMessageListResponseDto,
