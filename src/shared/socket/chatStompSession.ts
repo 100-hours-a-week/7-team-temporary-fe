@@ -26,27 +26,29 @@ const DEFAULT_LOGOUT_DISCONNECT_PAYLOAD: DisconnectHandshakePayload = {
 };
 const PUBLISH_RECEIPT_TIMEOUT_MS = 3000;
 
+function toSubscribedUserPayload(candidate: unknown): SubscribedUserEventPayload | null {
+  if (!candidate || typeof candidate !== "object") return null;
+
+  const value = candidate as Partial<SubscribedUserEventPayload>;
+  if (typeof value.userId === "number" && typeof value.subscribedAt === "string") {
+    return {
+      userId: value.userId,
+      subscribedAt: value.subscribedAt,
+    };
+  }
+
+  return null;
+}
+
 function parseSubscribedUserPayload(rawBody: string): SubscribedUserEventPayload | null {
   try {
-    const parsed = JSON.parse(rawBody.replace(/\u0000/g, "")) as
-      | Partial<SubscribedUserEventPayload>
-      | { payload?: Partial<SubscribedUserEventPayload> };
+    const parsed = JSON.parse(rawBody.replace(/\u0000/g, "")) as unknown;
+    const topLevel = toSubscribedUserPayload(parsed);
+    if (topLevel) return topLevel;
 
-    const candidate =
-      typeof parsed === "object" && parsed && "payload" in parsed ? parsed.payload : parsed;
-
-    if (
-      candidate &&
-      typeof candidate.userId === "number" &&
-      typeof candidate.subscribedAt === "string"
-    ) {
-      return {
-        userId: candidate.userId,
-        subscribedAt: candidate.subscribedAt,
-      };
-    }
-
-    return null;
+    if (!parsed || typeof parsed !== "object") return null;
+    const wrappedPayload = (parsed as { payload?: unknown }).payload;
+    return toSubscribedUserPayload(wrappedPayload);
   } catch {
     return null;
   }
