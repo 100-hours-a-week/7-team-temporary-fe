@@ -1,8 +1,8 @@
-export { toChatMessageListModel, toChatRoomListModel } from "./mappers";
+export { messageCreatedPayloadToVM, toChatMessageListModel, toChatRoomListModel } from "./mappers";
 export { chatRoomQueryKeys } from "./queryKeys";
 export { useChatRoomMessagesInfiniteQuery } from "./useChatRoomMessagesInfiniteQuery";
 export { useChatRoomMessagesQuery } from "./useChatRoomMessagesQuery";
-export { useChatRoomRealtimeMock } from "./useChatRoomRealtimeMock";
+export { useChatRoomRealtime } from "./useChatRoomRealtime";
 export { useChatRoomOwnerStatusQuery } from "./useChatRoomOwnerStatusQuery";
 export { useGroupChatRoomListQuery } from "./useGroupChatRoomListQuery";
 export type {
