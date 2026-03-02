@@ -24,6 +24,33 @@ const DEFAULT_LOGOUT_DISCONNECT_PAYLOAD: DisconnectHandshakePayload = {
   code: "LOGOUT",
   message: "로그아웃으로 연결을 종료합니다.",
 };
+const PUBLISH_RECEIPT_TIMEOUT_MS = 3000;
+
+function parseSubscribedUserPayload(rawBody: string): SubscribedUserEventPayload | null {
+  try {
+    const parsed = JSON.parse(rawBody.replace(/\u0000/g, "")) as
+      | Partial<SubscribedUserEventPayload>
+      | { payload?: Partial<SubscribedUserEventPayload> };
+
+    const candidate =
+      typeof parsed === "object" && parsed && "payload" in parsed ? parsed.payload : parsed;
+
+    if (
+      candidate &&
+      typeof candidate.userId === "number" &&
+      typeof candidate.subscribedAt === "string"
+    ) {
+      return {
+        userId: candidate.userId,
+        subscribedAt: candidate.subscribedAt,
+      };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 class ChatStompSession {
   private client: Client | null = null;
@@ -31,6 +58,57 @@ class ChatStompSession {
   private subscribedUserEventSubscription: StompSubscription | null = null;
   private lastBearerToken: string | null = null;
   private isRefreshing = false;
+
+  private publishWithReceipt(params: {
+    client: Client;
+    destination: string;
+    body: string;
+    eventName: string;
+    payloadForLog?: unknown;
+  }) {
+    const { client, destination, body, eventName, payloadForLog } = params;
+    const receiptId = `${eventName}-${Date.now()}`;
+    let isReceiptReceived = false;
+
+    const timeoutId = window.setTimeout(() => {
+      if (isReceiptReceived) return;
+      console.warn(`[chat-socket] ${eventName} receipt timeout`, {
+        destination,
+        receiptId,
+        timeoutMs: PUBLISH_RECEIPT_TIMEOUT_MS,
+      });
+    }, PUBLISH_RECEIPT_TIMEOUT_MS);
+
+    try {
+      client.watchForReceipt(receiptId, () => {
+        isReceiptReceived = true;
+        window.clearTimeout(timeoutId);
+        chatSocketLog(`[chat-socket] ${eventName} receipt received`, {
+          destination,
+          receiptId,
+        });
+      });
+
+      client.publish({
+        destination,
+        headers: { receipt: receiptId },
+        body,
+      });
+
+      chatSocketLog(`[chat-socket] ${eventName} published`, {
+        destination,
+        receiptId,
+        payload: payloadForLog,
+      });
+    } catch (error) {
+      window.clearTimeout(timeoutId);
+      console.error(`[chat-socket] ${eventName} publish failed`, {
+        destination,
+        receiptId,
+        error,
+      });
+    }
+  }
 
   /*
    * 소켓 연결 시작 엔트리 포인트.
@@ -101,23 +179,16 @@ class ChatStompSession {
       this.subscribedUserEventSubscription = client.subscribe(
         subscribedUserDestination,
         (message) => {
-          try {
-            const payload = JSON.parse(message.body) as Partial<SubscribedUserEventPayload>;
-            if (typeof payload.userId !== "number" || typeof payload.subscribedAt !== "string") {
-              console.warn("[chat-socket] subscribed.user payload 파싱 실패", {
-                body: message.body,
-                headers: message.headers,
-              });
-              return;
-            }
-
-            chatSocketLog("[chat-socket] subscribed.user", payload);
-          } catch {
+          const payload = parseSubscribedUserPayload(message.body);
+          if (!payload) {
             console.warn("[chat-socket] subscribed.user payload 파싱 실패", {
               body: message.body,
               headers: message.headers,
             });
+            return;
           }
+
+          chatSocketLog("[chat-socket] subscribed.user", payload);
         },
       );
 
@@ -139,14 +210,12 @@ class ChatStompSession {
             requestedAt: new Date().toISOString(),
           };
 
-          client.publish({
+          this.publishWithReceipt({
+            client,
             destination: subscribeUserDestination,
             body: JSON.stringify(subscribeUserPayload),
-          });
-
-          chatSocketLog("[chat-socket] subscribe.user published", {
-            destination: subscribeUserDestination,
-            payload: subscribeUserPayload,
+            eventName: "subscribe.user",
+            payloadForLog: subscribeUserPayload,
           });
           return;
         }
