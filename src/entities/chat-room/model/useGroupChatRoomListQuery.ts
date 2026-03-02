@@ -1,10 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import {
-  fetchChatRoomSearchList,
-  CHAT_ROOM_REALTIME_MOCK_ENABLED,
-  MOCK_REALTIME_STATE,
-} from "../api";
+import { fetchChatRoomSearchList } from "../api";
 
 import { toChatRoomListModel } from "./chatRoomList.mapper";
 import { chatRoomQueryKeys } from "./queryKeys";
@@ -24,11 +20,11 @@ export function useGroupChatRoomListQuery({
   staleTime,
   gcTime,
 }: UseGroupChatRoomListQueryOptions = {}) {
+  // TODO: 개인 채팅방 목록 API 전까지 검색 API를 임시 목록 소스로 사용한다.
   return useQuery({
-    queryKey: chatRoomQueryKeys.list("OPEN_CHAT", page, size),
+    queryKey: chatRoomQueryKeys.search("", page, size),
     queryFn: ({ signal }) => fetchChatRoomSearchList({ title: "", page, size, signal }),
-    select: (dto) =>
-      toChatRoomListModel(dto, CHAT_ROOM_REALTIME_MOCK_ENABLED ? MOCK_REALTIME_STATE : undefined),
+    select: (dto) => toChatRoomListModel(dto),
     enabled,
     staleTime,
     gcTime,

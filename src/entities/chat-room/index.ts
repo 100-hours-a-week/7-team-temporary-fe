@@ -21,7 +21,7 @@ export {
   useChatRoomMessagesInfiniteQuery,
   useChatRoomMessagesQuery,
   useChatRoomOwnerStatusQuery,
-  useChatRoomRealtimeMock,
+  useChatRoomRealtime,
   useGroupChatRoomListQuery,
 } from "./model";
 export type {

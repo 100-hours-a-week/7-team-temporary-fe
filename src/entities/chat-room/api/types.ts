@@ -2,7 +2,7 @@ export type ChatRoomType = "OPEN_CHAT" | "CAM_STUDY";
 export type ChatMessageType = "TEXT" | "FILE";
 export type ChatMessageSenderType = "USER" | "AI";
 
-/** GET /chat-rooms/participants?type=&page=&size= 응답 content 항목 */
+/** GET /chat-rooms?title=&page=&size= 응답 content 항목 (목록 임시 사용) */
 export interface ChatRoomSummaryDto {
   roomId: number;
   type: ChatRoomType;
@@ -10,6 +10,10 @@ export interface ChatRoomSummaryDto {
   description: string;
   maxParticipants: number;
   participantsCount: number;
+  lastMessage?: string | null;
+  lastMessageAt?: string | null;
+  unreadCount?: number | null;
+  unreadMessageCount?: number | null;
 }
 
 export interface ChatRoomListResponseDto {
