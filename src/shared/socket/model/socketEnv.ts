@@ -1,0 +1,65 @@
+const CONNECT_DESTINATION = process.env.NEXT_PUBLIC_CHAT_SOCKET_CONNECT_DEST?.trim();
+const CONNECTED_DESTINATION = process.env.NEXT_PUBLIC_CHAT_SOCKET_CONNECTED_DEST?.trim();
+const SUBSCRIBE_USER_DESTINATION = process.env.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_USER_DEST?.trim();
+const SUBSCRIBED_USER_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBED_USER_DEST?.trim();
+const DISCONNECT_DESTINATION = process.env.NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST?.trim();
+const RECONNECT_DELAY_MS = Number(process.env.NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS ?? 5000);
+const CHAT_SOCKET_LOG_ENABLED =
+  process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_CHAT_SOCKET_DEBUG === "true";
+
+export interface ChatSocketStartConfig {
+  brokerURL: string;
+  connectDestination: string;
+  connectedDestination: string;
+  subscribeUserDestination: string;
+  subscribedUserDestination: string;
+  reconnectDelayMs: number;
+}
+
+function resolveBrokerUrl() {
+  return process.env.NEXT_PUBLIC_CHAT_STOMP_BROKER_URL?.trim();
+}
+
+export function isChatSocketLogEnabled() {
+  return CHAT_SOCKET_LOG_ENABLED;
+}
+
+export function resolveChatSocketDisconnectDestination() {
+  return DISCONNECT_DESTINATION;
+}
+
+export function resolveChatSocketStartConfig(): ChatSocketStartConfig | null {
+  const brokerURL = resolveBrokerUrl();
+
+  if (!brokerURL) {
+    console.warn("[chat-socket] skip connect: NEXT_PUBLIC_CHAT_STOMP_BROKER_URL 미설정");
+    return null;
+  }
+
+  if (!/^wss?:\/\//.test(brokerURL)) {
+    console.warn("[chat-socket] skip connect: broker URL은 ws:// 또는 wss:// 형식 필요", {
+      brokerURL,
+    });
+    return null;
+  }
+
+  if (
+    !CONNECT_DESTINATION ||
+    !CONNECTED_DESTINATION ||
+    !SUBSCRIBE_USER_DESTINATION ||
+    !SUBSCRIBED_USER_DESTINATION
+  ) {
+    console.warn("[chat-socket] skip connect: destination env 값이 누락되었습니다.");
+    return null;
+  }
+
+  return {
+    brokerURL,
+    connectDestination: CONNECT_DESTINATION,
+    connectedDestination: CONNECTED_DESTINATION,
+    subscribeUserDestination: SUBSCRIBE_USER_DESTINATION,
+    subscribedUserDestination: SUBSCRIBED_USER_DESTINATION,
+    reconnectDelayMs: Number.isFinite(RECONNECT_DELAY_MS) ? RECONNECT_DELAY_MS : 5000,
+  };
+}

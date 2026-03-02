@@ -1,137 +1,54 @@
 "use client";
 
-import { Client, type IFrame, type IMessage, type StompSubscription } from "@stomp/stompjs";
+import { Client, type IFrame, type StompSubscription } from "@stomp/stompjs";
 
 import { AuthService } from "@/shared/auth";
-import { getOrCreateDeviceId } from "@/shared/device";
-
-const CONNECT_DESTINATION =
-  process.env.NEXT_PUBLIC_CHAT_SOCKET_CONNECT_DEST?.trim() || "/pub/socket.connect";
-const CONNECTED_DESTINATION =
-  process.env.NEXT_PUBLIC_CHAT_SOCKET_CONNECTED_DEST?.trim() || "/user/queue/socket.connected";
-const SUBSCRIBE_USER_DESTINATION =
-  process.env.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_USER_DEST?.trim() || "/pub/socket.subscribe.user";
-const DISCONNECT_DESTINATION =
-  process.env.NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST?.trim() || "/pub/socket.disconnect";
-const RECONNECT_DELAY_MS = Number(process.env.NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS ?? 5000);
-const CHAT_SOCKET_LOG_ENABLED =
-  process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_CHAT_SOCKET_DEBUG === "true";
-
-/*
- * 소켓 디버그 로그 출력 유틸.
- * 개발 모드 또는 디버그 플래그가 켜진 경우에만 콘솔에 출력한다.
- */
-function chatSocketLog(message: string, payload?: unknown) {
-  if (!CHAT_SOCKET_LOG_ENABLED) return;
-  if (typeof payload === "undefined") {
-    console.log(message);
-    return;
-  }
-  console.log(message, payload);
-}
-
-const SOCKET_CONNECTED_ERROR_CODES = [
-  "CONNECT_UNAUTHORIZED",
-  "CONNECT_TOKEN_EXPIRED",
-  "CONNECT_INVALID_PAYLOAD",
-] as const;
-
-type SocketConnectedErrorCode = (typeof SOCKET_CONNECTED_ERROR_CODES)[number];
-
-interface DisconnectHandshakePayload {
-  code: string;
-  message: string;
-}
-
-interface SocketConnectedSuccessPayload {
-  sessionId: string;
-  userId: number;
-  connectedAt: string;
-  serverTime: string;
-}
-
-interface SubscribeUserHandshakePayload {
-  sessionId: string;
-  userId: number;
-  deviceId: string;
-  subscribedAt: string;
-}
+import {
+  parseConnectedErrorCode,
+  parseConnectedSuccessPayload,
+  toStompHeaderErrorCode,
+} from "./model/connectedMessage";
+import type {
+  DisconnectHandshakePayload,
+  SubscribedUserEventPayload,
+  SubscribeUserRequestPayload,
+} from "./model/handshake.types";
+import {
+  resolveChatSocketDisconnectDestination,
+  resolveChatSocketStartConfig,
+} from "./model/socketEnv";
+import { chatSocketLog, resolveStompDebugLogger } from "./model/socketLogger";
+import { ensureBearerToken, resolveDeviceIdFromJwt } from "./model/token";
 
 const DEFAULT_LOGOUT_DISCONNECT_PAYLOAD: DisconnectHandshakePayload = {
   code: "LOGOUT",
   message: "로그아웃으로 연결을 종료합니다.",
 };
+const PUBLISH_RECEIPT_TIMEOUT_MS = 3000;
 
-/*
- * STOMP broker URL 환경변수를 읽는다.
- * undefined 또는 빈 값이면 연결 시도를 스킵한다.
- */
-function resolveBrokerUrl() {
-  return process.env.NEXT_PUBLIC_CHAT_STOMP_BROKER_URL?.trim();
-}
+function toSubscribedUserPayload(candidate: unknown): SubscribedUserEventPayload | null {
+  if (!candidate || typeof candidate !== "object") return null;
 
-/*
- * 토큰 문자열을 Bearer 형식으로 표준화한다.
- * 이미 Bearer prefix가 있으면 그대로 사용한다.
- */
-function ensureBearerToken(token: string) {
-  return token.startsWith("Bearer ") ? token : `Bearer ${token}`;
-}
-
-/*
- * 서버가 보낸 문자열을 클라이언트가 아는 연결 에러 코드로 변환한다.
- * 목록에 없는 값은 null로 처리한다.
- */
-function toSocketConnectedErrorCode(
-  value: string | null | undefined,
-): SocketConnectedErrorCode | null {
-  if (!value) return null;
-  return SOCKET_CONNECTED_ERROR_CODES.includes(value as SocketConnectedErrorCode)
-    ? (value as SocketConnectedErrorCode)
-    : null;
-}
-
-/*
- * socket.connected 메시지에서 에러 코드를 추출한다.
- * plain text, JSON(code/status/data) 포맷을 모두 지원한다.
- */
-function parseConnectedErrorCode(message: IMessage): SocketConnectedErrorCode | null {
-  const direct = toSocketConnectedErrorCode(message.body?.trim());
-  if (direct) return direct;
-
-  try {
-    const parsed = JSON.parse(message.body) as { code?: string; status?: string; data?: string };
-    return (
-      toSocketConnectedErrorCode(parsed.code) ??
-      toSocketConnectedErrorCode(parsed.status) ??
-      toSocketConnectedErrorCode(parsed.data)
-    );
-  } catch {
-    return null;
+  const value = candidate as Partial<SubscribedUserEventPayload>;
+  if (typeof value.userId === "number" && typeof value.subscribedAt === "string") {
+    return {
+      userId: value.userId,
+      subscribedAt: value.subscribedAt,
+    };
   }
+
+  return null;
 }
 
-/*
- * socket.connected 성공 payload를 파싱하고 타입을 검증한다.
- * 필수 필드가 하나라도 없으면 null을 반환한다.
- */
-function parseConnectedSuccessPayload(message: IMessage): SocketConnectedSuccessPayload | null {
+function parseSubscribedUserPayload(rawBody: string): SubscribedUserEventPayload | null {
   try {
-    const parsed = JSON.parse(message.body) as Partial<SocketConnectedSuccessPayload>;
-    if (
-      typeof parsed.sessionId === "string" &&
-      typeof parsed.userId === "number" &&
-      typeof parsed.connectedAt === "string" &&
-      typeof parsed.serverTime === "string"
-    ) {
-      return {
-        sessionId: parsed.sessionId,
-        userId: parsed.userId,
-        connectedAt: parsed.connectedAt,
-        serverTime: parsed.serverTime,
-      };
-    }
-    return null;
+    const parsed = JSON.parse(rawBody.replace(/\u0000/g, "")) as unknown;
+    const topLevel = toSubscribedUserPayload(parsed);
+    if (topLevel) return topLevel;
+
+    if (!parsed || typeof parsed !== "object") return null;
+    const wrappedPayload = (parsed as { payload?: unknown }).payload;
+    return toSubscribedUserPayload(wrappedPayload);
   } catch {
     return null;
   }
@@ -140,8 +57,60 @@ function parseConnectedSuccessPayload(message: IMessage): SocketConnectedSuccess
 class ChatStompSession {
   private client: Client | null = null;
   private connectedSubscription: StompSubscription | null = null;
+  private subscribedUserEventSubscription: StompSubscription | null = null;
   private lastBearerToken: string | null = null;
   private isRefreshing = false;
+
+  private publishWithReceipt(params: {
+    client: Client;
+    destination: string;
+    body: string;
+    eventName: string;
+    payloadForLog?: unknown;
+  }) {
+    const { client, destination, body, eventName, payloadForLog } = params;
+    const receiptId = `${eventName}-${Date.now()}`;
+    let isReceiptReceived = false;
+
+    const timeoutId = window.setTimeout(() => {
+      if (isReceiptReceived) return;
+      console.warn(`[chat-socket] ${eventName} receipt timeout`, {
+        destination,
+        receiptId,
+        timeoutMs: PUBLISH_RECEIPT_TIMEOUT_MS,
+      });
+    }, PUBLISH_RECEIPT_TIMEOUT_MS);
+
+    try {
+      client.watchForReceipt(receiptId, () => {
+        isReceiptReceived = true;
+        window.clearTimeout(timeoutId);
+        chatSocketLog(`[chat-socket] ${eventName} receipt received`, {
+          destination,
+          receiptId,
+        });
+      });
+
+      client.publish({
+        destination,
+        headers: { receipt: receiptId },
+        body,
+      });
+
+      chatSocketLog(`[chat-socket] ${eventName} published`, {
+        destination,
+        receiptId,
+        payload: payloadForLog,
+      });
+    } catch (error) {
+      window.clearTimeout(timeoutId);
+      console.error(`[chat-socket] ${eventName} publish failed`, {
+        destination,
+        receiptId,
+        error,
+      });
+    }
+  }
 
   /*
    * 소켓 연결 시작 엔트리 포인트.
@@ -152,22 +121,22 @@ class ChatStompSession {
   start(accessToken: string) {
     if (typeof window === "undefined") return;
 
-    const brokerURL = resolveBrokerUrl();
-
-    if (!brokerURL) {
-      // 항상 출력해야 하는 설정 누락 경고
-      console.warn("[chat-socket] skip connect: NEXT_PUBLIC_CHAT_STOMP_BROKER_URL 미설정");
-      return;
-    }
-    if (!/^wss?:\/\//.test(brokerURL)) {
-      console.warn("[chat-socket] skip connect: broker URL은 ws:// 또는 wss:// 형식 필요", {
-        brokerURL,
-      });
-      return;
-    }
+    const startConfig = resolveChatSocketStartConfig();
+    if (!startConfig) return;
+    const {
+      brokerURL,
+      connectDestination,
+      connectedDestination,
+      subscribeUserDestination,
+      subscribedUserDestination,
+    } = startConfig;
 
     const bearerToken = ensureBearerToken(accessToken);
-    const deviceId = getOrCreateDeviceId();
+    const deviceId = resolveDeviceIdFromJwt(bearerToken);
+    if (!deviceId) {
+      console.warn("[chat-socket] skip connect: JWT payload에 deviceId가 없습니다.");
+      return;
+    }
 
     chatSocketLog("[chat-socket] start requested", {
       hasAccessToken: Boolean(accessToken),
@@ -193,21 +162,39 @@ class ChatStompSession {
 
     const client = new Client({
       brokerURL,
-      reconnectDelay: Number.isFinite(RECONNECT_DELAY_MS) ? RECONNECT_DELAY_MS : 5000,
+      reconnectDelay: startConfig.reconnectDelayMs,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
       connectHeaders: {
         accessToken: bearerToken,
         deviceId,
       },
-      debug: CHAT_SOCKET_LOG_ENABLED ? (msg) => console.log("[chat-socket:stomp]", msg) : undefined,
+      debug: resolveStompDebugLogger(),
     });
 
     client.onConnect = () => {
       // STOMP 자동 재연결 시 이전 구독 객체는 이미 닫힌 WebSocket에 묶여 있으므로
       // unsubscribe() 대신 참조만 초기화한다. STOMP 레이어가 세션 정리를 처리한다.
       this.connectedSubscription = null;
-      this.connectedSubscription = client.subscribe(CONNECTED_DESTINATION, (message) => {
+      this.subscribedUserEventSubscription = null;
+
+      this.subscribedUserEventSubscription = client.subscribe(
+        subscribedUserDestination,
+        (message) => {
+          const payload = parseSubscribedUserPayload(message.body);
+          if (!payload) {
+            console.warn("[chat-socket] subscribed.user payload 파싱 실패", {
+              body: message.body,
+              headers: message.headers,
+            });
+            return;
+          }
+
+          chatSocketLog("[chat-socket] subscribed.user", payload);
+        },
+      );
+
+      this.connectedSubscription = client.subscribe(connectedDestination, (message) => {
         const code = parseConnectedErrorCode(message);
         if (!code) {
           const connectedPayload = parseConnectedSuccessPayload(message);
@@ -221,21 +208,16 @@ class ChatStompSession {
 
           chatSocketLog("[chat-socket] socket.connected", connectedPayload);
 
-          const subscribeUserPayload: SubscribeUserHandshakePayload = {
-            sessionId: connectedPayload.sessionId,
-            userId: connectedPayload.userId,
-            deviceId,
-            subscribedAt: new Date().toISOString(),
+          const subscribeUserPayload: SubscribeUserRequestPayload = {
+            requestedAt: new Date().toISOString(),
           };
 
-          client.publish({
-            destination: SUBSCRIBE_USER_DESTINATION,
+          this.publishWithReceipt({
+            client,
+            destination: subscribeUserDestination,
             body: JSON.stringify(subscribeUserPayload),
-          });
-
-          chatSocketLog("[chat-socket] subscribe.user published", {
-            destination: SUBSCRIBE_USER_DESTINATION,
-            payload: subscribeUserPayload,
+            eventName: "subscribe.user",
+            payloadForLog: subscribeUserPayload,
           });
           return;
         }
@@ -254,20 +236,18 @@ class ChatStompSession {
       });
 
       client.publish({
-        destination: CONNECT_DESTINATION,
+        destination: connectDestination,
         body: JSON.stringify({ accessToken: bearerToken, deviceId }),
       });
 
       chatSocketLog("[chat-socket] socket.connect published", {
-        destination: CONNECT_DESTINATION,
-        connectedDestination: CONNECTED_DESTINATION,
+        destination: connectDestination,
+        connectedDestination,
       });
     };
 
     client.onStompError = (frame: IFrame) => {
-      const headerCode =
-        toSocketConnectedErrorCode(frame.headers["message"]) ??
-        toSocketConnectedErrorCode(frame.headers["code"]);
+      const headerCode = toStompHeaderErrorCode(frame.headers["message"], frame.headers["code"]);
 
       console.warn("[chat-socket] STOMP error", {
         command: frame.command,
@@ -304,6 +284,7 @@ class ChatStompSession {
    */
   stop(payload: DisconnectHandshakePayload = DEFAULT_LOGOUT_DISCONNECT_PAYLOAD) {
     const client = this.client;
+    const disconnectDestination = resolveChatSocketDisconnectDestination();
     chatSocketLog("[chat-socket] stop requested", {
       payload,
       hasClient: Boolean(client),
@@ -311,25 +292,25 @@ class ChatStompSession {
       isConnected: client?.connected ?? false,
     });
 
-    if (client?.connected) {
+    if (client?.connected && disconnectDestination) {
       const receiptId = `disconnect-${Date.now()}`;
 
       try {
         client.watchForReceipt(receiptId, () => {
           chatSocketLog("[chat-socket] socket.disconnect receipt received", {
             receiptId,
-            destination: DISCONNECT_DESTINATION,
+            destination: disconnectDestination,
           });
         });
 
         client.publish({
-          destination: DISCONNECT_DESTINATION,
+          destination: disconnectDestination,
           headers: { receipt: receiptId },
           body: JSON.stringify(payload),
         });
 
         chatSocketLog("[chat-socket] socket.disconnect published", {
-          destination: DISCONNECT_DESTINATION,
+          destination: disconnectDestination,
           payload,
           receiptId,
         });
@@ -340,6 +321,8 @@ class ChatStompSession {
 
     this.connectedSubscription?.unsubscribe();
     this.connectedSubscription = null;
+    this.subscribedUserEventSubscription?.unsubscribe();
+    this.subscribedUserEventSubscription = null;
 
     if (client) {
       client.deactivate();
