@@ -1,13 +1,11 @@
 import { IconButton } from "@/shared/ui/button";
 
 interface ChatRoomHeaderActionsProps {
-  isOwner: boolean;
   onMembersClick: () => void;
   onSettingsClick: () => void;
 }
 
 export function ChatRoomHeaderActions({
-  isOwner,
   onMembersClick,
   onSettingsClick,
 }: ChatRoomHeaderActionsProps) {
@@ -20,15 +18,13 @@ export function ChatRoomHeaderActions({
         className="p-0"
         iconClassName="h-7 w-7 text-ink-900 [&>path]:h-[18px] [&>path]:w-[18px]"
       />
-      {isOwner ? (
-        <IconButton
-          icon="more"
-          label="채팅방 설정"
-          onClick={onSettingsClick}
-          className="p-0"
-          iconClassName="h-7 w-7 text-ink-900 [&>path]:h-[18px] [&>path]:w-[18px]"
-        />
-      ) : null}
+      <IconButton
+        icon="more"
+        label="채팅방 설정"
+        onClick={onSettingsClick}
+        className="p-0"
+        iconClassName="h-7 w-7 text-ink-900 [&>path]:h-[18px] [&>path]:w-[18px]"
+      />
     </div>
   );
 }
