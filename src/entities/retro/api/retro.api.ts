@@ -20,6 +20,36 @@ interface FetchPublicRetrosParams {
   signal?: AbortSignal;
 }
 
+function trimTrailingSlash(url: string) {
+  return url.replace(/\/$/, "");
+}
+
+function resolvePublicRetroServerBaseUrl() {
+  const configuredPublicBase = process.env.NEXT_PUBLIC_API_TASK_PUBLIC_BASE_URL?.trim();
+  if (configuredPublicBase) return trimTrailingSlash(configuredPublicBase);
+
+  const proxyTaskTarget =
+    process.env.API_PROXY_TASK_TARGET?.trim() || process.env.API_PROXY_TARGET?.trim();
+  if (proxyTaskTarget) return trimTrailingSlash(proxyTaskTarget);
+
+  return null;
+}
+
+function resolvePublicRetroUrl({
+  clientUrl,
+  serverPath,
+}: {
+  clientUrl: string;
+  serverPath: string;
+}) {
+  if (typeof window !== "undefined") return clientUrl;
+
+  const serverBaseUrl = resolvePublicRetroServerBaseUrl();
+  if (!serverBaseUrl) return clientUrl;
+
+  return `${serverBaseUrl}${serverPath}`;
+}
+
 function toRetroListSearchParams({
   isOpen,
   page = 1,
@@ -60,7 +90,13 @@ export async function fetchPublicRetroById(
   reflectionId: number,
   signal?: AbortSignal,
 ): Promise<MyRetroItemResponseDto> {
-  return apiFetch<MyRetroItemResponseDto>(Endpoint.RETRO.BY_ID(reflectionId), { signal });
+  return apiFetch<MyRetroItemResponseDto>(
+    resolvePublicRetroUrl({
+      clientUrl: Endpoint.RETRO.BY_ID(reflectionId),
+      serverPath: `/reflections/${reflectionId}`,
+    }),
+    { signal },
+  );
 }
 
 export async function fetchPublicRetros({
@@ -70,9 +106,13 @@ export async function fetchPublicRetros({
   signal,
 }: FetchPublicRetrosParams = {}): Promise<PublicRetroListResponseDto> {
   const searchParams = toRetroListSearchParams({ isOpen, page, size });
+  const queryString = searchParams.toString();
 
   return apiFetch<PublicRetroListResponseDto>(
-    `${Endpoint.RETRO.PUBLIC_LIST}?${searchParams.toString()}`,
+    resolvePublicRetroUrl({
+      clientUrl: `${Endpoint.RETRO.PUBLIC_LIST}?${queryString}`,
+      serverPath: `/reflections?${queryString}`,
+    }),
     {
       signal,
     },
