@@ -24,9 +24,7 @@ export function useCreateChatRoomForm(
     formState: { isValid, isSubmitting },
   } = form;
 
-  const submitForm = handleSubmit((values) => {
-    options.onValid?.(values);
-  });
+  const submitForm = handleSubmit((values) => options.onValid?.(values));
 
   return {
     ...form,
