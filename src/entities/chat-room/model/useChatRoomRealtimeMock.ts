@@ -5,7 +5,7 @@ import {
   getMockRealtimeStateSnapshot,
   subscribeMockChatRoomRealtime,
   type MockRealtimeEntry,
-} from "../api";
+} from "../api/mock";
 
 interface UseChatRoomRealtimeMockOptions {
   enabled?: boolean;
