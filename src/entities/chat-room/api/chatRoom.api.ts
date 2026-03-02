@@ -19,6 +19,13 @@ interface FetchChatRoomListParams {
   signal?: AbortSignal;
 }
 
+interface FetchChatRoomSearchListParams {
+  title?: string;
+  page?: number;
+  size?: number;
+  signal?: AbortSignal;
+}
+
 const CHAT_ROOM_LIST_ENABLE_MOCK_FALLBACK = true;
 const CHAT_ROOM_OWNER_STATUS_ENABLE_MOCK_FALLBACK = true;
 const CHAT_ROOM_MESSAGES_ENABLE_MOCK_FALLBACK = true;
@@ -51,6 +58,23 @@ export async function fetchChatRoomList({
   } catch {
     if (!CHAT_ROOM_LIST_ENABLE_MOCK_FALLBACK) throw new Error("채팅방 목록 조회 실패");
     return getMockChatRoomListResponse({ type, page, size });
+  }
+}
+
+export async function fetchChatRoomSearchList({
+  title = "",
+  page = 1,
+  size = 10,
+  signal,
+}: FetchChatRoomSearchListParams): Promise<ChatRoomListResponseDto> {
+  try {
+    return await apiFetch<ChatRoomListResponseDto>(
+      Endpoint.CHAT_ROOMS.SEARCH({ title, page, size }),
+      { signal, authRequired: true },
+    );
+  } catch {
+    if (!CHAT_ROOM_LIST_ENABLE_MOCK_FALLBACK) throw new Error("채팅방 검색 조회 실패");
+    return getMockChatRoomListResponse({ type: "OPEN_CHAT", page, size });
   }
 }
 

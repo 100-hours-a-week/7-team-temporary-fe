@@ -1,4 +1,9 @@
-export { fetchChatRoomList, fetchChatRoomMessages, fetchChatRoomOwnerStatus } from "./chatRoom.api";
+export {
+  fetchChatRoomList,
+  fetchChatRoomMessages,
+  fetchChatRoomOwnerStatus,
+  fetchChatRoomSearchList,
+} from "./chatRoom.api";
 export {
   CHAT_ROOM_REALTIME_MOCK_ENABLED,
   CHAT_ROOM_WEBSOCKET_MOCK_ENABLED,

@@ -110,6 +110,14 @@ export const Endpoint = {
 
   CHAT_ROOMS: {
     CREATE: chatPath("/chat-rooms"),
+    SEARCH: ({ title, page = 1, size = 10 }: { title: string; page?: number; size?: number }) => {
+      const searchParams = new URLSearchParams({
+        title,
+        page: String(page),
+        size: String(size),
+      });
+      return chatPath(`/chat-rooms?${searchParams.toString()}`);
+    },
     PARTICIPANTS: chatPath("/chat-rooms/participants"),
     OWNER_STATUS: (ownerId: number) => chatPath(`/chat-rooms/participants/${ownerId}`),
     MESSAGES: (roomId: number) => chatPath(`/chat-rooms/${roomId}/message`),
