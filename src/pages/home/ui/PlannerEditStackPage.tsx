@@ -16,7 +16,7 @@ import {
   type DayPlanScheduleResponseDto,
 } from "@/entities/day-plan";
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
-import { FloatingActionButton } from "@/shared/ui/button";
+import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 import { Endpoint } from "@/shared/api";
 import { buildTimeRange, isAfterDayEnd, parseTimeToMinutes } from "@/shared/lib";
 import { useApiMutation } from "@/shared/query";
@@ -468,14 +468,13 @@ export function PlannerEditStackPage() {
           />
         </div>
 
-        <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
+        <FloatingActionDock>
           <FloatingActionButton
             icon="basket"
             label="태스크 바스켓"
             onClick={handleOpenTaskBasket}
-            className="pointer-events-auto absolute right-5 bottom-[calc(env(safe-area-inset-bottom)+110px)]"
           />
-        </div>
+        </FloatingActionDock>
 
         <ExcludedTasksSheet
           dayPlanId={dayPlanId}
