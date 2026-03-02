@@ -1,4 +1,9 @@
-export { fetchChatRoomList, fetchChatRoomMessages, fetchChatRoomOwnerStatus } from "./api";
+export {
+  fetchChatRoomList,
+  fetchChatRoomMessages,
+  fetchChatRoomOwnerStatus,
+  fetchChatRoomSearchList,
+} from "./api";
 export type {
   ChatMessageDto,
   ChatMessageListResponseDto,
