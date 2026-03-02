@@ -40,6 +40,7 @@ import Reject from "./assets/Reject-icon.svg";
 import WeeklyReport from "./assets/Weekly-Report-icon.svg";
 import Room from "./assets/Room.svg";
 import Room_filled from "./assets/Room-fill.svg";
+import Plus from "./assets/Plus-icon.svg";
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -84,6 +85,7 @@ export const IconMap = {
   weekly_report: WeeklyReport,
   room: Room,
   room_filled: Room_filled,
+  plus: Plus,
 } as const satisfies Record<string, SvgComponent>;
 
 export type IconName = keyof typeof IconMap;

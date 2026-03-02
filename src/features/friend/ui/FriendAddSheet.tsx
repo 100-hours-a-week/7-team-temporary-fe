@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { FriendBaseItem } from "@/entities/friend";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { BottomSheet } from "@/shared/ui";
+import { SearchBar } from "@/shared/ui/search";
 import { type FriendSearchResultVM, useFriendSearchSection } from "../model";
 
 interface FriendAddSheetProps {
@@ -66,11 +67,14 @@ export function FriendAddSheet({ open, onOpenChange }: FriendAddSheetProps) {
           </button>
         </header>
 
-        <input
+        <SearchBar
           value={keyword}
-          onChange={(event) => setKeyword(event.target.value)}
+          onChange={setKeyword}
           placeholder="닉네임 검색"
-          className="text-md h-11 w-full shrink-0 rounded-xl border border-neutral-200 bg-white px-4 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none"
+          actionLabel="검색"
+          actionDisabled={!keyword.trim()}
+          onActionClick={() => setKeyword((prev) => prev.trim())}
+          className="shrink-0"
         />
 
         <div
