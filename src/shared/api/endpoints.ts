@@ -111,6 +111,8 @@ export const Endpoint = {
   CHAT_ROOMS: {
     CREATE: chatPath("/chat-rooms"),
     DETAIL: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
+    UPDATE: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
+    DELETE: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
     SEARCH: ({ title, page = 1, size = 10 }: { title: string; page?: number; size?: number }) => {
       const searchParams = new URLSearchParams({
         title,
