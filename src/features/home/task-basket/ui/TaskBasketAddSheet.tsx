@@ -13,6 +13,7 @@ import type {
   DayPlanScheduleStatus,
 } from "@/entities/day-plan";
 import { Endpoint } from "@/shared/api";
+import { formatMinutesToHHmm, parseHHmmToMinutes, splitHHmmToParts } from "@/shared/lib";
 import { useApiMutation, useMutationErrorEffect } from "@/shared/query";
 import { BottomSheet } from "@/shared/ui";
 import { FormField, BASE_INPUT_CLASS_NAME } from "@/shared/form/ui";
@@ -55,11 +56,9 @@ export function TaskBasketAddSheet({
   const hasTimeConflict = (newStart: number, newEnd: number) =>
     tasks.some((task) => {
       if (!task.startAt || !task.endAt) return false;
-      const [startH, startM] = task.startAt.split(":").map(Number);
-      const [endH, endM] = task.endAt.split(":").map(Number);
-      if ([startH, startM, endH, endM].some((value) => Number.isNaN(value))) return false;
-      const taskStart = startH * 60 + startM;
-      const taskEnd = endH * 60 + endM;
+      const taskStart = parseHHmmToMinutes(task.startAt);
+      const taskEnd = parseHHmmToMinutes(task.endAt);
+      if (taskStart === null || taskEnd === null) return false;
       return newStart < taskEnd && newEnd > taskStart;
     });
 
@@ -237,15 +236,8 @@ export function TaskBasketAddSheet({
       }
     }
 
-    const timeLabel = (value: number) => String(value).padStart(2, "0");
-    const startAt =
-      shouldUseTime && startMinutes !== null
-        ? `${timeLabel(Number(values.startHour))}:${timeLabel(Number(values.startMinute))}`
-        : "";
-    const endAt =
-      shouldUseTime && endMinutes !== null
-        ? `${timeLabel(Number(values.endHour))}:${timeLabel(Number(values.endMinute))}`
-        : "";
+    const startAt = shouldUseTime && startMinutes !== null ? formatMinutesToHHmm(startMinutes) : "";
+    const endAt = shouldUseTime && endMinutes !== null ? formatMinutesToHHmm(endMinutes) : "";
 
     const payload = buildPayload(values, startAt, endAt);
 
@@ -288,11 +280,8 @@ export function TaskBasketAddSheet({
   const dayEndTime = useUserPreferencesStore((state) => state.dayEndTime);
   const dayEndLimitMinutes = useMemo(() => {
     if (!dayEndTime) return null;
-    const [hourText, minuteText] = dayEndTime.split(":");
-    const hour = Number(hourText);
-    const minute = Number(minuteText);
-    if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
-    const total = hour * 60 + minute;
+    const total = parseHHmmToMinutes(dayEndTime);
+    if (total === null) return null;
     if (total < 12 * 60) return null;
     return Math.floor(total / 10) * 10;
   }, [dayEndTime]);
@@ -321,17 +310,8 @@ export function TaskBasketAddSheet({
   useEffect(() => {
     if (open) {
       if (editingTask) {
-        const normalizeTimePart = (value: string) => {
-          if (!value) return "";
-          const parsed = Number(value);
-          return Number.isNaN(parsed) ? "" : String(parsed);
-        };
-        const [startHourRaw = "", startMinuteRaw = ""] = editingTask.startAt?.split(":") ?? [];
-        const [endHourRaw = "", endMinuteRaw = ""] = editingTask.endAt?.split(":") ?? [];
-        const startHour = normalizeTimePart(startHourRaw);
-        const startMinute = normalizeTimePart(startMinuteRaw);
-        const endHour = normalizeTimePart(endHourRaw);
-        const endMinute = normalizeTimePart(endMinuteRaw);
+        const { hour: startHour, minute: startMinute } = splitHHmmToParts(editingTask.startAt);
+        const { hour: endHour, minute: endMinute } = splitHHmmToParts(editingTask.endAt);
         reset(
           {
             content: editingTask.title ?? "",
