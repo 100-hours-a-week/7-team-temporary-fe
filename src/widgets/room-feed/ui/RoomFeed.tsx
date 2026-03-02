@@ -1,10 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { useQueryClient } from "@tanstack/react-query";
 
 import type { ChatRoomListItemVM } from "@/entities/chat-room";
-import { useChatRoomRealtimeMock, useGroupChatRoomListQuery } from "@/entities/chat-room";
+import { chatRoomQueryKeys, useGroupChatRoomListQuery } from "@/entities/chat-room";
 import { usePaginatedAccumulator, useInfiniteScrollTrigger } from "@/shared/hooks";
+import { chatStompSession } from "@/shared/socket";
 import { FloatingActionButton } from "@/shared/ui/button";
 import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
 
@@ -30,6 +33,7 @@ interface RoomFeedProps {
 }
 
 export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }: RoomFeedProps) {
+  const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<RoomSection>(ROOM_SECTION.GROUP_CHAT);
   const [currentPage, setCurrentPage] = useState(CHAT_ROOM_LIST_PAGE);
   const scrollRef = useRef<HTMLElement>(null);
@@ -42,7 +46,7 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
   });
 
   const {
-    fetchedItems: fetchedRooms,
+    fetchedItems: rooms,
     hasMore,
     isInitialLoading,
     isFetching,
@@ -69,6 +73,25 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
     reset();
   }, [isGroupChatSection, reset]);
 
+  // user queue 이벤트로 목록 요약이 바뀌면 1페이지부터 다시 로드
+  useEffect(() => {
+    if (!enabled || !isGroupChatSection) return;
+
+    const refreshList = () => {
+      setCurrentPage(CHAT_ROOM_LIST_PAGE);
+      reset();
+      void queryClient.invalidateQueries({ queryKey: chatRoomQueryKeys.searchAll() });
+    };
+
+    const unsubscribeSummary = chatStompSession.onChatSummaryChanged(refreshList);
+    const unsubscribeUnread = chatStompSession.onUnreadChanged(refreshList);
+
+    return () => {
+      unsubscribeSummary();
+      unsubscribeUnread();
+    };
+  }, [enabled, isGroupChatSection, queryClient, reset]);
+
   const loadMore = useCallback(() => {
     if (!enabled) return;
     if (!isGroupChatSection) return;
@@ -85,29 +108,6 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
     onLoadMore: loadMore,
     rootRef: scrollRef,
   });
-
-  const roomIds = useMemo(() => fetchedRooms.map((room) => room.roomId), [fetchedRooms]);
-  const realtimeStateMap = useChatRoomRealtimeMock({
-    enabled: enabled && isGroupChatSection,
-    roomIds,
-    intervalMs: 3000,
-  });
-
-  const rooms = useMemo(
-    () =>
-      fetchedRooms.map((room) => {
-        const realtime = realtimeStateMap[room.roomId];
-        if (!realtime) return room;
-
-        return {
-          ...room,
-          lastMessage: realtime.lastMessage,
-          lastMessageAt: realtime.lastMessageAt,
-          unreadCount: realtime.unreadCount,
-        };
-      }),
-    [fetchedRooms, realtimeStateMap],
-  );
 
   return (
     <section
