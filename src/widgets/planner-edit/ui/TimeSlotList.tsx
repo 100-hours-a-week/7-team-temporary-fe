@@ -1,5 +1,6 @@
 import type { TaskItemModel } from "@/entities/day-plan";
 import { HomeTaskItem } from "@/entities/day-plan";
+import { parseHHmmToMinutes } from "@/shared/lib";
 
 interface TimeSlotListProps {
   slots: number[];
@@ -8,9 +9,9 @@ interface TimeSlotListProps {
 }
 
 const parseHour = (time?: string) => {
-  if (!time) return null;
-  const [hours] = time.split(":").map(Number);
-  return Number.isNaN(hours) ? null : hours;
+  const minutes = parseHHmmToMinutes(time);
+  if (minutes === null) return null;
+  return Math.floor(minutes / 60);
 };
 
 export function TimeSlotList({ slots, tasks = [], onToggleComplete }: TimeSlotListProps) {

@@ -8,6 +8,7 @@ import type { TodoCartTaskItemModel } from "@/entities/day-plan";
 import { useDayPlanScheduleByIdQuery } from "@/entities/day-plan";
 import { TodoCartTaskItem, type TodoCartViewMode } from "@/entities/day-plan";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
+import { parseHHmmToMinutes } from "@/shared/lib";
 
 type TodoListTask = TodoCartTaskItemModel & { status?: DayPlanScheduleStatus };
 
@@ -140,20 +141,13 @@ function getViewMode(task: TodoListTask): TodoCartViewMode {
 }
 
 function sortByStartTimeDesc(left?: string, right?: string) {
-  const leftMinutes = toMinutes(left);
-  const rightMinutes = toMinutes(right);
+  const leftMinutes = parseHHmmToMinutes(left);
+  const rightMinutes = parseHHmmToMinutes(right);
 
   if (leftMinutes === null && rightMinutes === null) return 0;
   if (leftMinutes === null) return 1;
   if (rightMinutes === null) return -1;
   return rightMinutes - leftMinutes;
-}
-
-function toMinutes(time?: string) {
-  if (!time) return null;
-  const [hours, minutes] = time.split(":").map(Number);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
-  return hours * 60 + minutes;
 }
 
 const ListContainer = styled.div`
