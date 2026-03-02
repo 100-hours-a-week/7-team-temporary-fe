@@ -1,4 +1,5 @@
 import { apiFetch, Endpoint } from "@/shared/api";
+import { CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED, getMockChatRoomMessageListResponse } from "./mock";
 
 import type {
   ChatRoomDetailDto,
@@ -97,6 +98,10 @@ export async function fetchChatRoomMessages({
   size?: number;
   signal?: AbortSignal;
 }): Promise<ChatMessageListResponseDto> {
+  if (CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED) {
+    return getMockChatRoomMessageListResponse({ roomId, cursor, size });
+  }
+
   const searchParams = new URLSearchParams();
   if (typeof cursor === "number") searchParams.set("cursor", String(cursor));
   if (typeof size === "number") searchParams.set("size", String(size));
