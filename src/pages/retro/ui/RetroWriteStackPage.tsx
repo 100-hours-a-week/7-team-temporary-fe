@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from "react";
 
 import { dayPlanQueryKeys } from "@/entities/day-plan";
+import { dayPlanScheduleQueryKeys } from "@/entities/day-plan-schedule";
 import { retroQueryKeys } from "@/entities/retro";
 import { RetroWriteForm } from "@/features/retro";
 import { formatYmdDate, parseDateInput } from "@/shared/lib";
@@ -28,7 +29,7 @@ export function RetroWriteStackPage({ baseDate, dayPlanId = null }: RetroWriteSt
 
   const invalidateKeys = useMemo(
     () => [
-      ...dayPlanQueryKeys.dayPlanScheduleCacheKeys({
+      ...dayPlanScheduleQueryKeys.dayPlanScheduleCacheKeys({
         dayPlanId,
         dayPlanDate: baseDate,
       }),

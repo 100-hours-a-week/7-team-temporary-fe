@@ -2,7 +2,7 @@
 
 import type { Meta, StoryObj } from "@storybook/nextjs";
 import { TodoList } from "@/widgets/planner-edit";
-import type { TodoCartTaskItemModel } from "@/entities/day-plan";
+import type { TodoCartTaskItemModel } from "@/entities/day-plan-schedule";
 
 const meta: Meta<typeof TodoList> = {
   title: "widgets/planner-edit/TodoList",

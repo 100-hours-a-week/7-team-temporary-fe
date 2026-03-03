@@ -1,4 +1,4 @@
-import type { DayPlanPeriodSchedulesModel } from "@/entities/day-plan";
+import type { DayPlanPeriodSchedulesModel } from "@/entities/day-plan-presence";
 
 export interface HomeWeekPlanPresenceVM {
   hasPlanByDate: Map<string, boolean>;

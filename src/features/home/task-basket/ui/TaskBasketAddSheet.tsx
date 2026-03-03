@@ -2,26 +2,50 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { TodoCartTaskItemModel } from "@/entities/day-plan";
-import type { TaskDurationOption } from "@/shared/validation";
+import type { TodoCartTaskItemModel } from "@/entities/day-plan-schedule";
 import { TASK_BASKET_FORM_DEFAULTS, useTaskBasketForm, type TaskBasketFormModel } from "../model";
-import { TASK_DURATION_OPTIONS } from "@/shared/validation";
-import type {
-  CreateDayPlanScheduleRequestDto,
-  DayPlanScheduleDuration,
-  DayPlanScheduleItemDto,
-  DayPlanScheduleStatus,
-} from "@/entities/day-plan";
-import { Endpoint } from "@/shared/api";
-import { formatMinutesToHHmm, parseHHmmToMinutes, splitHHmmToParts } from "@/shared/lib";
-import { useApiMutation, useMutationErrorEffect } from "@/shared/query";
+import { parseHHmmToMinutes } from "@/shared/lib";
+import { useMutationErrorEffect } from "@/shared/query";
 import { BottomSheet } from "@/shared/ui";
 import { FormField, BASE_INPUT_CLASS_NAME } from "@/shared/form/ui";
 import { PrimaryButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { useUserPreferencesStore } from "@/entities/user";
+import {
+  toCreateDayPlanScheduleRequestDto,
+  toTaskBasketFormModelFromTask,
+  toTaskBasketTimeRange,
+  useTaskBasketScheduleMutations,
+} from "../model";
+import { TaskDurationOptionList } from "./TaskDurationOptionList";
+import { TaskTimeSelectList } from "./TaskTimeSelectList";
+import {
+  TASK_BASKET_AI_TIME_HINT,
+  TASK_BASKET_CONTENT_LABEL,
+  TASK_BASKET_CONTENT_MAX_LENGTH,
+  TASK_BASKET_CONTENT_PLACEHOLDER,
+  TASK_BASKET_CREATE_SUBMIT_LABEL,
+  TASK_BASKET_CREATE_SUCCESS_MESSAGE,
+  TASK_BASKET_CREATE_TITLE,
+  TASK_BASKET_DAY_END_MIN_THRESHOLD,
+  TASK_BASKET_DEFAULT_DAY_END_HOUR,
+  TASK_BASKET_DEFAULT_DAY_END_MINUTE,
+  TASK_BASKET_EDIT_SUBMIT_LABEL,
+  TASK_BASKET_EDIT_TITLE,
+  TASK_BASKET_FIXED_TIME_LABEL,
+  TASK_BASKET_IMMERSION_LABEL,
+  TASK_BASKET_MINUTE_OPTIONS,
+  TASK_BASKET_NO_DAY_PLAN_MESSAGE,
+  TASK_BASKET_SHEET_EXPAND_HEIGHT,
+  TASK_BASKET_SHEET_PEEK_HEIGHT,
+  TASK_BASKET_TIME_CONFLICT_MESSAGE,
+  TASK_BASKET_UPDATE_SUCCESS_MESSAGE,
+  TASK_BASKET_URGENT_LABEL,
+  TASK_BASKET_VALIDATE_DIRTY_OPTIONS,
+  TASK_BASKET_VALIDATE_OPTIONS,
+} from "./TaskBasketAddSheet.constants";
 
-type TodoTask = TodoCartTaskItemModel & { status?: DayPlanScheduleStatus };
+type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 
 interface TaskBasketAddSheetProps {
   open: boolean;
@@ -29,7 +53,6 @@ interface TaskBasketAddSheetProps {
   tasks: TodoTask[];
   dayPlanId: number | null;
   invalidateKeys?: Array<readonly unknown[]>;
-  onAddTask: (task: TodoTask) => void;
   editingTask?: TodoTask | null;
   onUpdateTask?: (task: TodoTask) => void;
 }
@@ -40,7 +63,6 @@ export function TaskBasketAddSheet({
   tasks,
   dayPlanId,
   invalidateKeys,
-  onAddTask,
   editingTask = null,
   onUpdateTask,
 }: TaskBasketAddSheetProps) {
@@ -66,134 +88,13 @@ export function TaskBasketAddSheet({
     onOpenChange(false);
   };
 
-  const createScheduleMutation = useApiMutation<
-    CreateDayPlanScheduleRequestDto,
-    CreateDayPlanScheduleRequestDto,
-    DayPlanScheduleItemDto | undefined
-  >({
-    url: () => {
-      if (!dayPlanId) {
-        throw new Error("dayPlanId가 없습니다.");
-      }
-      return Endpoint.DAY_PLAN.SCHEDULE_BY_ID(dayPlanId);
-    },
-    method: "POST",
-    dtoFn: (payload) => payload,
-    authRequired: true,
-    refreshOnUnauthorized: true,
-    invalidateKeys: invalidateKeys ?? [],
-  });
-  const updateScheduleMutation = useApiMutation<
-    CreateDayPlanScheduleRequestDto,
-    CreateDayPlanScheduleRequestDto,
-    void
-  >({
-    url: () => {
-      if (!editingTask) {
-        throw new Error("editingTask가 없습니다.");
-      }
-      return Endpoint.SCHEDULE.BY_ID(editingTask.scheduleId);
-    },
-    method: "PUT",
-    dtoFn: (payload) => payload,
-    authRequired: true,
-    refreshOnUnauthorized: true,
-    invalidateKeys: invalidateKeys ?? [],
+  const { createScheduleMutation, updateScheduleMutation } = useTaskBasketScheduleMutations({
+    dayPlanId,
+    editingTask,
+    invalidateKeys,
   });
   useMutationErrorEffect(createScheduleMutation);
   useMutationErrorEffect(updateScheduleMutation);
-
-  const mapDurationToApi = (duration: TaskDurationOption | null) => {
-    if (!duration) return undefined;
-    const durationMap: Record<TaskDurationOption, DayPlanScheduleDuration> = {
-      "~30분": "MINUTE_UNDER_30",
-      "30분~1시간": "MINUTE_30_TO_60",
-      "1~2시간": "HOUR_1_TO_2",
-      "2~4시간": "HOUR_2_TO_4",
-      "4시간~": "HOUR_OVER_4",
-    };
-    return durationMap[duration];
-  };
-
-  const mapDurationFromApi = (duration: DayPlanScheduleDuration | TaskDurationOption | null) => {
-    if (!duration) return null;
-    if (TASK_DURATION_OPTIONS.includes(duration as TaskDurationOption)) {
-      return duration as TaskDurationOption;
-    }
-    const durationMap: Record<DayPlanScheduleDuration, TaskDurationOption> = {
-      MINUTE_UNDER_30: "~30분",
-      MINUTE_30_TO_60: "30분~1시간",
-      HOUR_1_TO_2: "1~2시간",
-      HOUR_2_TO_4: "2~4시간",
-      HOUR_OVER_4: "4시간~",
-    };
-    return durationMap[duration as DayPlanScheduleDuration] ?? null;
-  };
-
-  const buildPayload = (values: TaskBasketFormModel, startAt: string, endAt: string) => {
-    const basePayload: CreateDayPlanScheduleRequestDto = {
-      title: values.content.trim(),
-      type: values.isFixed ? "FIXED" : "FLEX",
-    };
-
-    if (values.isFixed) {
-      return {
-        ...basePayload,
-        startAt,
-        endAt,
-      };
-    }
-
-    const flexPayload: CreateDayPlanScheduleRequestDto = {
-      ...basePayload,
-      estimatedTimeRange: mapDurationToApi(values.duration),
-      focusLevel: values.immersion,
-      isUrgent: values.isUrgent,
-    };
-    if (shouldShowTimeFields) {
-      return {
-        ...flexPayload,
-        startAt,
-        endAt,
-      };
-    }
-    return flexPayload;
-  };
-
-  const buildTodoTask = (
-    values: TaskBasketFormModel,
-    startAt: string,
-    endAt: string,
-    response?: DayPlanScheduleItemDto,
-  ): TodoTask => {
-    if (response) {
-      return {
-        scheduleId: response.scheduleId,
-        title: response.title,
-        status: response.status,
-        type: response.type,
-        startAt: response.startAt,
-        endAt: response.endAt,
-        estimatedTimeRange: response.estimatedTimeRange,
-        focusLevel: response.focusLevel,
-        isUrgent: response.isUrgent,
-        assignedBy: response.assignedBy,
-      };
-    }
-
-    return {
-      scheduleId: Date.now(),
-      title: values.content.trim(),
-      status: "TODO",
-      type: values.isFixed ? "FIXED" : "FLEX",
-      startAt,
-      endAt,
-      estimatedTimeRange: values.isFixed ? null : values.duration,
-      focusLevel: values.isFixed ? null : values.immersion,
-      isUrgent: values.isFixed ? null : values.isUrgent,
-      assignedBy: "USER",
-    };
-  };
 
   const buildEditedTask = (
     values: TaskBasketFormModel,
@@ -215,43 +116,41 @@ export function TaskBasketAddSheet({
 
   const handleFormSubmit = async (values: TaskBasketFormModel) => {
     if (!dayPlanId && !editingTask) {
-      showToast("일정을 생성할 날짜 정보가 없습니다.", "error");
+      showToast(TASK_BASKET_NO_DAY_PLAN_MESSAGE, "error");
       return;
     }
 
     const shouldUseTime = values.isFixed || isAssignedFlexEditing || hasEditingTime;
-    const startMinutes =
-      shouldUseTime && values.startHour !== "" && values.startMinute !== ""
-        ? Number(values.startHour) * 60 + Number(values.startMinute)
-        : null;
-    const endMinutes =
-      shouldUseTime && values.endHour !== "" && values.endMinute !== ""
-        ? Number(values.endHour) * 60 + Number(values.endMinute)
-        : null;
+    const { startMinutes, endMinutes, startAt, endAt } = toTaskBasketTimeRange(
+      values,
+      shouldUseTime,
+    );
 
     if (shouldUseTime && startMinutes !== null && endMinutes !== null) {
       if (hasTimeConflict(startMinutes, endMinutes)) {
-        showToast("기존 시간에 다른 일정이 이미 존재합니다.", "error");
+        showToast(TASK_BASKET_TIME_CONFLICT_MESSAGE, "error");
         return;
       }
     }
 
-    const startAt = shouldUseTime && startMinutes !== null ? formatMinutesToHHmm(startMinutes) : "";
-    const endAt = shouldUseTime && endMinutes !== null ? formatMinutesToHHmm(endMinutes) : "";
-
-    const payload = buildPayload(values, startAt, endAt);
+    const payload = toCreateDayPlanScheduleRequestDto({
+      form: values,
+      shouldShowTimeFields,
+      startAt,
+      endAt,
+    });
 
     try {
       if (editingTask) {
         await updateScheduleMutation.mutateAsync(payload);
         const nextTask = buildEditedTask(values, startAt, endAt, editingTask);
         onUpdateTask?.(nextTask);
-        showToast("할 일이 수정되었습니다.", "success");
+        showToast(TASK_BASKET_UPDATE_SUCCESS_MESSAGE, "success");
         handleClose();
         return;
       }
       await createScheduleMutation.mutateAsync(payload);
-      showToast("할 일이 추가되었습니다.", "success");
+      showToast(TASK_BASKET_CREATE_SUCCESS_MESSAGE, "success");
       handleClose();
     } catch (error) {
       console.error(error);
@@ -282,17 +181,21 @@ export function TaskBasketAddSheet({
     if (!dayEndTime) return null;
     const total = parseHHmmToMinutes(dayEndTime);
     if (total === null) return null;
-    if (total < 12 * 60) return null;
+    if (total < TASK_BASKET_DAY_END_MIN_THRESHOLD) return null;
     return Math.floor(total / 10) * 10;
   }, [dayEndTime]);
-  const dayEndHour = dayEndLimitMinutes !== null ? Math.floor(dayEndLimitMinutes / 60) : 23;
-  const dayEndMinute = dayEndLimitMinutes !== null ? dayEndLimitMinutes % 60 : 50;
+  const dayEndHour =
+    dayEndLimitMinutes !== null
+      ? Math.floor(dayEndLimitMinutes / 60)
+      : TASK_BASKET_DEFAULT_DAY_END_HOUR;
+  const dayEndMinute =
+    dayEndLimitMinutes !== null ? dayEndLimitMinutes % 60 : TASK_BASKET_DEFAULT_DAY_END_MINUTE;
   const hourOptions = useMemo(() => {
     const startHour = 0;
     const endHour = Math.max(startHour, dayEndHour);
     return Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
   }, [dayEndHour]);
-  const baseMinuteOptions = useMemo(() => [0, 10, 20, 30, 40, 50], []);
+  const baseMinuteOptions = useMemo(() => [...TASK_BASKET_MINUTE_OPTIONS], []);
   const getMinuteOptions = useCallback(
     (hourValue: string) => {
       const hour = Number(hourValue);
@@ -310,24 +213,7 @@ export function TaskBasketAddSheet({
   useEffect(() => {
     if (open) {
       if (editingTask) {
-        const { hour: startHour, minute: startMinute } = splitHHmmToParts(editingTask.startAt);
-        const { hour: endHour, minute: endMinute } = splitHHmmToParts(editingTask.endAt);
-        reset(
-          {
-            content: editingTask.title ?? "",
-            isFixed: editingTask.type === "FIXED",
-            startHour,
-            startMinute,
-            endHour,
-            endMinute,
-            duration: mapDurationFromApi(
-              editingTask.estimatedTimeRange as DayPlanScheduleDuration | TaskDurationOption | null,
-            ),
-            immersion: editingTask.focusLevel ?? 5,
-            isUrgent: Boolean(editingTask.isUrgent),
-          },
-          { keepDirty: false },
-        );
+        reset(toTaskBasketFormModelFromTask(editingTask), { keepDirty: false });
       } else {
         reset(TASK_BASKET_FORM_DEFAULTS);
       }
@@ -352,15 +238,15 @@ export function TaskBasketAddSheet({
         onOpenChange={handleSheetOpenChange}
         expanded={isExpanded}
         onExpandedChange={setIsExpanded}
-        peekHeight={85}
-        expandHeight={90}
+        peekHeight={TASK_BASKET_SHEET_PEEK_HEIGHT}
+        expandHeight={TASK_BASKET_SHEET_EXPAND_HEIGHT}
         enableDragHandle
         className="z-[99] pb-[env(safe-area-inset-bottom)]"
         sheetClassName="z-[99]"
       >
         <div className="flex h-full flex-col px-6">
           <h2 className="text-2xl font-semibold text-neutral-900">
-            {isEditMode ? "할 일 수정" : "할 일"}
+            {isEditMode ? TASK_BASKET_EDIT_TITLE : TASK_BASKET_CREATE_TITLE}
           </h2>
 
           <form
@@ -368,15 +254,15 @@ export function TaskBasketAddSheet({
             onSubmit={submitForm}
           >
             <FormField
-              label="할 일 내용"
+              label={TASK_BASKET_CONTENT_LABEL}
               error={errors.content?.message}
             >
               <input
                 type="text"
-                placeholder="스크럼 시간"
+                placeholder={TASK_BASKET_CONTENT_PLACEHOLDER}
                 className={BASE_INPUT_CLASS_NAME}
                 {...register("content")}
-                maxLength={25}
+                maxLength={TASK_BASKET_CONTENT_MAX_LENGTH}
               />
             </FormField>
 
@@ -387,99 +273,57 @@ export function TaskBasketAddSheet({
                   className="h-5 w-5 rounded border-neutral-300 text-neutral-900"
                   {...register("isFixed")}
                 />
-                고정 시간
+                {TASK_BASKET_FIXED_TIME_LABEL}
               </label>
 
               {!isFixed && !isAssignedFlexEditing && (
                 <div className="rounded-2xl bg-neutral-100 px-4 py-3 text-sm text-[var(--color-ink-300)]">
-                  고정 시간이 지정되어있지 않을 경우, AI가 잘 맞는 시간대로 배치합니다!
+                  {TASK_BASKET_AI_TIME_HINT}
                 </div>
               )}
 
               {shouldShowTimeFields && (
-                <div className="flex flex-col gap-2">
-                  {(isAssignedFlexEditing || hasEditingTime) && !isFixed ? (
-                    <div className="text-sm font-semibold text-neutral-900">배치 시간</div>
-                  ) : null}
-                  <div className="flex items-center justify-between gap-3 text-base font-semibold text-neutral-900">
-                    <TimeSelect
-                      label="시작 시간"
-                      hourOptions={hourOptions}
-                      minuteOptions={getMinuteOptions(watch("startHour"))}
-                      hourValue={watch("startHour")}
-                      minuteValue={watch("startMinute")}
-                      onHourChange={(value) =>
-                        setValue("startHour", value, {
-                          shouldValidate: true,
-                        })
-                      }
-                      onMinuteChange={(value) =>
-                        setValue("startMinute", value, {
-                          shouldValidate: true,
-                        })
-                      }
-                    />
-                    <span className="text-neutral-400">—</span>
-                    <TimeSelect
-                      label="종료 시간"
-                      hourOptions={hourOptions}
-                      minuteOptions={getMinuteOptions(watch("endHour"))}
-                      hourValue={watch("endHour")}
-                      minuteValue={watch("endMinute")}
-                      onHourChange={(value) =>
-                        setValue("endHour", value, {
-                          shouldValidate: true,
-                        })
-                      }
-                      onMinuteChange={(value) =>
-                        setValue("endMinute", value, {
-                          shouldValidate: true,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
+                <TaskTimeSelectList
+                  showArrangedLabel={(isAssignedFlexEditing || hasEditingTime) && !isFixed}
+                  start={{
+                    hourOptions,
+                    minuteOptions: getMinuteOptions(watch("startHour")),
+                    hourValue: watch("startHour"),
+                    minuteValue: watch("startMinute"),
+                    onHourChange: (value) =>
+                      setValue("startHour", value, TASK_BASKET_VALIDATE_OPTIONS),
+                    onMinuteChange: (value) =>
+                      setValue("startMinute", value, TASK_BASKET_VALIDATE_OPTIONS),
+                  }}
+                  end={{
+                    hourOptions,
+                    minuteOptions: getMinuteOptions(watch("endHour")),
+                    hourValue: watch("endHour"),
+                    minuteValue: watch("endMinute"),
+                    onHourChange: (value) =>
+                      setValue("endHour", value, TASK_BASKET_VALIDATE_OPTIONS),
+                    onMinuteChange: (value) =>
+                      setValue("endMinute", value, TASK_BASKET_VALIDATE_OPTIONS),
+                  }}
+                />
               )}
             </div>
 
             {!isFixed && (
               <>
-                <div className="flex flex-col gap-3">
-                  <div className="text-sm font-semibold text-neutral-900">예상 소요 시간</div>
-                  <div className="flex flex-wrap gap-3 text-center text-[var(--color-gray-300)]">
-                    {TASK_DURATION_OPTIONS.map((option) => {
-                      const isSelected = duration === option;
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                            isSelected
-                              ? "bg-neutral-900 text-white"
-                              : "bg-neutral-100 text-neutral-700"
-                          }`}
-                          onClick={() =>
-                            setValue("duration", option, {
-                              shouldValidate: true,
-                              shouldDirty: true,
-                            })
-                          }
-                        >
-                          {option}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {errors.duration?.message && (
-                    <p className="text-xs text-[var(--color-red-400)]">
-                      {errors.duration?.message}
-                    </p>
-                  )}
-                </div>
+                <TaskDurationOptionList
+                  value={duration}
+                  errorMessage={errors.duration?.message}
+                  onChange={(option) =>
+                    setValue("duration", option, TASK_BASKET_VALIDATE_DIRTY_OPTIONS)
+                  }
+                />
 
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center gap-2">
-                    <div className="text-base font-semibold text-neutral-900">몰입도</div>
+                    <div className="text-base font-semibold text-neutral-900">
+                      {TASK_BASKET_IMMERSION_LABEL}
+                    </div>
                     <div className="text-sm font-semibold text-neutral-900">{immersion}</div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -502,7 +346,7 @@ export function TaskBasketAddSheet({
                     className="h-5 w-5 rounded border-neutral-300 text-neutral-900"
                     {...register("isUrgent")}
                   />
-                  급해요
+                  {TASK_BASKET_URGENT_LABEL}
                 </label>
               </>
             )}
@@ -512,67 +356,11 @@ export function TaskBasketAddSheet({
               className="mt-2 w-full rounded-[28px]"
               disabled={!canSubmit}
             >
-              {isEditMode ? "수정하기" : "할 일 추가"}
+              {isEditMode ? TASK_BASKET_EDIT_SUBMIT_LABEL : TASK_BASKET_CREATE_SUBMIT_LABEL}
             </PrimaryButton>
           </form>
         </div>
       </BottomSheet>
     </>
-  );
-}
-
-interface TimeSelectProps {
-  label: string;
-  hourOptions: number[];
-  minuteOptions: number[];
-  hourValue: string;
-  minuteValue: string;
-  onHourChange: (value: string) => void;
-  onMinuteChange: (value: string) => void;
-}
-
-function TimeSelect({
-  label,
-  hourOptions,
-  minuteOptions,
-  hourValue,
-  minuteValue,
-  onHourChange,
-  onMinuteChange,
-}: TimeSelectProps) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="sr-only">{label}</span>
-      <select
-        className="h-11 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-sm text-neutral-900"
-        value={hourValue}
-        onChange={(event) => onHourChange(event.target.value)}
-      >
-        <option value="">시</option>
-        {hourOptions.map((hour) => (
-          <option
-            key={hour}
-            value={hour}
-          >
-            {hour}시
-          </option>
-        ))}
-      </select>
-      <select
-        className="h-11 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-sm text-neutral-900"
-        value={minuteValue}
-        onChange={(event) => onMinuteChange(event.target.value)}
-      >
-        <option value="">분</option>
-        {minuteOptions.map((minute) => (
-          <option
-            key={minute}
-            value={minute}
-          >
-            {minute}분
-          </option>
-        ))}
-      </select>
-    </div>
   );
 }

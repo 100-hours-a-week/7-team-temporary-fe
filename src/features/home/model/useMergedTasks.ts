@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
-import type { DayPlanScheduleResponseDto } from "@/entities/day-plan";
-import { toTaskItemModelFromHomeTask, type TaskItemModel } from "@/entities/day-plan";
+import type { DayPlanScheduleListModel } from "@/entities/day-plan-schedule";
+import { toTaskItemModelFromHomeTask, type TaskItemModel } from "@/entities/day-plan-schedule";
 
 interface UseMergedTasksParams {
-  data?: DayPlanScheduleResponseDto;
+  data?: DayPlanScheduleListModel;
   currentPage: number;
   pageSize: number;
   overrides: Map<number, boolean>;
@@ -12,7 +12,6 @@ interface UseMergedTasksParams {
 }
 
 interface UseMergedTasksResult {
-  baseTasks: TaskItemModel[];
   tasks: TaskItemModel[];
   baseCompletionById: Map<number, boolean>;
   hasMore: boolean;
@@ -68,10 +67,12 @@ export function useMergedTasks({
     [baseTasks],
   );
 
-  const hasMore = totalPages === null ? baseTasks.length === pageSize : currentPage < totalPages;
+  const hasMore = useMemo(
+    () => (totalPages === null ? baseTasks.length === pageSize : currentPage < totalPages),
+    [baseTasks.length, currentPage, pageSize, totalPages],
+  );
 
   return {
-    baseTasks,
     tasks,
     baseCompletionById,
     hasMore,

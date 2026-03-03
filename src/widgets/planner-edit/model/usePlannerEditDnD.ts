@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 
-import type { EditableTaskItemModel } from "@/entities/day-plan";
+import type { EditableTaskItemModel } from "@/entities/day-plan-schedule";
 import {
   buildTimeRange,
   buildTimeRangeFromEnd,

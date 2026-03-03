@@ -1,5 +1,5 @@
-import type { TaskItemModel } from "@/entities/day-plan";
-import { HomeTaskItem } from "@/entities/day-plan";
+import type { TaskItemModel } from "@/entities/day-plan-schedule";
+import { HomeTaskItem } from "@/entities/day-plan-schedule";
 import { parseHHmmToMinutes } from "@/shared/lib";
 
 interface TimeSlotListProps {
