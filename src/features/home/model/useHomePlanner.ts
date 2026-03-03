@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
-import {
-  toTaskItemModelFromHomeTask,
-  type TaskItemModel,
-  useHomePlanStore,
-} from "@/entities/day-plan";
+import { toTaskItemModelFromHomeTask, type TaskItemModel } from "@/entities/day-plan-schedule";
+import { useHomePlanStore } from "@/entities/day-plan";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
+import { formatDateToYmd } from "./date";
 import { useHomePlannerCalendar } from "./useHomePlannerCalendar";
 import { useHomePlannerQueries } from "./useHomePlannerQueries";
 import { useMergedTasks } from "./useMergedTasks";
@@ -13,12 +11,6 @@ import { toHomeWeekPlanPresenceVM } from "./planPresenceViewModel";
 import { usePlannerStatus } from "./usePlannerStatus";
 
 const PAGE_SIZE = 10;
-const formatDateParam = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
 
 interface UseHomePlannerResult {
   today: Date;
@@ -55,18 +47,10 @@ export function useHomePlanner({
   );
   const [currentPage, setCurrentPage] = useState(1);
 
-  const queryDate = useMemo(() => formatDateParam(selectedDate ?? today), [selectedDate, today]);
-  const weekStartDate = useMemo(() => formatDateParam(weekDays[0]), [weekDays]);
-  const weekEndDate = useMemo(() => formatDateParam(weekDays[weekDays.length - 1]), [weekDays]);
-  const {
-    data,
-    isLoading,
-    isError,
-    periodSchedulesModel,
-    currentScheduleData,
-    isCurrentTaskLoading,
-    isCurrentTaskError,
-  } = useHomePlannerQueries({
+  const queryDate = useMemo(() => formatDateToYmd(selectedDate ?? today), [selectedDate, today]);
+  const weekStartDate = useMemo(() => formatDateToYmd(weekDays[0]), [weekDays]);
+  const weekEndDate = useMemo(() => formatDateToYmd(weekDays[weekDays.length - 1]), [weekDays]);
+  const { scheduleQuery, periodSchedulesQuery, currentScheduleQuery } = useHomePlannerQueries({
     queryDate,
     currentPage,
     pageSize: PAGE_SIZE,
@@ -81,14 +65,14 @@ export function useHomePlanner({
   }, [queryDate]);
 
   const { tasks, baseCompletionById, hasMore } = useMergedTasks({
-    data,
+    data: scheduleQuery.data,
     currentPage,
     pageSize: PAGE_SIZE,
     overrides: completionOverrides,
     resetKey: queryDate,
   });
 
-  const weekDates = useMemo(() => weekDays.map((day) => formatDateParam(day)), [weekDays]);
+  const weekDates = useMemo(() => weekDays.map((day) => formatDateToYmd(day)), [weekDays]);
   const isWeeklyReportAvailable = useMemo(() => {
     const weekEndDate = new Date(weekDays[weekDays.length - 1]);
     weekEndDate.setHours(23, 59, 59, 999);
@@ -99,15 +83,18 @@ export function useHomePlanner({
     () =>
       toHomeWeekPlanPresenceVM({
         weekDates,
-        periodSchedules: periodSchedulesModel,
+        periodSchedules: periodSchedulesQuery.data,
         selectedDate: queryDate,
-        selectedDateHasPlan: data?.totalElements !== undefined ? data.totalElements > 0 : undefined,
+        selectedDateHasPlan:
+          scheduleQuery.data?.totalElements !== undefined
+            ? scheduleQuery.data.totalElements > 0
+            : undefined,
       }),
-    [weekDates, periodSchedulesModel, queryDate, data?.totalElements],
+    [weekDates, periodSchedulesQuery.data, queryDate, scheduleQuery.data?.totalElements],
   );
 
   const hasPlan = useCallback(
-    (day: Date) => hasPlanVM.hasPlanByDate.get(formatDateParam(day)) ?? false,
+    (day: Date) => hasPlanVM.hasPlanByDate.get(formatDateToYmd(day)) ?? false,
     [hasPlanVM],
   );
   const handleToggleComplete = useCallback(
@@ -123,34 +110,34 @@ export function useHomePlanner({
   );
 
   const currentTask = useMemo(() => {
-    if (!currentScheduleData) return null;
-    const baseTask = toTaskItemModelFromHomeTask(currentScheduleData);
+    if (!currentScheduleQuery.data) return null;
+    const baseTask = toTaskItemModelFromHomeTask(currentScheduleQuery.data);
     return {
       ...baseTask,
       isCompleted: completionOverrides.get(baseTask.taskId) ?? baseTask.isCompleted,
     };
-  }, [completionOverrides, currentScheduleData]);
+  }, [completionOverrides, currentScheduleQuery.data]);
   const { statusMessage, currentTaskStatus, todayScheduleLabel } = usePlannerStatus({
-    isError,
-    isLoading,
+    isError: scheduleQuery.isError,
+    isLoading: scheduleQuery.isLoading,
     tasks,
     currentTask,
-    isCurrentTaskLoading,
-    isCurrentTaskError,
+    isCurrentTaskLoading: currentScheduleQuery.isLoading,
+    isCurrentTaskError: currentScheduleQuery.isError,
     selectedDate: selectedDate ?? today,
   });
   // 상태 메시지/표시 텍스트는 usePlannerStatus에서 파생
 
   useEffect(() => {
-    if (data?.dayPlanId) {
-      setHomePlan(data.dayPlanId, queryDate);
+    if (scheduleQuery.data?.dayPlanId) {
+      setHomePlan(scheduleQuery.data.dayPlanId, queryDate);
     }
-  }, [data?.dayPlanId, queryDate, setHomePlan]);
+  }, [scheduleQuery.data?.dayPlanId, queryDate, setHomePlan]);
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled,
     hasMore,
-    isFetching: isLoading,
+    isFetching: scheduleQuery.isFetching,
     onLoadMore: () => setCurrentPage((prev) => prev + 1),
   });
 
@@ -166,12 +153,12 @@ export function useHomePlanner({
     statusMessage,
     currentTask,
     currentTaskStatus,
-    isCurrentTaskLoading,
+    isCurrentTaskLoading: currentScheduleQuery.isLoading,
     handleToggleComplete,
     handleMoveWeek,
     hasPlan,
     hasMore,
-    isLoading,
+    isLoading: scheduleQuery.isLoading,
     loadMoreRef,
   };
 }
