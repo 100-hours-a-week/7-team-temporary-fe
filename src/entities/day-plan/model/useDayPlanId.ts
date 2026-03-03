@@ -1,4 +1,4 @@
-import { useDayPlanScheduleQuery } from "./useDayPlanScheduleQuery";
+import { useDayPlanScheduleQuery } from "@/entities/day-plan-schedule";
 
 interface UseDayPlanIdOptions {
   date: string;
