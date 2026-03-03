@@ -2,16 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { TaskSplitGroup, TaskSplitItem } from "@/features/home";
-import type { TodoCartTaskItemModel } from "@/entities/day-plan";
-import { TaskBasketAddSheet, TaskSplitSheetContent } from "@/features/home";
+import type { ScheduleChildrenPayload, TaskSplitGroup, TaskSplitItem } from "@/features/home";
 import {
-  dayPlanQueryKeys,
+  dayPlanScheduleQueryKeys,
+  type TodoCartTaskItemModel,
   useDayPlanScheduleByIdQuery,
-  useHomePlanStore,
-} from "@/entities/day-plan";
-import { ApiError, Endpoint } from "@/shared/api";
-import { useApiMutation } from "@/shared/query";
+} from "@/entities/day-plan-schedule";
+import {
+  TaskBasketAddSheet,
+  TaskSplitSheetContent,
+  useAiArrangeScheduleMutation,
+  useDeleteScheduleMutation,
+  useScheduleChildrenMutation,
+} from "@/features/home";
+import { useHomePlanStore } from "@/entities/day-plan";
+import { ApiError } from "@/shared/api";
 import { BottomSheet, ConfirmDialog } from "@/shared/ui";
 import { Icon } from "@/shared/ui/icon";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
@@ -22,12 +27,6 @@ import { AiArrangeSheetContent } from "./AiArrangeSheet";
 
 type TodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 type FlowStep = "idle" | "loading" | "ai" | "taskSplit";
-type ScheduleChildrenPayload = {
-  schedules: Array<{
-    parentScheduleId: number;
-    titles: string[];
-  }>;
-};
 
 const LONG_DURATION_VALUES = new Set(["HOUR_2_TO_4", "HOUR_OVER_4", "2~4시간", "4시간~"]);
 const OVER_FOUR_HOURS_VALUES = new Set(["HOUR_OVER_4", "4시간~"]);
@@ -90,7 +89,7 @@ export function TaskBasketStackPage() {
   }, [dayPlanDate, today]);
   const invalidateScheduleKeys = useMemo(
     () =>
-      dayPlanQueryKeys.dayPlanScheduleCacheKeys({
+      dayPlanScheduleQueryKeys.dayPlanScheduleCacheKeys({
         dayPlanId,
         dayPlanDate,
         page: 1,
@@ -99,37 +98,14 @@ export function TaskBasketStackPage() {
     [dayPlanDate, dayPlanId],
   );
 
-  const deleteScheduleMutation = useApiMutation<number, void, void>({
-    url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),
-    method: "DELETE",
-    authRequired: true,
-    refreshOnUnauthorized: true,
+  const deleteScheduleMutation = useDeleteScheduleMutation({
     invalidateKeys: invalidateScheduleKeys,
   });
-
-  const aiArrangeMutation = useApiMutation<void, void, void>({
-    url: () => {
-      if (!dayPlanId) {
-        throw new Error("dayPlanId가 없습니다.");
-      }
-      return Endpoint.DAY_PLAN.AI_ARRANGEMENT(dayPlanId);
-    },
-    method: "POST",
-    authRequired: true,
-    refreshOnUnauthorized: true,
+  const aiArrangeMutation = useAiArrangeScheduleMutation({
+    dayPlanId,
     invalidateKeys: invalidateScheduleKeys,
   });
-
-  const scheduleChildrenMutation = useApiMutation<
-    ScheduleChildrenPayload,
-    ScheduleChildrenPayload,
-    void
-  >({
-    url: Endpoint.SCHEDULE.CHILDREN,
-    method: "POST",
-    authRequired: true,
-    refreshOnUnauthorized: true,
-    dtoFn: (payload) => payload,
+  const scheduleChildrenMutation = useScheduleChildrenMutation({
     invalidateKeys: invalidateScheduleKeys,
     onSuccess: () => {
       setTaskSplitHandled(true);
@@ -508,7 +484,6 @@ export function TaskBasketStackPage() {
         tasks={tasks}
         dayPlanId={dayPlanId}
         invalidateKeys={invalidateScheduleKeys}
-        onAddTask={(task) => setTasks((prev) => [task, ...prev])}
         editingTask={editingTask}
         onUpdateTask={handleUpdateTask}
       />

@@ -4,22 +4,25 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "r
 import { useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 
-import { END_HOUR, START_HOUR, TaskBasketAddSheet } from "@/features/home";
 import {
-  dayPlanQueryKeys,
+  END_HOUR,
+  START_HOUR,
+  TaskBasketAddSheet,
+  useDeleteScheduleMutation,
+} from "@/features/home";
+import {
+  dayPlanScheduleQueryKeys,
   EditableTaskItem,
   ExcludedTaskItem,
+  type DayPlanScheduleListModel,
   type EditableTaskItemModel,
   type TodoCartTaskItemModel,
   useDayPlanScheduleByIdQuery,
-  useHomePlanStore,
-  type DayPlanScheduleResponseDto,
-} from "@/entities/day-plan";
+} from "@/entities/day-plan-schedule";
+import { useHomePlanStore } from "@/entities/day-plan";
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
 import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
-import { Endpoint } from "@/shared/api";
 import { buildTimeRange, formatHHmmRange, isAfterDayEnd, parseHHmmToMinutes } from "@/shared/lib";
-import { useApiMutation } from "@/shared/query";
 import { ConfirmDialog } from "@/shared/ui";
 import { useToast } from "@/shared/ui/toast";
 import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
@@ -74,7 +77,7 @@ export function PlannerEditStackPage() {
   const { data: myProfile } = useMyProfileQuery();
   const scheduleKeys = useMemo(
     () =>
-      dayPlanQueryKeys.dayPlanScheduleCacheKeys({
+      dayPlanScheduleQueryKeys.dayPlanScheduleCacheKeys({
         dayPlanId,
         dayPlanDate,
         page: 1,
@@ -219,11 +222,7 @@ export function PlannerEditStackPage() {
     },
     [mergedTasks],
   );
-  const deleteScheduleMutation = useApiMutation<number, void, void>({
-    url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),
-    method: "DELETE",
-    authRequired: true,
-    refreshOnUnauthorized: true,
+  const deleteScheduleMutation = useDeleteScheduleMutation({
     invalidateKeys: invalidateScheduleKeys,
   });
 
@@ -261,7 +260,7 @@ export function PlannerEditStackPage() {
     });
     if (!dayPlanId || scheduleKeys.length === 0) return;
     scheduleKeys.forEach((key) => {
-      queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
+      queryClient.setQueryData(key, (prev: DayPlanScheduleListModel | undefined) =>
         updateScheduleCache(
           prev,
           resolvedTask.scheduleId,
@@ -330,7 +329,7 @@ export function PlannerEditStackPage() {
         setDroppedTasks((prev) => prev.filter((task) => task.scheduleId !== deleteTargetId));
         if (dayPlanId && scheduleKeys.length > 0) {
           scheduleKeys.forEach((key) => {
-            queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
+            queryClient.setQueryData(key, (prev: DayPlanScheduleListModel | undefined) =>
               removeScheduleCache(prev, deleteTargetId),
             );
           });
@@ -530,7 +529,6 @@ export function PlannerEditStackPage() {
           tasks={sheetTasks}
           dayPlanId={dayPlanId}
           invalidateKeys={invalidateScheduleKeys}
-          onAddTask={() => undefined}
           editingTask={editingTask}
           onUpdateTask={handleUpdateTask}
         />
