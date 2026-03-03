@@ -6,7 +6,7 @@ import type { CSSProperties, ProfilerOnRenderCallback } from "react";
 import { SectionCard, ShinyText } from "@/shared/ui";
 import { SectionActionButton } from "@/shared/ui/button";
 import { Icon } from "@/shared/ui/icon";
-import { HomeTaskItem } from "@/entities/day-plan";
+import { HomeTaskItem } from "@/entities/day-plan-schedule";
 import { useHomePlanner } from "@/features/home";
 import { HomeWeekSelector } from "@/widgets/home-week";
 

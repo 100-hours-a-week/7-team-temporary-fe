@@ -3,14 +3,13 @@ import styled from "@emotion/styled";
 import type { RefObject } from "react";
 import { useEffect, useMemo, useState } from "react";
 
-import type { DayPlanScheduleStatus } from "@/entities/day-plan";
-import type { TodoCartTaskItemModel } from "@/entities/day-plan";
-import { useDayPlanScheduleByIdQuery } from "@/entities/day-plan";
-import { TodoCartTaskItem, type TodoCartViewMode } from "@/entities/day-plan";
+import type { TodoCartTaskItemModel } from "@/entities/day-plan-schedule";
+import { useDayPlanScheduleByIdQuery } from "@/entities/day-plan-schedule";
+import { TodoCartTaskItem, type TodoCartViewMode } from "@/entities/day-plan-schedule";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { parseHHmmToMinutes } from "@/shared/lib";
 
-type TodoListTask = TodoCartTaskItemModel & { status?: DayPlanScheduleStatus };
+type TodoListTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 
 interface TodoListProps {
   tasks: TodoListTask[];

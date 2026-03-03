@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { type EditableTaskItemModel, useDayPlanSchedulesQuery } from "@/entities/day-plan";
+import { type EditableTaskItemModel, useDayPlanSchedulesQuery } from "@/entities/day-plan-schedule";
 
 import { DraggableExcludedTaskItem } from "./DraggableExcludedTaskItem";
 import { ExcludedListBottomSheet } from "./ExcludedListBottomSheet";
