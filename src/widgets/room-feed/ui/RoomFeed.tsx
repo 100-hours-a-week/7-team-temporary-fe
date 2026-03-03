@@ -68,19 +68,16 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
     scrollRef.current?.scrollTo({ top: 0 });
   }, [activeSection]);
 
-  useEffect(() => {
-    setCurrentPage(CHAT_ROOM_LIST_PAGE);
-    reset();
-  }, [isGroupChatSection, reset]);
-
   // user queue 이벤트로 목록 요약이 바뀌면 1페이지부터 다시 로드
   useEffect(() => {
     if (!enabled || !isGroupChatSection) return;
 
     const refreshList = () => {
-      setCurrentPage(CHAT_ROOM_LIST_PAGE);
-      reset();
-      void queryClient.invalidateQueries({ queryKey: chatRoomQueryKeys.searchAll() });
+      if (currentPage !== CHAT_ROOM_LIST_PAGE) {
+        setCurrentPage(CHAT_ROOM_LIST_PAGE);
+        reset();
+      }
+      void queryClient.invalidateQueries({ queryKey: chatRoomQueryKeys.listAll() });
     };
 
     const unsubscribeSummary = chatStompSession.onChatSummaryChanged(refreshList);
@@ -90,7 +87,7 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
       unsubscribeSummary();
       unsubscribeUnread();
     };
-  }, [enabled, isGroupChatSection, queryClient, reset]);
+  }, [currentPage, enabled, isGroupChatSection, queryClient, reset]);
 
   const loadMore = useCallback(() => {
     if (!enabled) return;
