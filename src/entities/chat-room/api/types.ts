@@ -52,6 +52,7 @@ export interface ChatRoomParticipantDto {
   nickname: string;
   cameraEnabled: boolean;
   profileImage?: ChatRoomProfileImageDto | null;
+  lastSeenMessageId?: number | null;
   joinedAt: string;
 }
 
@@ -80,6 +81,8 @@ export interface ChatMessageDto {
   messageType: ChatMessageType;
   senderType: ChatMessageSenderType;
   senderId: number | null;
+  senderNickname?: string | null;
+  senderProfile?: ChatRoomProfileImageDto | null;
   content: string | null;
   images: ChatMessageImageDto[];
   sentAt: string;
