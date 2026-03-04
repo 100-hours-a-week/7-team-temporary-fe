@@ -372,7 +372,7 @@ const DEFAULT_MESSAGE_SEED: ChatMessageDto[] = [
   },
   {
     messageId: 209,
-    messageType: "FILE",
+    messageType: "IMAGE",
     senderType: "USER",
     senderId: 5,
     content: null,
@@ -394,7 +394,7 @@ const DEFAULT_MESSAGE_SEED: ChatMessageDto[] = [
   },
   {
     messageId: 208,
-    messageType: "FILE",
+    messageType: "IMAGE",
     senderType: "USER",
     senderId: 5,
     content: null,
