@@ -25,8 +25,13 @@ export interface MessageSendPayload {
   idempotencyKey: string;
   roomId: number;
   messageType: ChatMessageType;
-  content: string;
+  content: string | null;
   imageKeys: string[];
+}
+
+export interface LastSeenUpdatePayload {
+  participantId: number;
+  lastSeenMessageId: number;
 }
 
 export interface SocketPongPayload {
@@ -131,6 +136,12 @@ export interface MessageCreatedPayload {
   messageType: ChatMessageType;
   senderType: ChatMessageSenderType;
   senderId: number | null;
+  senderNickname?: string | null;
+  senderProfile?: {
+    url: string;
+    expiresAt?: string | null;
+    key?: string;
+  } | null;
   content: string | null;
   images: Array<{ url: string; key: string; sortOrder: number; expiresAt?: string }>;
   sentAt: string;
