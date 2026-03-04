@@ -15,10 +15,9 @@ export interface ChatRoomSummaryDto {
   description: string;
   maxParticipants: number;
   participantsCount: number;
-  lastMessage?: string | null;
-  lastMessageAt?: string | null;
+  lastUserMessagePreview?: string | null;
+  lastUserMessageSentAt?: string | null;
   unreadCount?: number | null;
-  unreadMessageCount?: number | null;
 }
 
 export interface ChatRoomListResponseDto {
