@@ -26,8 +26,12 @@ export interface ChatMessageItemVM {
   messageType: ChatMessageType;
   senderType: ChatMessageSenderType;
   senderId: number | null;
-  senderName: string | null;
-  senderProfileImageUrl: string | null;
+  senderNickname: string | null;
+  senderProfile: {
+    url: string;
+    expiresAt?: string | null;
+    key?: string;
+  } | null;
   isMine: boolean;
   content: string | null;
   imageUrls: string[];
@@ -47,6 +51,7 @@ export interface ChatRoomMemberVM {
   nickname: string;
   cameraEnabled: boolean;
   profileImageUrl: string | null;
+  lastSeenMessageId?: number | null;
   joinedAt: string | null;
   role: "OWNER" | "PARTICIPANT";
 }

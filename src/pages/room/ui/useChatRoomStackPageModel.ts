@@ -39,6 +39,14 @@ function toRoomFeedPreviewFromPendingMessage(message: ChatMessageItemVM): string
   return content && content.length > 0 ? content : "메시지";
 }
 
+function toRoomFeedPreviewFromMessage(message: ChatMessageItemVM): string {
+  const content = message.content?.trim();
+  if (message.messageType === "IMAGE") {
+    return content && content.length > 0 ? content : "이미지";
+  }
+  return content && content.length > 0 ? content : "메시지";
+}
+
 interface UseChatRoomStackPageModelOptions {
   roomId: number;
 }
@@ -52,6 +60,8 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
     () => new Map(),
   );
   const pendingMessagesRef = useRef(pendingMessages);
+  const lastSeenUpdatedMessageIdRef = useRef(0);
+  const lastRoomFeedPatchedMessageIdRef = useRef(0);
   const nextPendingIdRef = useRef(INITIAL_PENDING_MESSAGE_ID);
   const { showToast } = useToast();
 
@@ -74,10 +84,18 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
 
     const participant = detail.participants.find((member) => member.userId === myUserId);
     if (participant?.participantId) return participant.participantId;
-
-    // owner는 participants 목록에 없을 수 있어 userId fallback 유지
-    if (detail.owner.userId === myUserId) return myUserId;
     return undefined;
+  }, [chatRoomDetailQuery.data, myUserId]);
+
+  const myLastSeenMessageId = useMemo(() => {
+    if (myUserId === null) return null;
+    const detail = chatRoomDetailQuery.data;
+    if (!detail) return null;
+
+    const participant = detail.participants.find((member) => member.userId === myUserId);
+    if (!participant) return null;
+
+    return typeof participant.lastSeenMessageId === "number" ? participant.lastSeenMessageId : null;
   }, [chatRoomDetailQuery.data, myUserId]);
 
   useEffect(() => {
@@ -102,6 +120,10 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
     myUserId,
     enabled: isChatRuntimeEnabled && myParticipantId !== undefined,
   });
+
+  useEffect(() => {
+    lastRoomFeedPatchedMessageIdRef.current = 0;
+  }, [roomId]);
 
   const patchRoomFeedLatestMessage = useCallback(
     (payload: { lastMessage: string; lastMessageAt: string }) => {
@@ -130,6 +152,39 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
     [queryClient, roomId],
   );
 
+  const patchRoomFeedUnreadCount = useCallback(
+    (unreadCount: number) => {
+      queryClient.setQueriesData<ChatRoomListModel>(
+        { queryKey: chatRoomQueryKeys.listAll() },
+        (current) => {
+          if (!current) return current;
+
+          let isPatched = false;
+          const content = current.content.map((room) => {
+            if (room.roomId !== roomId) return room;
+            isPatched = true;
+            return {
+              ...room,
+              unreadCount,
+            };
+          });
+
+          if (!isPatched) return current;
+          return { ...current, content };
+        },
+      );
+    },
+    [queryClient, roomId],
+  );
+
+  const refetchMessageList = useCallback(() => {
+    if (!isChatRuntimeEnabled) return;
+    void queryClient.refetchQueries({
+      queryKey: chatRoomQueryKeys.messagesInfinite(roomId, CHAT_ROOM_MESSAGE_PAGE_SIZE, myUserId),
+      type: "active",
+    });
+  }, [isChatRuntimeEnabled, myUserId, queryClient, roomId]);
+
   useEffect(() => {
     return chatStompSession.onMessageSendAccepted(({ idempotencyKey, sentAt }) => {
       const pendingMessage = pendingMessagesRef.current.get(idempotencyKey);
@@ -140,6 +195,9 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
         return next;
       });
 
+      // self-message 요약 이벤트 누락 케이스 대비: 목록 데이터 재검증
+      void queryClient.invalidateQueries({ queryKey: chatRoomQueryKeys.listAll() });
+
       if (!pendingMessage) return;
 
       patchRoomFeedLatestMessage({
@@ -147,7 +205,24 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
         lastMessageAt: sentAt || pendingMessage.sentAt,
       });
     });
-  }, [patchRoomFeedLatestMessage]);
+  }, [patchRoomFeedLatestMessage, queryClient]);
+
+  useEffect(() => {
+    if (myUserId === null) return;
+    if (realtimeMessages.length === 0) return;
+
+    const latestMine = [...realtimeMessages]
+      .reverse()
+      .find((message) => message.senderType === "USER" && message.senderId === myUserId);
+    if (!latestMine) return;
+    if (latestMine.messageId <= lastRoomFeedPatchedMessageIdRef.current) return;
+
+    lastRoomFeedPatchedMessageIdRef.current = latestMine.messageId;
+    patchRoomFeedLatestMessage({
+      lastMessage: toRoomFeedPreviewFromMessage(latestMine),
+      lastMessageAt: latestMine.sentAt,
+    });
+  }, [myUserId, patchRoomFeedLatestMessage, realtimeMessages]);
 
   useEffect(() => {
     return chatStompSession.onMessageSendFailed(({ idempotencyKey, message }) => {
@@ -190,6 +265,44 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
     [chatMessagesQuery.messages, newRealtimeMessages, pendingMessages],
   );
 
+  const latestConfirmedMessageId = useMemo(
+    () =>
+      messages.reduce((latestId, message) => {
+        if (message.messageId <= 0) return latestId;
+        return Math.max(latestId, message.messageId);
+      }, 0),
+    [messages],
+  );
+
+  useEffect(() => {
+    lastSeenUpdatedMessageIdRef.current = 0;
+  }, [roomId]);
+
+  useEffect(() => {
+    if (!isChatRuntimeEnabled) return;
+    if (typeof myParticipantId !== "number" || myParticipantId <= 0) return;
+    if (latestConfirmedMessageId <= 0) return;
+    if (latestConfirmedMessageId <= lastSeenUpdatedMessageIdRef.current) return;
+
+    lastSeenUpdatedMessageIdRef.current = latestConfirmedMessageId;
+    // 읽음 전송 시 목록 unread를 먼저 낙관적으로 0으로 반영한다.
+    patchRoomFeedUnreadCount(0);
+    void queryClient.invalidateQueries({
+      queryKey: chatRoomQueryKeys.listAll(),
+      refetchType: "none",
+    });
+    chatStompSession.sendLastSeenUpdate({
+      participantId: myParticipantId,
+      lastSeenMessageId: latestConfirmedMessageId,
+    });
+  }, [
+    isChatRuntimeEnabled,
+    latestConfirmedMessageId,
+    myParticipantId,
+    patchRoomFeedUnreadCount,
+    queryClient,
+  ]);
+
   const createPendingMessage = useCallback(
     (payload: PendingMessagePayload): ChatMessageItemVM => {
       const messageId = nextPendingIdRef.current;
@@ -200,8 +313,8 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
         messageType: payload.messageType,
         senderType: "USER",
         senderId: myUserId,
-        senderName: null,
-        senderProfileImageUrl: null,
+        senderNickname: null,
+        senderProfile: null,
         isMine: true,
         content: payload.content,
         imageUrls: payload.imageUrls,
@@ -240,7 +353,8 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
       content,
       imageKeys: [],
     });
-  }, [createPendingMessage, draftMessage, roomId, showToast]);
+    refetchMessageList();
+  }, [createPendingMessage, draftMessage, refetchMessageList, roomId, showToast]);
 
   const handleImageSelect = useCallback(
     async (file: File) => {
@@ -251,19 +365,27 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
         const { uploadUrl, imageKey } = await requestPresignedUrl("MESSAGES");
         await uploadToPresignedUrl(uploadUrl, file);
 
+        const pendingMessage = createPendingMessage({
+          messageType: "IMAGE",
+          content: file.name || "이미지 전송 중...",
+          imageUrls: [],
+        });
+        setPendingMessages((prev) => new Map(prev).set(idempotencyKey, pendingMessage));
+
         chatStompSession.sendMessage({
           idempotencyKey,
           roomId,
           messageType: "IMAGE",
-          content: file.name || "image",
+          content: null,
           imageKeys: [imageKey],
         });
+        refetchMessageList();
       } catch (error) {
         console.error("[chat-room] 이미지 메시지 전송 준비 실패", error);
         showToast("이미지 업로드에 실패했습니다.", "error");
       }
     },
-    [roomId, showToast],
+    [createPendingMessage, refetchMessageList, roomId, showToast],
   );
 
   const handleToggleExtraMenu = useCallback(() => {
@@ -272,6 +394,7 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
 
   return {
     messages,
+    myLastSeenMessageId,
     isLoading: (!isInteractiveReady || chatMessagesQuery.isLoading) && messages.length === 0,
     isError: chatMessagesQuery.isError,
     hasMore: chatMessagesQuery.hasMore,

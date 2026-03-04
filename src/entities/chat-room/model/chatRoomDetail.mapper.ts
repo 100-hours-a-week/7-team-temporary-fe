@@ -9,6 +9,7 @@ function toOwnerVM(owner: ChatRoomOwnerDto): ChatRoomMemberVM {
     nickname: owner.nickname,
     cameraEnabled: owner.cameraEnabled,
     profileImageUrl: owner.profileImage?.url ?? null,
+    lastSeenMessageId: null,
     joinedAt: null,
     role: "OWNER",
   };
@@ -21,6 +22,7 @@ function toParticipantVM(participant: ChatRoomParticipantDto): ChatRoomMemberVM 
     nickname: participant.nickname,
     cameraEnabled: participant.cameraEnabled,
     profileImageUrl: participant.profileImage?.url ?? null,
+    lastSeenMessageId: participant.lastSeenMessageId ?? null,
     joinedAt: participant.joinedAt,
     role: "PARTICIPANT",
   };

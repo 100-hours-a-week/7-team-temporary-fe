@@ -10,6 +10,7 @@ import { ChatMessageItem } from "./ChatMessageItem";
 
 interface ChatMessageFeedProps {
   messages: ChatMessageItemVM[];
+  lastSeenMessageId?: number | null;
   isLoading: boolean;
   isError: boolean;
   hasMore: boolean;
@@ -17,8 +18,21 @@ interface ChatMessageFeedProps {
   onLoadMore: () => void;
 }
 
+function ReadDivider() {
+  return (
+    <div className="my-2 flex items-center gap-3 px-1">
+      <span className="h-px flex-1 bg-neutral-200" />
+      <span className="shrink-0 text-[11px] font-medium text-neutral-400">
+        여기까지 읽으셨습니다
+      </span>
+      <span className="h-px flex-1 bg-neutral-200" />
+    </div>
+  );
+}
+
 export function ChatMessageFeed({
   messages,
+  lastSeenMessageId,
   isLoading,
   isError,
   hasMore,
@@ -53,6 +67,12 @@ export function ChatMessageFeed({
     return <section className="pb-6" />;
   }
 
+  const firstUnreadIndex =
+    typeof lastSeenMessageId === "number"
+      ? messages.findIndex((message) => message.messageId > lastSeenMessageId)
+      : -1;
+  const showReadDivider = firstUnreadIndex >= 0;
+
   return (
     <section className="flex flex-col gap-3 pb-6">
       <InfiniteScrollSentinel
@@ -63,11 +83,11 @@ export function ChatMessageFeed({
         loadingLabel="이전 메시지 불러오는 중..."
         loadingClassName="pb-1"
       />
-      {messages.map((message) => (
-        <ChatMessageItem
-          key={`${message.messageId}-${message.sentAt}`}
-          message={message}
-        />
+      {messages.map((message, index) => (
+        <div key={`${message.messageId}-${message.sentAt}`}>
+          {showReadDivider && index === firstUnreadIndex ? <ReadDivider /> : null}
+          <ChatMessageItem message={message} />
+        </div>
       ))}
       <div ref={bottomRef} />
     </section>
