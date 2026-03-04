@@ -159,14 +159,37 @@ function toUnreadChangedPayload(candidate: unknown): UnreadChangedUserEventPaylo
   const value = candidate as Partial<UnreadChangedUserEventPayload> & {
     userId?: number | string;
     roomId?: number | string;
+    unreadCount?: number | string;
+    participantsCount?: number | string;
+    lastUserMessagePreview?: string | null;
+    lastUserMessageSentAt?: string | null;
   };
   const userId = toNumber(value.userId);
   const roomId = toNumber(value.roomId);
   if (userId !== null && roomId !== null) {
+    const unreadCount = toNumber(value.unreadCount);
+    const participantsCount = toNumber(value.participantsCount);
+    const lastUserMessagePreview =
+      typeof value.lastUserMessagePreview === "string"
+        ? value.lastUserMessagePreview
+        : value.lastUserMessagePreview === null
+          ? null
+          : undefined;
+    const lastUserMessageSentAt =
+      typeof value.lastUserMessageSentAt === "string"
+        ? value.lastUserMessageSentAt
+        : value.lastUserMessageSentAt === null
+          ? null
+          : undefined;
+
     return {
       eventId: typeof value.eventId === "string" ? value.eventId : `unread-${roomId}-${Date.now()}`,
       userId,
       roomId,
+      unreadCount: unreadCount ?? undefined,
+      participantsCount: participantsCount ?? undefined,
+      lastUserMessagePreview,
+      lastUserMessageSentAt,
     };
   }
   return null;
