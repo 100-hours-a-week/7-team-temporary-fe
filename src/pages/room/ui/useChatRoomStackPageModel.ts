@@ -200,7 +200,7 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
         chatStompSession.sendMessage({
           idempotencyKey,
           roomId,
-          messageType: "FILE",
+          messageType: "IMAGE",
           content: file.name || "image",
           imageKeys: [imageKey],
         });
