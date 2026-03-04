@@ -236,7 +236,8 @@ export const MOCK_REALTIME_STATE: Record<number, MockRealtimeEntry> = {
 };
 
 export const CHAT_ROOM_WEBSOCKET_MOCK_ENABLED = true;
-export const CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED = true;
+export const CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED =
+  process.env.NEXT_PUBLIC_CHAT_ROOM_MESSAGE_LIST_MOCK === "true";
 
 export interface MockRealtimeMessage extends MockRealtimeEntry {
   roomId: number;
@@ -371,7 +372,7 @@ const DEFAULT_MESSAGE_SEED: ChatMessageDto[] = [
   },
   {
     messageId: 209,
-    messageType: "FILE",
+    messageType: "IMAGE",
     senderType: "USER",
     senderId: 5,
     content: null,
@@ -393,7 +394,7 @@ const DEFAULT_MESSAGE_SEED: ChatMessageDto[] = [
   },
   {
     messageId: 208,
-    messageType: "FILE",
+    messageType: "IMAGE",
     senderType: "USER",
     senderId: 5,
     content: null,

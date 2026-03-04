@@ -1,8 +1,8 @@
 "use client";
 
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { HomeTaskItem } from "@/entities/day-plan";
-import type { TaskItemModel } from "@/entities/day-plan";
+import { HomeTaskItem } from "@/entities/day-plan-schedule";
+import type { TaskItemModel } from "@/entities/day-plan-schedule";
 
 const meta: Meta<typeof HomeTaskItem> = {
   title: "features/home/HomeTaskItem",

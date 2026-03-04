@@ -1,59 +1,44 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 
-import { fetchChatRoomSearchList, type ChatRoomSummaryDto } from "@/entities/chat-room";
+import type { ChatRoomSummaryDto } from "@/entities/chat-room";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/shared/ui";
-import { FloatingActionButton } from "@/shared/ui/button";
+import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 import { Icon } from "@/shared/ui/icon";
 import { SearchBar } from "@/shared/ui/search";
 import { useStackPage } from "@/widgets/stack";
+import { useChatSearchStackHeader, useChatSearchStackPageModel } from "../model";
 import { CreateChatRoomStackPage } from "./CreateChatRoomStackPage";
 import { ChatRoomStackPage } from "./ChatRoomStackPage";
 
 export function ChatSearchStackPage() {
-  const [keyword, setKeyword] = useState("");
-  const [selectedRoom, setSelectedRoom] = useState<ChatRoomSummaryDto | null>(null);
-  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
-  const { push, setHeaderContent, setHeaderRightContent } = useStackPage();
-
-  useEffect(() => {
-    setHeaderContent(<span className="text-[18px] font-semibold text-black">채팅방 찾기</span>);
-    setHeaderRightContent(null);
-    return () => {
-      setHeaderContent(null);
-      setHeaderRightContent(null);
-    };
-  }, [setHeaderContent, setHeaderRightContent]);
-
-  const handleOpenCreateChatRoom = () => {
+  const { push } = useStackPage();
+  const handleOpenCreateChatRoom = useCallback(() => {
     push(<CreateChatRoomStackPage />);
-  };
-
-  const normalizedKeyword = keyword.trim();
-  const searchListQuery = useQuery({
-    queryKey: ["chat-room-search", normalizedKeyword, 1, 100],
-    queryFn: ({ signal }) =>
-      fetchChatRoomSearchList({ title: normalizedKeyword, page: 1, size: 100, signal }),
+  }, [push]);
+  const handleOpenChatRoom = useCallback(
+    (roomId: number) => {
+      push(<ChatRoomStackPage roomId={roomId} />);
+    },
+    [push],
+  );
+  useChatSearchStackHeader();
+  const {
+    keyword,
+    setKeyword,
+    handleSearchAction,
+    searchListQuery,
+    filteredRooms,
+    selectedRoom,
+    isJoinDialogOpen,
+    handleOpenRoomDialog,
+    handleJoinDialogOpenChange,
+    handleJoinRoom,
+    isJoinPending,
+  } = useChatSearchStackPageModel({
+    onJoinSuccess: handleOpenChatRoom,
   });
-  const filteredRooms = searchListQuery.data?.content ?? [];
-
-  const handleOpenRoomDialog = (room: ChatRoomSummaryDto) => {
-    setSelectedRoom(room);
-    setIsJoinDialogOpen(true);
-  };
-
-  const handleOpenChatRoom = (roomId: number) => {
-    push(<ChatRoomStackPage roomId={roomId} />);
-  };
-
-  const handleJoinRoom = () => {
-    if (!selectedRoom) return;
-    handleOpenChatRoom(selectedRoom.roomId);
-    setIsJoinDialogOpen(false);
-    setSelectedRoom(null);
-  };
 
   return (
     <section className="scrollbar-hide h-full overflow-y-auto px-6 pt-4 pb-[110px]">
@@ -64,7 +49,7 @@ export function ChatSearchStackPage() {
         maxLength={25}
         actionLabel="검색"
         actionDisabled={!keyword.trim()}
-        onActionClick={() => setKeyword((prev) => prev.trim())}
+        onActionClick={handleSearchAction}
       />
 
       {searchListQuery.isLoading ? (
@@ -92,23 +77,17 @@ export function ChatSearchStackPage() {
         </ul>
       )}
 
-      <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
+      <FloatingActionDock offsetClassName="bottom-[30px]">
         <FloatingActionButton
           icon="plus"
           label="채팅방 생성"
           onClick={handleOpenCreateChatRoom}
-          className="pointer-events-auto absolute right-5 bottom-[30px]"
         />
-      </div>
+      </FloatingActionDock>
 
       <Dialog
         open={isJoinDialogOpen}
-        onOpenChange={(open) => {
-          setIsJoinDialogOpen(open);
-          if (!open) {
-            setSelectedRoom(null);
-          }
-        }}
+        onOpenChange={handleJoinDialogOpenChange}
       >
         <DialogContent className="w-[calc(100%-2rem)] rounded-3xl bg-white p-0 text-center sm:max-w-[425px] [&>button]:hidden">
           <div className="px-6 pt-6 pb-6">
@@ -134,6 +113,7 @@ export function ChatSearchStackPage() {
               <DialogClose asChild>
                 <button
                   type="button"
+                  disabled={isJoinPending}
                   className="h-12 w-full rounded-xl bg-neutral-100 text-sm font-semibold text-neutral-500"
                 >
                   취소
@@ -141,10 +121,11 @@ export function ChatSearchStackPage() {
               </DialogClose>
               <button
                 type="button"
-                onClick={handleJoinRoom}
+                onClick={() => void handleJoinRoom()}
+                disabled={isJoinPending}
                 className="bg-primary-700 hover:bg-primary-700 h-12 w-full rounded-xl text-sm font-semibold text-white"
               >
-                함께하기
+                {isJoinPending ? "입장 중..." : "함께하기"}
               </button>
             </div>
           </div>

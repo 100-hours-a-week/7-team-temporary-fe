@@ -1,6 +1,11 @@
+import type {
+  ChatMessageSenderType as ChatMessageSenderContractType,
+  ChatMessageType as ChatMessageContractType,
+} from "@/shared/model";
+
 export type ChatRoomType = "OPEN_CHAT" | "CAM_STUDY";
-export type ChatMessageType = "TEXT" | "FILE";
-export type ChatMessageSenderType = "USER" | "AI";
+export type ChatMessageType = ChatMessageContractType;
+export type ChatMessageSenderType = ChatMessageSenderContractType;
 
 /** GET /chat-rooms?title=&page=&size= 응답 content 항목 (목록 임시 사용) */
 export interface ChatRoomSummaryDto {
@@ -10,10 +15,9 @@ export interface ChatRoomSummaryDto {
   description: string;
   maxParticipants: number;
   participantsCount: number;
-  lastMessage?: string | null;
-  lastMessageAt?: string | null;
+  lastUserMessagePreview?: string | null;
+  lastUserMessageSentAt?: string | null;
   unreadCount?: number | null;
-  unreadMessageCount?: number | null;
 }
 
 export interface ChatRoomListResponseDto {

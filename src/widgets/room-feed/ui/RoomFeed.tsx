@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -8,7 +8,7 @@ import type { ChatRoomListItemVM } from "@/entities/chat-room";
 import { chatRoomQueryKeys, useGroupChatRoomListQuery } from "@/entities/chat-room";
 import { usePaginatedAccumulator, useInfiniteScrollTrigger } from "@/shared/hooks";
 import { chatStompSession } from "@/shared/socket";
-import { FloatingActionButton } from "@/shared/ui/button";
+import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
 
 import { ChatRoomList } from "./ChatRoomList";
@@ -25,6 +25,7 @@ const ROOM_TABS: ReadonlyArray<SectionTab<RoomSection>> = [
 
 const CHAT_ROOM_LIST_PAGE = 1;
 const CHAT_ROOM_LIST_SIZE = 10;
+const CHAT_ROOM_REST_CORRECTION_DEBOUNCE_MS = 1200;
 
 interface RoomFeedProps {
   enabled?: boolean;
@@ -32,10 +33,41 @@ interface RoomFeedProps {
   onChatSearchClick?: () => void;
 }
 
+function isPatchResolvedByServer(
+  room: ChatRoomListItemVM,
+  patch: Partial<ChatRoomListItemVM>,
+): boolean {
+  const unreadSynced = patch.unreadCount === undefined || room.unreadCount === patch.unreadCount;
+  const participantsSynced =
+    patch.participantsCount === undefined || room.participantsCount === patch.participantsCount;
+  const lastMessageSynced =
+    patch.lastMessage === undefined || room.lastMessage === patch.lastMessage;
+  const lastMessageAtSynced =
+    patch.lastMessageAt === undefined || room.lastMessageAt === patch.lastMessageAt;
+
+  if (unreadSynced && participantsSynced && lastMessageSynced && lastMessageAtSynced) {
+    return true;
+  }
+
+  if (
+    typeof patch.lastMessageAt === "string" &&
+    typeof room.lastMessageAt === "string" &&
+    Number.isFinite(Date.parse(patch.lastMessageAt)) &&
+    Number.isFinite(Date.parse(room.lastMessageAt))
+  ) {
+    return Date.parse(room.lastMessageAt) >= Date.parse(patch.lastMessageAt);
+  }
+
+  return false;
+}
+
 export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }: RoomFeedProps) {
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<RoomSection>(ROOM_SECTION.GROUP_CHAT);
   const [currentPage, setCurrentPage] = useState(CHAT_ROOM_LIST_PAGE);
+  const [roomRealtimePatches, setRoomRealtimePatches] = useState<
+    Record<number, Partial<ChatRoomListItemVM>>
+  >({});
   const scrollRef = useRef<HTMLElement>(null);
 
   const isGroupChatSection = activeSection === ROOM_SECTION.GROUP_CHAT;
@@ -68,29 +100,105 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
     scrollRef.current?.scrollTo({ top: 0 });
   }, [activeSection]);
 
+  const patchedRooms = useMemo(
+    () =>
+      rooms.map((room) => {
+        const patch = roomRealtimePatches[room.roomId];
+        return patch ? { ...room, ...patch } : room;
+      }),
+    [roomRealtimePatches, rooms],
+  );
+
+  // REST 재조회가 반영되면 서버 값과 동기화된 room patch만 선택적으로 비운다.
   useEffect(() => {
-    setCurrentPage(CHAT_ROOM_LIST_PAGE);
-    reset();
-  }, [isGroupChatSection, reset]);
+    if (!groupChatQuery.data?.content.length) return;
+    setRoomRealtimePatches((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      groupChatQuery.data.content.forEach((room) => {
+        const patch = next[room.roomId];
+        if (!patch) return;
+        if (!isPatchResolvedByServer(room, patch)) return;
+        delete next[room.roomId];
+        changed = true;
+      });
+
+      return changed ? next : prev;
+    });
+  }, [groupChatQuery.data]);
 
   // user queue 이벤트로 목록 요약이 바뀌면 1페이지부터 다시 로드
   useEffect(() => {
     if (!enabled || !isGroupChatSection) return;
+    let correctionTimer: number | null = null;
 
     const refreshList = () => {
-      setCurrentPage(CHAT_ROOM_LIST_PAGE);
-      reset();
-      void queryClient.invalidateQueries({ queryKey: chatRoomQueryKeys.searchAll() });
+      if (currentPage !== CHAT_ROOM_LIST_PAGE) {
+        setCurrentPage(CHAT_ROOM_LIST_PAGE);
+        reset();
+      }
+      void queryClient.invalidateQueries({ queryKey: chatRoomQueryKeys.listAll() });
+    };
+
+    const scheduleRestCorrection = (delayMs: number) => {
+      if (correctionTimer !== null) {
+        window.clearTimeout(correctionTimer);
+      }
+      correctionTimer = window.setTimeout(() => {
+        correctionTimer = null;
+        refreshList();
+      }, delayMs);
     };
 
     const unsubscribeSummary = chatStompSession.onChatSummaryChanged(refreshList);
-    const unsubscribeUnread = chatStompSession.onUnreadChanged(refreshList);
+    const unsubscribeUnread = chatStompSession.onUnreadChanged((payload) => {
+      setRoomRealtimePatches((prev) => {
+        const nextPatch: Partial<ChatRoomListItemVM> = {};
+        if (typeof payload.unreadCount === "number") {
+          nextPatch.unreadCount = payload.unreadCount;
+        }
+        if (typeof payload.participantsCount === "number") {
+          nextPatch.participantsCount = payload.participantsCount;
+        }
+        if (typeof payload.lastUserMessagePreview === "string") {
+          nextPatch.lastMessage = payload.lastUserMessagePreview;
+        } else if (payload.lastUserMessagePreview === null) {
+          nextPatch.lastMessage = undefined;
+        }
+        if (typeof payload.lastUserMessageSentAt === "string") {
+          nextPatch.lastMessageAt = payload.lastUserMessageSentAt;
+        } else if (payload.lastUserMessageSentAt === null) {
+          nextPatch.lastMessageAt = undefined;
+        }
+
+        if (Object.keys(nextPatch).length === 0) return prev;
+
+        return {
+          ...prev,
+          [payload.roomId]: {
+            ...(prev[payload.roomId] ?? {}),
+            ...nextPatch,
+          },
+        };
+      });
+
+      const hasCompleteSummaryPayload =
+        typeof payload.unreadCount === "number" &&
+        payload.lastUserMessagePreview !== undefined &&
+        payload.lastUserMessageSentAt !== undefined &&
+        typeof payload.participantsCount === "number";
+      scheduleRestCorrection(hasCompleteSummaryPayload ? CHAT_ROOM_REST_CORRECTION_DEBOUNCE_MS : 0);
+    });
 
     return () => {
+      if (correctionTimer !== null) {
+        window.clearTimeout(correctionTimer);
+      }
       unsubscribeSummary();
       unsubscribeUnread();
     };
-  }, [enabled, isGroupChatSection, queryClient, reset]);
+  }, [currentPage, enabled, isGroupChatSection, queryClient, reset]);
 
   const loadMore = useCallback(() => {
     if (!enabled) return;
@@ -134,7 +242,7 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
 
       {!isInitialLoading && !isError ? (
         <ChatRoomList
-          items={rooms}
+          items={patchedRooms}
           onChatRoomClick={onChatRoomClick ?? (() => undefined)}
         />
       ) : null}
@@ -152,14 +260,13 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
       ) : null}
 
       {isGroupChatSection && (
-        <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
+        <FloatingActionDock>
           <FloatingActionButton
             icon="chat_single"
             label="채팅방 찾기"
             onClick={onChatSearchClick}
-            className="pointer-events-auto absolute right-5 bottom-[calc(env(safe-area-inset-bottom)+110px)]"
           />
-        </div>
+        </FloatingActionDock>
       )}
     </section>
   );

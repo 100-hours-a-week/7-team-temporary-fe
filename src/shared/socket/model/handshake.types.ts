@@ -1,3 +1,5 @@
+import type { ChatMessageSenderType, ChatMessageType } from "@/shared/model";
+
 // ─── Handshake: Client → Server ──────────────────────────────────────────────
 
 export interface DisconnectHandshakePayload {
@@ -22,7 +24,7 @@ export interface UnsubscribeRoomRequestPayload {
 export interface MessageSendPayload {
   idempotencyKey: string;
   roomId: number;
-  messageType: "TEXT" | "FILE";
+  messageType: ChatMessageType;
   content: string;
   imageKeys: string[];
 }
@@ -72,6 +74,10 @@ export interface UnreadChangedUserEventPayload {
   eventId: string;
   userId: number;
   roomId: number;
+  unreadCount?: number;
+  lastUserMessagePreview?: string | null;
+  lastUserMessageSentAt?: string | null;
+  participantsCount?: number;
 }
 
 export interface ChatSummaryChangedUserEventPayload {
@@ -107,7 +113,7 @@ export interface MessageSendFailedPayload {
   idempotencyKey: string;
   code: string;
   message: string;
-  retryable: true;
+  retryable: boolean;
 }
 
 export interface MessageDuplicatePayload {
@@ -122,8 +128,8 @@ export interface MessageCreatedPayload {
   eventId: string;
   messageId: number;
   roomId: number;
-  messageType: "TEXT" | "FILE";
-  senderType: "USER" | "AI";
+  messageType: ChatMessageType;
+  senderType: ChatMessageSenderType;
   senderId: number | null;
   content: string | null;
   images: Array<{ url: string; key: string; sortOrder: number; expiresAt?: string }>;

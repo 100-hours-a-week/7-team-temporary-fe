@@ -9,12 +9,11 @@ import { chatRoomQueryKeys } from "./queryKeys";
 import type { ChatMessageItemVM } from "./types";
 
 const DEFAULT_CHAT_ROOM_SIZE = 50;
-const DEFAULT_CHAT_ROOM_MY_USER_ID = 3;
 
 interface UseChatRoomMessagesInfiniteQueryOptions {
   roomId: number;
   size?: number;
-  myUserId?: number;
+  myUserId?: number | null;
   enabled?: boolean;
   staleTime?: number;
   gcTime?: number;
@@ -39,7 +38,7 @@ function dedupeAndSortMessages(messages: ChatMessageItemVM[]) {
 export function useChatRoomMessagesInfiniteQuery({
   roomId,
   size = DEFAULT_CHAT_ROOM_SIZE,
-  myUserId = DEFAULT_CHAT_ROOM_MY_USER_ID,
+  myUserId = null,
   enabled = true,
   staleTime,
   gcTime,
@@ -65,7 +64,7 @@ export function useChatRoomMessagesInfiniteQuery({
     if (!query.hasNextPage) return;
     if (query.isFetchingNextPage) return;
     void query.fetchNextPage();
-  }, [query.fetchNextPage, query.hasNextPage, query.isFetchingNextPage]);
+  }, [query]);
 
   return {
     ...query,

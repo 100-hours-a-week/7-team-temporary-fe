@@ -110,7 +110,7 @@ function ChatMessageImages({ imageUrls }: { imageUrls: string[] }) {
 export const ChatMessageItem = memo(function ChatMessageItem({ message }: ChatMessageItemProps) {
   const timeLabel = formatSentTime(message.sentAt);
 
-  if (message.senderType === "AI") {
+  if (message.senderType === "AI" || message.senderType === "SYSTEM") {
     return (
       <div className="flex justify-center py-5">
         <div className="rounded-full bg-neutral-200 px-3 py-1 text-xs text-neutral-600">
@@ -120,10 +120,9 @@ export const ChatMessageItem = memo(function ChatMessageItem({ message }: ChatMe
     );
   }
 
-  const isFileMessage = message.messageType === "FILE";
-  const showText = !isFileMessage && Boolean(message.content);
-  const showImages = isFileMessage && message.imageUrls.length > 0;
-  const bubbleClass = isFileMessage
+  const showText = Boolean(message.content);
+  const showImages = message.imageUrls.length > 0;
+  const bubbleClass = showImages
     ? CHAT_MESSAGE_BUBBLE_MAX_WIDTH_CLASS
     : `${CHAT_MESSAGE_BUBBLE_MAX_WIDTH_CLASS} rounded-2xl border border-neutral-200 bg-white px-3 py-2`;
 

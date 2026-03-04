@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ChangeEvent } from "react";
+import { useEffect, useRef, type ChangeEvent, type KeyboardEvent } from "react";
 
 import { cn } from "@/shared/lib";
 
@@ -64,6 +64,16 @@ export function ChatMessageComposer({
     event.target.value = "";
   };
 
+  const handleTextareaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter") return;
+    if (event.shiftKey) return;
+    if (event.nativeEvent.isComposing) return;
+
+    event.preventDefault();
+    if (isSendDisabled) return;
+    onSend();
+  };
+
   return (
     <section
       className={cn(
@@ -100,6 +110,7 @@ export function ChatMessageComposer({
           maxLength={maxLength}
           placeholder="메시지 입력"
           onChange={(event) => onChange(event.target.value)}
+          onKeyDown={handleTextareaKeyDown}
           className="min-h-10 flex-1 resize-none overflow-y-hidden rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm leading-6 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-300 focus:outline-none"
         />
 
