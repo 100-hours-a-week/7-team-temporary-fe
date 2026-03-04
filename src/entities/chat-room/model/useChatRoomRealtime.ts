@@ -10,14 +10,14 @@ import type { ChatMessageItemVM } from "./types";
 interface UseChatRoomRealtimeOptions {
   roomId: number;
   participantId?: number;
-  myUserId?: number;
+  myUserId?: number | null;
   enabled?: boolean;
 }
 
 export function useChatRoomRealtime({
   roomId,
   participantId,
-  myUserId = 0,
+  myUserId = null,
   enabled = true,
 }: UseChatRoomRealtimeOptions) {
   const [realtimeMessages, setRealtimeMessages] = useState<ChatMessageItemVM[]>([]);

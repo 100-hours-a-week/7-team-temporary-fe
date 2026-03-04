@@ -6,13 +6,12 @@ import { toChatMessageListModel } from "./chatMessage.mapper";
 import { chatRoomQueryKeys } from "./queryKeys";
 
 const DEFAULT_CHAT_ROOM_SIZE = 50;
-const DEFAULT_CHAT_ROOM_MY_USER_ID = 3;
 
 interface UseChatRoomMessagesQueryOptions {
   roomId: number;
   cursor?: number;
   size?: number;
-  myUserId?: number;
+  myUserId?: number | null;
   enabled?: boolean;
   staleTime?: number;
   gcTime?: number;
@@ -22,7 +21,7 @@ export function useChatRoomMessagesQuery({
   roomId,
   cursor,
   size = DEFAULT_CHAT_ROOM_SIZE,
-  myUserId = DEFAULT_CHAT_ROOM_MY_USER_ID,
+  myUserId = null,
   enabled = true,
   staleTime,
   gcTime,
