@@ -74,6 +74,10 @@ export interface UnreadChangedUserEventPayload {
   eventId: string;
   userId: number;
   roomId: number;
+  unreadCount?: number;
+  lastUserMessagePreview?: string | null;
+  lastUserMessageSentAt?: string | null;
+  participantsCount?: number;
 }
 
 export interface ChatSummaryChangedUserEventPayload {

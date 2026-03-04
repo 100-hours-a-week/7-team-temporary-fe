@@ -12,9 +12,9 @@ function pickFirstNumber(candidates: Array<number | null | undefined>, fallback 
 }
 
 function toChatRoomListItemVM(dto: ChatRoomSummaryDto): ChatRoomListItemVM {
-  const lastMessage = pickFirstString([dto.lastMessage]);
-  const lastMessageAt = pickFirstString([dto.lastMessageAt]);
-  const unreadCount = pickFirstNumber([dto.unreadCount, dto.unreadMessageCount], 0);
+  const lastMessage = pickFirstString([dto.lastUserMessagePreview]);
+  const lastMessageAt = pickFirstString([dto.lastUserMessageSentAt]);
+  const unreadCount = pickFirstNumber([dto.unreadCount], 0);
 
   return {
     roomId: dto.roomId,

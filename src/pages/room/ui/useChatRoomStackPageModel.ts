@@ -2,12 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import type { ChatMessageItemVM } from "@/entities/chat-room";
 import {
+  chatRoomQueryKeys,
   useChatRoomDetailQuery,
   useChatRoomMessagesInfiniteQuery,
   useChatRoomRealtime,
 } from "@/entities/chat-room";
+import type { ChatRoomListModel } from "@/entities/chat-room";
 import { useAuthStore } from "@/entities/user";
 import { requestPresignedUrl, uploadToPresignedUrl } from "@/shared/api";
 import { chatStompSession } from "@/shared/socket";
@@ -27,19 +31,33 @@ function createIdempotencyKey() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function toRoomFeedPreviewFromPendingMessage(message: ChatMessageItemVM): string {
+  const content = message.content?.trim();
+  if (message.messageType === "IMAGE") {
+    return content && content.length > 0 ? content : "이미지";
+  }
+  return content && content.length > 0 ? content : "메시지";
+}
+
 interface UseChatRoomStackPageModelOptions {
   roomId: number;
 }
 
 export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelOptions) {
+  const queryClient = useQueryClient();
   const [draftMessage, setDraftMessage] = useState("");
   const [isExtraMenuOpen, setIsExtraMenuOpen] = useState(false);
   const [isInteractiveReady, setIsInteractiveReady] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<Map<string, ChatMessageItemVM>>(
     () => new Map(),
   );
+  const pendingMessagesRef = useRef(pendingMessages);
   const nextPendingIdRef = useRef(INITIAL_PENDING_MESSAGE_ID);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    pendingMessagesRef.current = pendingMessages;
+  }, [pendingMessages]);
 
   const myUserId = useAuthStore((state) => state.userId ?? null);
   const isRoomEnabled = roomId > 0;
@@ -85,15 +103,51 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
     enabled: isChatRuntimeEnabled && myParticipantId !== undefined,
   });
 
+  const patchRoomFeedLatestMessage = useCallback(
+    (payload: { lastMessage: string; lastMessageAt: string }) => {
+      queryClient.setQueriesData<ChatRoomListModel>(
+        { queryKey: chatRoomQueryKeys.listAll() },
+        (current) => {
+          if (!current) return current;
+
+          let isPatched = false;
+          const content = current.content.map((room) => {
+            if (room.roomId !== roomId) return room;
+            isPatched = true;
+            return {
+              ...room,
+              lastMessage: payload.lastMessage,
+              lastMessageAt: payload.lastMessageAt,
+              unreadCount: 0,
+            };
+          });
+
+          if (!isPatched) return current;
+          return { ...current, content };
+        },
+      );
+    },
+    [queryClient, roomId],
+  );
+
   useEffect(() => {
-    return chatStompSession.onMessageSendAccepted(({ idempotencyKey }) => {
+    return chatStompSession.onMessageSendAccepted(({ idempotencyKey, sentAt }) => {
+      const pendingMessage = pendingMessagesRef.current.get(idempotencyKey);
       setPendingMessages((prev) => {
+        if (!prev.has(idempotencyKey)) return prev;
         const next = new Map(prev);
         next.delete(idempotencyKey);
         return next;
       });
+
+      if (!pendingMessage) return;
+
+      patchRoomFeedLatestMessage({
+        lastMessage: toRoomFeedPreviewFromPendingMessage(pendingMessage),
+        lastMessageAt: sentAt || pendingMessage.sentAt,
+      });
     });
-  }, []);
+  }, [patchRoomFeedLatestMessage]);
 
   useEffect(() => {
     return chatStompSession.onMessageSendFailed(({ idempotencyKey, message }) => {
