@@ -37,7 +37,10 @@ function isPatchResolvedByServer(
   room: ChatRoomListItemVM,
   patch: Partial<ChatRoomListItemVM>,
 ): boolean {
-  const unreadSynced = patch.unreadCount === undefined || room.unreadCount === patch.unreadCount;
+  const unreadSynced =
+    patch.unreadCount === undefined ||
+    room.unreadCount === patch.unreadCount ||
+    room.unreadCount === 0;
   const participantsSynced =
     patch.participantsCount === undefined || room.participantsCount === patch.participantsCount;
   const lastMessageSynced =
@@ -68,6 +71,8 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
   const [roomRealtimePatches, setRoomRealtimePatches] = useState<
     Record<number, Partial<ChatRoomListItemVM>>
   >({});
+  const [forcedReadRoomIds, setForcedReadRoomIds] = useState<Record<number, true>>({});
+  const previousUnreadByRoomRef = useRef<Record<number, number>>({});
   const scrollRef = useRef<HTMLElement>(null);
 
   const isGroupChatSection = activeSection === ROOM_SECTION.GROUP_CHAT;
@@ -104,10 +109,42 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
     () =>
       rooms.map((room) => {
         const patch = roomRealtimePatches[room.roomId];
-        return patch ? { ...room, ...patch } : room;
+        const merged = patch ? { ...room, ...patch } : room;
+
+        if (forcedReadRoomIds[room.roomId]) {
+          return {
+            ...merged,
+            unreadCount: 0,
+          };
+        }
+
+        return merged;
       }),
-    [roomRealtimePatches, rooms],
+    [forcedReadRoomIds, roomRealtimePatches, rooms],
   );
+
+  useEffect(() => {
+    setForcedReadRoomIds((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      rooms.forEach((room) => {
+        const previousUnread = previousUnreadByRoomRef.current[room.roomId];
+        if (previousUnread > 0 && room.unreadCount === 0 && !next[room.roomId]) {
+          next[room.roomId] = true;
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+
+    const nextPreviousUnread: Record<number, number> = {};
+    rooms.forEach((room) => {
+      nextPreviousUnread[room.roomId] = room.unreadCount;
+    });
+    previousUnreadByRoomRef.current = nextPreviousUnread;
+  }, [rooms]);
 
   // REST 재조회가 반영되면 서버 값과 동기화된 room patch만 선택적으로 비운다.
   useEffect(() => {
@@ -153,6 +190,25 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
 
     const unsubscribeSummary = chatStompSession.onChatSummaryChanged(refreshList);
     const unsubscribeUnread = chatStompSession.onUnreadChanged((payload) => {
+      if (typeof payload.unreadCount === "number") {
+        if (payload.unreadCount > 0) {
+          setForcedReadRoomIds((prev) => {
+            if (!prev[payload.roomId]) return prev;
+            const next = { ...prev };
+            delete next[payload.roomId];
+            return next;
+          });
+        } else if (payload.unreadCount === 0) {
+          setForcedReadRoomIds((prev) => {
+            if (prev[payload.roomId]) return prev;
+            return {
+              ...prev,
+              [payload.roomId]: true,
+            };
+          });
+        }
+      }
+
       setRoomRealtimePatches((prev) => {
         const nextPatch: Partial<ChatRoomListItemVM> = {};
         if (typeof payload.unreadCount === "number") {
