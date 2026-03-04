@@ -2,7 +2,8 @@
 
 import { Client, type IFrame, type StompSubscription } from "@stomp/stompjs";
 
-import { AuthService } from "@/shared/auth";
+import { apiFetch, Endpoint } from "@/shared/api";
+import { AuthService, setAuthUserId } from "@/shared/auth";
 import {
   parseConnectedErrorCode,
   parseConnectedSuccessPayload,
@@ -44,6 +45,22 @@ const DEFAULT_LOGOUT_DISCONNECT_PAYLOAD: DisconnectHandshakePayload = {
 };
 
 const PUBLISH_RECEIPT_TIMEOUT_MS = 3000;
+const DUPLICATE_RECONNECT_BASE_DELAY_MS = 1000;
+const DUPLICATE_RECONNECT_MAX_DELAY_MS = 8000;
+const DUPLICATE_RECONNECT_MAX_RETRIES = 8;
+
+interface SendMessageFallbackRequestDto {
+  idempotencyKey: string;
+  messageType: MessageSendPayload["messageType"];
+  content: string;
+  imageKeys: string[];
+}
+
+interface SendMessageFallbackResponseDto {
+  messageId?: number;
+  status?: string;
+  sentAt?: string;
+}
 
 // ─── Listener types ───────────────────────────────────────────────────────────
 
@@ -201,6 +218,12 @@ class ChatStompSession {
   private messageSendRejectedListeners = new Set<MessageSendRejectedListener>();
   private messageSendFailedListeners = new Set<MessageSendFailedListener>();
   private socketResyncRequiredListeners = new Set<SocketResyncRequiredListener>();
+  private pendingMessagePayloads = new Map<string, MessageSendPayload>();
+  private fallbackTriggeredMessageIds = new Set<string>();
+  private scheduledRefreshReconnectTimer: number | null = null;
+  private duplicateReconnectTimer: number | null = null;
+  private duplicateReconnectRetryCount = 0;
+  private isDuplicateReconnectPending = false;
 
   // ─── Public getters ──────────────────────────────────────────────────────────
 
@@ -287,16 +310,26 @@ class ChatStompSession {
   // ─── Message send ─────────────────────────────────────────────────────────────
 
   sendMessage(payload: MessageSendPayload) {
+    this.pendingMessagePayloads.set(payload.idempotencyKey, payload);
+
     if (!this.client?.connected || !this.config) {
       console.warn("[chat-socket] sendMessage: 소켓 미연결 상태");
+      this.triggerSendMessageHttpFallback(payload.idempotencyKey, "socket_not_connected");
       return;
     }
+
     this.publishWithReceipt({
       client: this.client,
       destination: this.config.messageSendDestination,
       body: JSON.stringify(payload),
       eventName: "message.send",
       payloadForLog: { roomId: payload.roomId, idempotencyKey: payload.idempotencyKey },
+      onReceiptTimeout: () => {
+        this.triggerSendMessageHttpFallback(payload.idempotencyKey, "receipt_timeout");
+      },
+      onPublishError: () => {
+        this.triggerSendMessageHttpFallback(payload.idempotencyKey, "publish_error");
+      },
     });
   }
 
@@ -398,6 +431,7 @@ class ChatStompSession {
    */
   stop(payload: DisconnectHandshakePayload = DEFAULT_LOGOUT_DISCONNECT_PAYLOAD) {
     this.isRefreshing = false;
+    this.resetReconnectState();
     this.stopClient(payload, false);
   }
 
@@ -456,7 +490,10 @@ class ChatStompSession {
         entry.stompSubscription = null;
       }
     } else {
+      this.resetReconnectState();
       this.activeRooms.clear();
+      this.pendingMessagePayloads.clear();
+      this.fallbackTriggeredMessageIds.clear();
     }
 
     if (client) {
@@ -467,6 +504,88 @@ class ChatStompSession {
     this.config = null;
     this.lastBearerToken = null;
     this.connectedUserId = null;
+  }
+
+  private clearScheduledRefreshReconnectTimer() {
+    if (this.scheduledRefreshReconnectTimer === null) return;
+    window.clearTimeout(this.scheduledRefreshReconnectTimer);
+    this.scheduledRefreshReconnectTimer = null;
+  }
+
+  private clearDuplicateReconnectTimer() {
+    if (this.duplicateReconnectTimer === null) return;
+    window.clearTimeout(this.duplicateReconnectTimer);
+    this.duplicateReconnectTimer = null;
+  }
+
+  private resetReconnectState() {
+    this.clearScheduledRefreshReconnectTimer();
+    this.clearDuplicateReconnectTimer();
+    this.duplicateReconnectRetryCount = 0;
+    this.isDuplicateReconnectPending = false;
+  }
+
+  private scheduleRefreshReconnect(delayMs: number) {
+    if (this.isDuplicateReconnectPending) return;
+    this.clearScheduledRefreshReconnectTimer();
+
+    this.scheduledRefreshReconnectTimer = window.setTimeout(() => {
+      this.scheduledRefreshReconnectTimer = null;
+      if (this.isDuplicateReconnectPending) return;
+      if (!this.client) return;
+      void this.refreshAndReconnect();
+    }, delayMs);
+  }
+
+  private resolveDuplicateReconnectDelay(nextAttempt: number, retryAfterMs?: number) {
+    if (typeof retryAfterMs === "number" && retryAfterMs > 0) return retryAfterMs;
+    return Math.min(
+      DUPLICATE_RECONNECT_BASE_DELAY_MS * 2 ** (nextAttempt - 1),
+      DUPLICATE_RECONNECT_MAX_DELAY_MS,
+    );
+  }
+
+  private handleDuplicateSessionConflict(message: string, retryAfterMs?: number) {
+    if (this.isDuplicateReconnectPending) return;
+
+    const retryToken = this.lastBearerToken;
+    if (!retryToken) {
+      this.stop({
+        code: "CONNECT_DUPLICATE_SESSION",
+        message: "중복 세션 재연결에 필요한 토큰이 없어 연결을 종료합니다.",
+      });
+      return;
+    }
+
+    const nextAttempt = this.duplicateReconnectRetryCount + 1;
+    const effectiveAttempt = Math.min(nextAttempt, DUPLICATE_RECONNECT_MAX_RETRIES);
+    const isOverLimit = nextAttempt > DUPLICATE_RECONNECT_MAX_RETRIES;
+
+    this.clearScheduledRefreshReconnectTimer();
+    this.duplicateReconnectRetryCount = nextAttempt;
+    this.isDuplicateReconnectPending = true;
+    const retryDelayMs = this.resolveDuplicateReconnectDelay(effectiveAttempt, retryAfterMs);
+
+    chatSocketLog("[chat-socket] duplicate session reconnect scheduled", {
+      nextAttempt,
+      effectiveAttempt,
+      isOverLimit,
+      retryDelayMs,
+    });
+
+    this.stopClient(
+      {
+        code: "RECONNECT",
+        message: `중복 세션 충돌 정리 후 재연결합니다. (${effectiveAttempt}/${DUPLICATE_RECONNECT_MAX_RETRIES}${isOverLimit ? "+" : ""})`,
+      },
+      true,
+    );
+
+    this.duplicateReconnectTimer = window.setTimeout(() => {
+      this.duplicateReconnectTimer = null;
+      this.isDuplicateReconnectPending = false;
+      this.start(retryToken);
+    }, retryDelayMs);
   }
 
   private emitListeners<T>(listeners: Set<(payload: T) => void>, payload: T, label: string) {
@@ -485,8 +604,18 @@ class ChatStompSession {
     body: string;
     eventName: string;
     payloadForLog?: unknown;
+    onReceiptTimeout?: () => void;
+    onPublishError?: (error: unknown) => void;
   }) {
-    const { client, destination, body, eventName, payloadForLog } = params;
+    const {
+      client,
+      destination,
+      body,
+      eventName,
+      payloadForLog,
+      onReceiptTimeout,
+      onPublishError,
+    } = params;
     const receiptId = `${eventName}-${Date.now()}`;
     let isReceiptReceived = false;
 
@@ -497,6 +626,7 @@ class ChatStompSession {
         receiptId,
         timeoutMs: PUBLISH_RECEIPT_TIMEOUT_MS,
       });
+      onReceiptTimeout?.();
     }, PUBLISH_RECEIPT_TIMEOUT_MS);
 
     try {
@@ -522,6 +652,79 @@ class ChatStompSession {
         receiptId,
         error,
       });
+      onPublishError?.(error);
+    }
+  }
+
+  private triggerSendMessageHttpFallback(idempotencyKey: string, reason: string) {
+    const payload = this.pendingMessagePayloads.get(idempotencyKey);
+    if (!payload) return;
+    if (this.fallbackTriggeredMessageIds.has(idempotencyKey)) return;
+
+    this.fallbackTriggeredMessageIds.add(idempotencyKey);
+    void this.sendMessageWithHttpFallback(payload, reason);
+  }
+
+  private async sendMessageWithHttpFallback(payload: MessageSendPayload, reason: string) {
+    const requestDto: SendMessageFallbackRequestDto = {
+      idempotencyKey: payload.idempotencyKey,
+      messageType: payload.messageType,
+      content: payload.content,
+      imageKeys: payload.imageKeys,
+    };
+
+    try {
+      const response = await AuthService.refreshAndRetry(() =>
+        apiFetch<SendMessageFallbackResponseDto | void, SendMessageFallbackRequestDto>(
+          Endpoint.CHAT_ROOMS.SEND_MESSAGE(payload.roomId),
+          {
+            method: "POST",
+            body: requestDto,
+            authRequired: true,
+          },
+        ),
+      );
+
+      chatSocketLog("[chat-socket] message.send HTTP fallback success", {
+        roomId: payload.roomId,
+        idempotencyKey: payload.idempotencyKey,
+        reason,
+        messageId: response && typeof response === "object" ? response.messageId : undefined,
+      });
+      this.pendingMessagePayloads.delete(payload.idempotencyKey);
+      this.fallbackTriggeredMessageIds.delete(payload.idempotencyKey);
+
+      const messageId =
+        response && typeof response === "object" && typeof response.messageId === "number"
+          ? response.messageId
+          : undefined;
+
+      if (messageId !== undefined) {
+        const acceptedPayload: MessageSendAcceptedPayload = {
+          idempotencyKey: payload.idempotencyKey,
+          messageId,
+          status:
+            response && typeof response === "object" && typeof response.status === "string"
+              ? response.status
+              : "SENT",
+          sentAt:
+            response && typeof response === "object" && typeof response.sentAt === "string"
+              ? response.sentAt
+              : new Date().toISOString(),
+        };
+        this.emitListeners(
+          this.messageSendAcceptedListeners,
+          acceptedPayload,
+          "messageSendAccepted",
+        );
+      }
+    } catch (error) {
+      console.error("[chat-socket] message.send HTTP fallback failed", {
+        roomId: payload.roomId,
+        idempotencyKey: payload.idempotencyKey,
+        reason,
+        error,
+      });
     }
   }
 
@@ -542,12 +745,6 @@ class ChatStompSession {
     this.userQueueSubscription = this.subscribeUserQueue(client, config);
     this.userQueueRoomSubscription = this.subscribeUserRoomQueue(client, config);
 
-    // Re-subscribe active rooms (preserved through token-refresh or auto-reconnect)
-    for (const [roomId, entry] of this.activeRooms) {
-      entry.stompSubscription = null;
-      this.doSubscribeRoom(client, config, roomId, entry);
-    }
-
     // Publish socket.connect handshake
     client.publish({
       destination: config.connectDestination,
@@ -557,6 +754,14 @@ class ChatStompSession {
       destination: config.connectDestination,
       connectedDestination: config.connectedDestination,
     });
+  }
+
+  private resubscribeActiveRooms(client: Client, config: ChatSocketStartConfig) {
+    // Re-subscribe active rooms only after socket.connected success.
+    for (const [roomId, entry] of this.activeRooms) {
+      entry.stompSubscription = null;
+      this.doSubscribeRoom(client, config, roomId, entry);
+    }
   }
 
   // ─── Handshake channel (/user/queue/handshake) ────────────────────────────────
@@ -571,7 +776,9 @@ class ChatStompSession {
           body: message.body,
         });
         if (errorCode === "CONNECT_TOKEN_EXPIRED") {
-          void this.refreshAndReconnect();
+          this.scheduleRefreshReconnect(0);
+        } else if (errorCode === "CONNECT_DUPLICATE_SESSION") {
+          this.handleDuplicateSessionConflict("이미 연결된 세션이 존재합니다.");
         } else {
           this.stop({
             code: errorCode,
@@ -586,6 +793,8 @@ class ChatStompSession {
       if (connectedPayload) {
         chatSocketLog("[chat-socket] socket.connected", connectedPayload);
         this.connectedUserId = connectedPayload.userId;
+        setAuthUserId(connectedPayload.userId);
+        this.resetReconnectState();
 
         const subscribeUserPayload: SubscribeUserRequestPayload = {
           requestedAt: new Date().toISOString(),
@@ -597,6 +806,7 @@ class ChatStompSession {
           eventName: "subscribe.user",
           payloadForLog: subscribeUserPayload,
         });
+        this.resubscribeActiveRooms(client, config);
         return;
       }
 
@@ -620,11 +830,16 @@ class ChatStompSession {
         const reconnectPayload = payload as SocketReconnectRequiredPayload;
         chatSocketLog("[chat-socket] socket.reconnectRequired", reconnectPayload);
         const delay = reconnectPayload?.retryAfterMs ?? config.reconnectDelayMs;
-        window.setTimeout(() => {
-          if (this.client) {
-            void this.refreshAndReconnect();
-          }
-        }, delay);
+        if (reconnectPayload?.code === "TOKEN_EXPIRED") {
+          this.scheduleRefreshReconnect(delay);
+        } else {
+          this.clearScheduledRefreshReconnectTimer();
+          this.scheduledRefreshReconnectTimer = window.setTimeout(() => {
+            this.scheduledRefreshReconnectTimer = null;
+            if (!this.lastBearerToken) return;
+            this.start(this.lastBearerToken);
+          }, delay);
+        }
         return;
       }
 
@@ -646,6 +861,31 @@ class ChatStompSession {
           code: disconnectPayload?.code ?? "SERVER_DISCONNECT",
           message: disconnectPayload?.message ?? "서버에 의해 연결이 종료되었습니다.",
         });
+        return;
+      }
+
+      if (event === "socket.error") {
+        const errorPayload =
+          payload && typeof payload === "object" ? (payload as Record<string, unknown>) : null;
+        const code = typeof errorPayload?.code === "string" ? errorPayload.code : "SOCKET_ERROR";
+        const message =
+          typeof errorPayload?.message === "string"
+            ? errorPayload.message
+            : "소켓 연결 중 오류가 발생했습니다.";
+        const retryAfterMs =
+          typeof errorPayload?.retryAfterMs === "number" ? errorPayload.retryAfterMs : undefined;
+
+        if (code === "CONNECT_TOKEN_EXPIRED") {
+          this.scheduleRefreshReconnect(retryAfterMs ?? 0);
+          return;
+        }
+
+        if (code === "CONNECT_DUPLICATE_SESSION") {
+          this.handleDuplicateSessionConflict(message, retryAfterMs);
+          return;
+        }
+
+        this.stop({ code, message });
         return;
       }
 
@@ -713,9 +953,12 @@ class ChatStompSession {
 
       if (event === "message.sendAccepted") {
         chatSocketLog("[chat-socket] message.sendAccepted", payload);
+        const acceptedPayload = payload as MessageSendAcceptedPayload;
+        this.pendingMessagePayloads.delete(acceptedPayload.idempotencyKey);
+        this.fallbackTriggeredMessageIds.delete(acceptedPayload.idempotencyKey);
         this.emitListeners(
           this.messageSendAcceptedListeners,
-          payload as MessageSendAcceptedPayload,
+          acceptedPayload,
           "messageSendAccepted",
         );
         return;
@@ -723,9 +966,12 @@ class ChatStompSession {
 
       if (event === "message.sendRejected") {
         chatSocketLog("[chat-socket] message.sendRejected", payload);
+        const rejectedPayload = payload as MessageSendRejectedPayload;
+        this.pendingMessagePayloads.delete(rejectedPayload.idempotencyKey);
+        this.fallbackTriggeredMessageIds.delete(rejectedPayload.idempotencyKey);
         this.emitListeners(
           this.messageSendRejectedListeners,
-          payload as MessageSendRejectedPayload,
+          rejectedPayload,
           "messageSendRejected",
         );
         return;
@@ -733,16 +979,22 @@ class ChatStompSession {
 
       if (event === "message.sendFailed") {
         chatSocketLog("[chat-socket] message.sendFailed", payload);
-        this.emitListeners(
-          this.messageSendFailedListeners,
-          payload as MessageSendFailedPayload,
-          "messageSendFailed",
-        );
+        const failedPayload = payload as MessageSendFailedPayload;
+        if (failedPayload.retryable) {
+          this.triggerSendMessageHttpFallback(failedPayload.idempotencyKey, "message_send_failed");
+        } else {
+          this.pendingMessagePayloads.delete(failedPayload.idempotencyKey);
+          this.fallbackTriggeredMessageIds.delete(failedPayload.idempotencyKey);
+        }
+        this.emitListeners(this.messageSendFailedListeners, failedPayload, "messageSendFailed");
         return;
       }
 
       if (event === "message.duplicate") {
-        chatSocketLog("[chat-socket] message.duplicate", payload as MessageDuplicatePayload);
+        const duplicatePayload = payload as MessageDuplicatePayload;
+        this.pendingMessagePayloads.delete(duplicatePayload.idempotencyKey);
+        this.fallbackTriggeredMessageIds.delete(duplicatePayload.idempotencyKey);
+        chatSocketLog("[chat-socket] message.duplicate", duplicatePayload);
         return;
       }
 
@@ -839,6 +1091,7 @@ class ChatStompSession {
    * refresh 실패 시 세션을 종료한다.
    */
   private async refreshAndReconnect() {
+    if (this.isDuplicateReconnectPending) return;
     if (this.isRefreshing) return;
     this.isRefreshing = true;
 

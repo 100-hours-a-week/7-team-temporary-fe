@@ -6,6 +6,7 @@ const SOCKET_CONNECTED_ERROR_CODES = [
   "CONNECT_UNAUTHORIZED",
   "CONNECT_TOKEN_EXPIRED",
   "CONNECT_INVALID_PAYLOAD",
+  "CONNECT_DUPLICATE_SESSION",
 ] as const;
 
 export type SocketConnectedErrorCode = (typeof SOCKET_CONNECTED_ERROR_CODES)[number];
@@ -56,10 +57,17 @@ export function parseConnectedErrorCode(message: IMessage): SocketConnectedError
 
   const parsed = parseJsonRecord(message.body);
   if (!parsed) return null;
+
+  const payload =
+    typeof parsed.payload === "object" && parsed.payload !== null
+      ? (parsed.payload as JsonRecord)
+      : null;
+
   return (
     toSocketConnectedErrorCode(typeof parsed.code === "string" ? parsed.code : null) ??
     toSocketConnectedErrorCode(typeof parsed.status === "string" ? parsed.status : null) ??
-    toSocketConnectedErrorCode(typeof parsed.data === "string" ? parsed.data : null)
+    toSocketConnectedErrorCode(typeof parsed.data === "string" ? parsed.data : null) ??
+    toSocketConnectedErrorCode(typeof payload?.code === "string" ? payload.code : null)
   );
 }
 
