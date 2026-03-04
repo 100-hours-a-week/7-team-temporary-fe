@@ -35,6 +35,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     configureAuthHandlers({
       getAccessToken: () => useAuthStore.getState().accessToken,
       setAuthenticated: (token) => useAuthStore.getState().setAuthenticated(token),
+      setUserId: (userId) => useAuthStore.getState().setUserId(userId),
       clearAuth: () => useAuthStore.getState().clearAuth(),
     });
   }, []);

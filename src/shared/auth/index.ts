@@ -3,6 +3,7 @@ export {
   clearAuth,
   configureAuthHandlers,
   getAccessToken,
+  setAuthUserId,
   setAuthenticated,
 } from "./auth.handlers";
 export {
