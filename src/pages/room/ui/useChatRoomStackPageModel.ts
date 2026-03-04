@@ -3,8 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ChatMessageItemVM } from "@/entities/chat-room";
-import { useChatRoomMessagesInfiniteQuery, useChatRoomRealtime } from "@/entities/chat-room";
+import {
+  useChatRoomDetailQuery,
+  useChatRoomMessagesInfiniteQuery,
+  useChatRoomRealtime,
+} from "@/entities/chat-room";
+import { useAuthStore } from "@/entities/user";
+import { requestPresignedUrl, uploadToPresignedUrl } from "@/shared/api";
 import { chatStompSession } from "@/shared/socket";
+import { useToast } from "@/shared/ui/toast";
 import { CHAT_COMPOSER_MAX_LENGTH } from "@/widgets/chat-room-message-feed";
 
 const CHAT_ROOM_MESSAGE_PAGE_SIZE = 50;
@@ -14,6 +21,9 @@ const CHAT_ROOM_STACK_INTERACTIVE_DELAY_MS = 220;
 type PendingMessagePayload = Pick<ChatMessageItemVM, "messageType" | "content" | "imageUrls">;
 
 function createIdempotencyKey() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
@@ -28,12 +38,29 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
   const [pendingMessages, setPendingMessages] = useState<Map<string, ChatMessageItemVM>>(
     () => new Map(),
   );
-  const objectUrlsRef = useRef<string[]>([]);
   const nextPendingIdRef = useRef(INITIAL_PENDING_MESSAGE_ID);
+  const { showToast } = useToast();
 
-  const myUserId = chatStompSession.userId ?? 0;
+  const myUserId = useAuthStore((state) => state.userId ?? null);
   const isRoomEnabled = roomId > 0;
   const isChatRuntimeEnabled = isRoomEnabled && isInteractiveReady;
+  const chatRoomDetailQuery = useChatRoomDetailQuery({
+    roomId,
+    enabled: isChatRuntimeEnabled && myUserId !== null,
+  });
+
+  const myParticipantId = useMemo(() => {
+    if (myUserId === null) return undefined;
+    const detail = chatRoomDetailQuery.data;
+    if (!detail) return undefined;
+
+    const participant = detail.participants.find((member) => member.userId === myUserId);
+    if (participant?.participantId) return participant.participantId;
+
+    // owner는 participants 목록에 없을 수 있어 userId fallback 유지
+    if (detail.owner.userId === myUserId) return myUserId;
+    return undefined;
+  }, [chatRoomDetailQuery.data, myUserId]);
 
   useEffect(() => {
     setIsInteractiveReady(false);
@@ -53,8 +80,9 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
 
   const { realtimeMessages } = useChatRoomRealtime({
     roomId,
+    participantId: myParticipantId,
     myUserId,
-    enabled: isChatRuntimeEnabled,
+    enabled: isChatRuntimeEnabled && myParticipantId !== undefined,
   });
 
   useEffect(() => {
@@ -68,11 +96,26 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
   }, []);
 
   useEffect(() => {
-    return () => {
-      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
-      objectUrlsRef.current = [];
-    };
-  }, []);
+    return chatStompSession.onMessageSendFailed(({ idempotencyKey, message }) => {
+      setPendingMessages((prev) => {
+        const next = new Map(prev);
+        next.delete(idempotencyKey);
+        return next;
+      });
+      showToast(message || "메시지 전송에 실패했습니다.", "error");
+    });
+  }, [showToast]);
+
+  useEffect(() => {
+    return chatStompSession.onMessageSendRejected(({ idempotencyKey, message }) => {
+      setPendingMessages((prev) => {
+        const next = new Map(prev);
+        next.delete(idempotencyKey);
+        return next;
+      });
+      showToast(message || "메시지 전송이 거절되었습니다.", "error");
+    });
+  }, [showToast]);
 
   const historicalMessageIds = useMemo(
     () => new Set(chatMessagesQuery.messages.map((message) => message.messageId)),
@@ -102,7 +145,7 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
         messageId,
         messageType: payload.messageType,
         senderType: "USER",
-        senderId: myUserId || null,
+        senderId: myUserId,
         senderName: null,
         senderProfileImageUrl: null,
         isMine: true,
@@ -121,6 +164,10 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
   const handleSendTextMessage = useCallback(() => {
     const content = draftMessage.trim();
     if (!content) return;
+    if (content.length > CHAT_COMPOSER_MAX_LENGTH) {
+      showToast(`메시지는 최대 ${CHAT_COMPOSER_MAX_LENGTH}자까지 전송할 수 있습니다.`, "error");
+      return;
+    }
 
     const idempotencyKey = createIdempotencyKey();
     const pendingMessage = createPendingMessage({
@@ -139,33 +186,30 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
       content,
       imageKeys: [],
     });
-  }, [createPendingMessage, draftMessage, roomId]);
+  }, [createPendingMessage, draftMessage, roomId, showToast]);
 
   const handleImageSelect = useCallback(
-    (file: File) => {
+    async (file: File) => {
       if (!file.type.startsWith("image/")) return;
 
-      const imageUrl = URL.createObjectURL(file);
-      objectUrlsRef.current.push(imageUrl);
-
       const idempotencyKey = createIdempotencyKey();
-      const pendingMessage = createPendingMessage({
-        messageType: "FILE",
-        content: null,
-        imageUrls: [imageUrl],
-      });
+      try {
+        const { uploadUrl, imageKey } = await requestPresignedUrl("MESSAGES");
+        await uploadToPresignedUrl(uploadUrl, file);
 
-      setPendingMessages((prev) => new Map(prev).set(idempotencyKey, pendingMessage));
-
-      chatStompSession.sendMessage({
-        idempotencyKey,
-        roomId,
-        messageType: "FILE",
-        content: "",
-        imageKeys: [],
-      });
+        chatStompSession.sendMessage({
+          idempotencyKey,
+          roomId,
+          messageType: "FILE",
+          content: file.name || "image",
+          imageKeys: [imageKey],
+        });
+      } catch (error) {
+        console.error("[chat-room] 이미지 메시지 전송 준비 실패", error);
+        showToast("이미지 업로드에 실패했습니다.", "error");
+      }
     },
-    [createPendingMessage, roomId],
+    [roomId, showToast],
   );
 
   const handleToggleExtraMenu = useCallback(() => {
@@ -181,7 +225,8 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
     loadMore: chatMessagesQuery.loadMore,
     draftMessage,
     isExtraMenuOpen,
-    isSendDisabled: draftMessage.trim().length === 0,
+    isSendDisabled:
+      draftMessage.trim().length === 0 || draftMessage.trim().length > CHAT_COMPOSER_MAX_LENGTH,
     handleDraftMessageChange,
     handleSendTextMessage,
     handleImageSelect,

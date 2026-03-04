@@ -4,7 +4,7 @@ import type { MessageCreatedPayload } from "@/shared/socket";
 import type { ChatMessageItemVM, ChatMessageListModel } from "./types";
 
 interface ToChatMessageListModelOptions {
-  myUserId: number;
+  myUserId: number | null;
 }
 
 function toChatMessageItemVM(
@@ -13,7 +13,8 @@ function toChatMessageItemVM(
 ): ChatMessageItemVM {
   const senderType = dto.senderType;
   const senderId = typeof dto.senderId === "number" ? dto.senderId : null;
-  const isMine = senderType === "USER" && senderId === myUserId;
+  const isMine =
+    senderType === "USER" && senderId !== null && myUserId !== null && senderId === myUserId;
 
   return {
     messageId: dto.messageId,
@@ -45,9 +46,13 @@ export function toChatMessageListModel(
 
 export function messageCreatedPayloadToVM(
   payload: MessageCreatedPayload,
-  myUserId: number,
+  myUserId: number | null,
 ): ChatMessageItemVM {
-  const isMine = payload.senderType === "USER" && payload.senderId === myUserId;
+  const isMine =
+    payload.senderType === "USER" &&
+    payload.senderId !== null &&
+    myUserId !== null &&
+    payload.senderId === myUserId;
 
   return {
     messageId: payload.messageId,
