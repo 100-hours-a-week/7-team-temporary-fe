@@ -9,10 +9,18 @@ import { FriendBaseItem } from "./FriendBaseItem";
 interface FriendListItemProps {
   vm: FriendListItemVM;
   onDelete?: (friendUserId: number) => void;
+  onChat?: (friendUserId: number) => void;
   isDeleting?: boolean;
+  isChatting?: boolean;
 }
 
-export function FriendListItem({ vm, onDelete, isDeleting = false }: FriendListItemProps) {
+export function FriendListItem({
+  vm,
+  onDelete,
+  onChat,
+  isDeleting = false,
+  isChatting = false,
+}: FriendListItemProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const handleDeleteConfirm = () => {
@@ -29,6 +37,8 @@ export function FriendListItem({ vm, onDelete, isDeleting = false }: FriendListI
             type="button"
             aria-label={`${vm.nickname} 채팅`}
             className="inline-flex h-8 w-8 items-center justify-center text-neutral-700"
+            onClick={() => onChat?.(vm.id)}
+            disabled={isChatting}
           >
             <Icon
               name="chat_single"
