@@ -3,6 +3,7 @@ export interface WeeklyButlerChatFormModel {
 }
 
 export interface WeeklyButlerChatRequestDto {
+  reportId: number;
   inputMessage: string;
 }
 

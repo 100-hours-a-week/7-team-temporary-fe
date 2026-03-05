@@ -1,2 +1,9 @@
-export { fetchWeeklyReport } from "./report.api";
-export type { WeeklyReportDto, WeeklyReportDailyStatDto } from "./types";
+export { fetchReportMessages, fetchWeeklyReport } from "./report.api";
+export type {
+  ReportMessageDto,
+  ReportMessageListDto,
+  ReportMessageSenderType,
+  ReportMessageType,
+  WeeklyReportDailyStatDto,
+  WeeklyReportDto,
+} from "./types";

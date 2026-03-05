@@ -94,6 +94,8 @@ export const Endpoint = {
 
   REPORTS: {
     LIST: chatPath("/reports"),
+    MESSAGE: (reportId: number) => chatPath(`/reports/${reportId}/message`),
+    MESSAGES: (reportId: number) => chatPath(`/reports/${reportId}/messages`),
   },
 
   FRIENDS: {

@@ -6,6 +6,9 @@ export function isWeeklyButlerChatSendable(form: WeeklyButlerChatFormModel): boo
   return form.message.trim().length > 0;
 }
 
-export function isWeeklyButlerChatLimitReached(sentCount: number): boolean {
-  return sentCount >= WEEKLY_BUTLER_CHAT_MAX_SEND_COUNT;
+export function isWeeklyButlerChatLimitReached(
+  sentCount: number,
+  maxSendCount = WEEKLY_BUTLER_CHAT_MAX_SEND_COUNT,
+): boolean {
+  return sentCount >= maxSendCount;
 }

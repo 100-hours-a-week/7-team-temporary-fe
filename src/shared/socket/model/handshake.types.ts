@@ -29,6 +29,11 @@ export interface MessageSendPayload {
   imageKeys: string[];
 }
 
+export interface ReportMessageSendPayload {
+  reportId: number;
+  inputMessage: string;
+}
+
 export interface LastSeenUpdatePayload {
   participantId: number;
   lastSeenMessageId: number;
@@ -125,6 +130,61 @@ export interface MessageDuplicatePayload {
   idempotencyKey: string;
   messageId: number;
   status: string;
+}
+
+// ─── Report queue: Server → Client (/user/queue/report) ───────────────────────
+
+export interface ReportMessageSendAcceptedPayload {
+  reportId?: number;
+  message?: string;
+}
+
+export interface ReportMessageSendRejectedPayload {
+  code: string;
+  message: string;
+  retryable?: boolean;
+}
+
+export interface ReportMessageSendFailedPayload {
+  code: string;
+  message: string;
+  retryable: boolean;
+}
+
+export interface ReportMessageCreatedPayload {
+  eventId: string;
+  reportId: number;
+  messageId: number;
+  senderType: "USER" | "AI" | "SYSTEM";
+  messageType: "TEXT" | "IMAGE";
+  content: string | null;
+  sentAt: string;
+}
+
+export interface ReportStreamStartPayload {
+  reportId: number;
+  messageId: number;
+  senderType: "USER" | "AI" | "SYSTEM";
+  messageType: "TEXT" | "IMAGE";
+  status?: string;
+}
+
+export interface ReportStreamChunkPayload {
+  reportId: number;
+  messageId: number;
+  senderType: "USER" | "AI" | "SYSTEM";
+  messageType: "TEXT" | "IMAGE";
+  delta: string;
+  sequence: number;
+}
+
+export interface ReportStreamEndPayload {
+  reportId: number;
+  messageId: number;
+  senderType: "USER" | "AI" | "SYSTEM";
+  messageType: "TEXT" | "IMAGE";
+  status?: string;
+  content?: string | null;
 }
 
 // ─── Room broadcast: Server → Client (/sub/room/{roomId}) ────────────────────

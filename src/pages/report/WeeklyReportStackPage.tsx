@@ -16,9 +16,10 @@ interface WeeklyReportStackPageProps {
 export function WeeklyReportStackPage({ baseDate }: WeeklyReportStackPageProps) {
   const { setHeaderContent } = useStackPage();
   const [isEntered, setIsEntered] = useState(false);
-  const { achievementPoints, periodLabel, isLoading, isError } = useWeeklyReportData({
-    baseDate,
-  });
+  const { report, achievementPoints, periodLabel, isButlerInputEnabled, isLoading, isError } =
+    useWeeklyReportData({
+      baseDate,
+    });
 
   useEffect(() => {
     setHeaderContent(
@@ -68,7 +69,12 @@ export function WeeklyReportStackPage({ baseDate }: WeeklyReportStackPageProps) 
         }`}
         style={{ transitionDelay: "130ms" }}
       >
-        <WeeklyButlerSection />
+        <WeeklyButlerSection
+          reportId={report?.reportId ?? null}
+          aiReportResponseLimit={report?.aiReportResponseLimit ?? null}
+          aiReportResponseUsed={report?.aiReportResponseUsed ?? null}
+          isInputEnabled={isButlerInputEnabled}
+        />
       </section>
     </div>
   );

@@ -13,7 +13,9 @@ export const WEEKLY_BUTLER_QUICK_ACTIONS = [
 export const WEEKLY_BUTLER_CHAT_MIN_HEIGHT_PX = 400;
 export const WEEKLY_BUTLER_CHAT_MAX_HEIGHT_PX = 520;
 export const WEEKLY_BUTLER_CHAT_INPUT_MAX_LENGTH = 150;
-export const WEEKLY_BUTLER_CHAT_INPUT_PLACEHOLDER = "햄찌에게 아무거나 물어보세요!";
+export const WEEKLY_BUTLER_CHAT_INPUT_PLACEHOLDER = "모립에게 질문하기";
 export const WEEKLY_BUTLER_CHAT_MAX_SEND_COUNT = 10;
+export const WEEKLY_BUTLER_CHAT_WEEK_DISABLED_PLACEHOLDER =
+  "지난주 리포트에서만 햄찌와 대화할 수 있어요.";
 export const WEEKLY_BUTLER_CHAT_LIMIT_REACHED_PLACEHOLDER =
   "오늘 버틀러 대화 횟수를 모두 사용했어요.";

@@ -8,6 +8,7 @@ import type { WeeklyAchievementPoint } from "./types";
 import {
   getWeeklyReportPeriodLabel,
   getWeeklyReportPeriodLabelFromRange,
+  isLastWeekReportStartDate,
   getWeeklyReportStartDate,
 } from "./weeklyReportDate";
 import {
@@ -22,6 +23,7 @@ interface UseWeeklyReportDataOptions {
 export function useWeeklyReportData({ baseDate }: UseWeeklyReportDataOptions) {
   const startDate = useMemo(() => getWeeklyReportStartDate(baseDate), [baseDate]);
   const weeklyReportQuery = useWeeklyReportQuery({ startDate });
+  const isButlerInputEnabled = useMemo(() => isLastWeekReportStartDate(startDate), [startDate]);
 
   const achievementPoints = useMemo<WeeklyAchievementPoint[]>(() => {
     const dailyStats = weeklyReportQuery.data?.dailyStats;
@@ -44,6 +46,7 @@ export function useWeeklyReportData({ baseDate }: UseWeeklyReportDataOptions) {
     report: weeklyReportQuery.data ?? null,
     achievementPoints,
     periodLabel,
+    isButlerInputEnabled,
     isLoading: weeklyReportQuery.isLoading,
     isError: weeklyReportQuery.isError,
   };
