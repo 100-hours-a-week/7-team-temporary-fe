@@ -8,6 +8,13 @@ export type ScheduleChildrenPayload = {
   }>;
 };
 
+type DayPlanScheduleStatus = "TODO" | "DONE";
+
+export interface UpdateScheduleStatusPayload {
+  scheduleId: number;
+  status: DayPlanScheduleStatus;
+}
+
 interface UseScheduleMutationBaseOptions {
   invalidateKeys?: Array<readonly unknown[]>;
 }
@@ -20,6 +27,19 @@ export function useDeleteScheduleMutation({
     method: "DELETE",
     authRequired: true,
     refreshOnUnauthorized: true,
+    invalidateKeys,
+  });
+}
+
+export function useUpdateScheduleStatusMutation({
+  invalidateKeys = [],
+}: UseScheduleMutationBaseOptions = {}) {
+  return useApiMutation<UpdateScheduleStatusPayload, { status: DayPlanScheduleStatus }, void>({
+    url: ({ scheduleId }) => Endpoint.SCHEDULE.STATUS(scheduleId),
+    method: "PATCH",
+    authRequired: true,
+    refreshOnUnauthorized: true,
+    dtoFn: ({ status }) => ({ status }),
     invalidateKeys,
   });
 }
