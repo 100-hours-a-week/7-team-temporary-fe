@@ -35,6 +35,7 @@ interface UseHomePlannerResult {
   hasPlan: (day: Date) => boolean;
   hasMore: boolean;
   isLoading: boolean;
+  isFetchingMore: boolean;
   loadMoreRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -119,6 +120,9 @@ export function useHomePlanner({
     (day: Date) => hasPlanVM.hasPlanByDate.get(formatDateToYmd(day)) ?? false,
     [hasPlanVM],
   );
+
+  const isInitialLoading = currentPage === 1 && scheduleQuery.isLoading && tasks.length === 0;
+  const isFetchingMore = currentPage > 1 && scheduleQuery.isFetching;
   const handleToggleComplete = useCallback(
     (taskId: number) => {
       const currentCompleted =
@@ -158,7 +162,7 @@ export function useHomePlanner({
   }, [completionOverrides, currentScheduleQuery.data]);
   const { statusMessage, currentTaskStatus, todayScheduleLabel } = usePlannerStatus({
     isError: scheduleQuery.isError,
-    isLoading: scheduleQuery.isLoading,
+    isLoading: isInitialLoading,
     tasks,
     currentTask,
     isCurrentTaskLoading: currentScheduleQuery.isLoading,
@@ -196,7 +200,8 @@ export function useHomePlanner({
     handleMoveWeek,
     hasPlan,
     hasMore,
-    isLoading: scheduleQuery.isLoading,
+    isLoading: isInitialLoading,
+    isFetchingMore,
     loadMoreRef,
   };
 }

@@ -58,6 +58,7 @@ export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlanner
     hasPlan,
     hasMore,
     isLoading,
+    isFetchingMore,
     loadMoreRef,
     isCurrentTaskLoading,
   } = useHomePlanner({ enabled });
@@ -182,7 +183,7 @@ export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlanner
                     ref={loadMoreRef}
                     className="h-px"
                   />
-                  {isLoading && hasMore ? (
+                  {isFetchingMore && hasMore ? (
                     <div className="text-center text-xs text-neutral-400">불러오는 중...</div>
                   ) : null}
                 </>
