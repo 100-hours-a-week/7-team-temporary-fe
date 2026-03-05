@@ -13,7 +13,7 @@ function WeeklyButlerBubbleBase({
   children,
 }: WeeklyButlerBubbleProps) {
   return (
-    <div className={cn("max-w-[88%] rounded-3xl px-5 py-3.5", className)}>
+    <div className={cn("max-w-[100%] rounded-3xl px-5 py-3.5", className)}>
       <div className={cn("text-sm leading-relaxed", contentClassName)}>{children}</div>
     </div>
   );
@@ -33,7 +33,7 @@ export function WeeklyButlerBotBubble({ className, children }: WeeklyButlerBubbl
 export function WeeklyButlerUserBubble({ className, children }: WeeklyButlerBubbleProps) {
   return (
     <WeeklyButlerBubbleBase
-      className={cn("border-ink-100 border bg-white text-neutral-800 shadow-sm", className)}
+      className={cn("border-ink-100 border bg-white text-neutral-800", className)}
       contentClassName="font-semibold text-neutral-900"
     >
       {children}

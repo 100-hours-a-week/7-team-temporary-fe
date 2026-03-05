@@ -38,9 +38,6 @@ export function WeeklyAchievementSection({
         {isError ? (
           <p className="text-sm text-neutral-500">주간 리포트를 불러오지 못했습니다.</p>
         ) : null}
-        {isLoading ? (
-          <p className="text-sm text-neutral-500">주간 리포트를 불러오는 중...</p>
-        ) : null}
         <WeeklyAchievementSummary
           bestDay={bestDay}
           averageRate={averageRate}
