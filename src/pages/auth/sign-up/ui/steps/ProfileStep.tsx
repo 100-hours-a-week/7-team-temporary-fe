@@ -65,7 +65,11 @@ export function ProfileStep() {
   useEffect(() => {
     setEmailCheckStatus("idle");
     setEmailHelperText(undefined);
-  }, [emailValue]);
+    setValue("isEmailChecked", false, {
+      shouldValidate: true,
+      shouldDirty: false,
+    });
+  }, [emailValue, setValue]);
 
   useEffect(() => {
     setValue("profileImageKey", imageKey ?? null, {
@@ -116,14 +120,26 @@ export function ProfileStep() {
       if (isDuplicated || isAvailable === false) {
         setEmailCheckStatus("error");
         setEmailHelperText("이미 사용 중인 이메일입니다.");
+        setValue("isEmailChecked", false, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
         return;
       }
       setEmailCheckStatus("success");
       setEmailHelperText("사용 가능한 이메일입니다.");
+      setValue("isEmailChecked", true, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "이미 사용 중인 이메일입니다.";
       setEmailCheckStatus("error");
       setEmailHelperText(message);
+      setValue("isEmailChecked", false, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     }
   };
 
