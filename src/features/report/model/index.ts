@@ -14,3 +14,4 @@ export type {
   WeeklyButlerChatUiState,
 } from "./weeklyButlerChat.types";
 export { useWeeklyButlerChatForm } from "./useWeeklyButlerChatForm";
+export { useWeeklyButlerSendMutation } from "./useWeeklyButlerSendMutation";

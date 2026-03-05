@@ -45,6 +45,12 @@ export const getWeeklyReportStartDate = (baseDate?: string | null) => {
   return formatIsoDate(weekStart);
 };
 
+export const isLastWeekReportStartDate = (selectedWeekStartDate: string, today = new Date()) => {
+  const thisWeekStart = toStartOfWeek(today);
+  const lastWeekStart = addDays(thisWeekStart, -DAYS_IN_WEEK);
+  return selectedWeekStartDate === formatIsoDate(lastWeekStart);
+};
+
 export const getWeeklyReportPeriodLabelFromRange = (startDate: string, endDate: string) => {
   const start = toDateFromIso(startDate);
   const end = toDateFromIso(endDate);
