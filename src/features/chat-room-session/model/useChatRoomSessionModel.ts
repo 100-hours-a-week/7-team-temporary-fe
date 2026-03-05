@@ -16,9 +16,9 @@ import { useAuthStore } from "@/entities/user";
 import { requestPresignedUrl, uploadToPresignedUrl } from "@/shared/api";
 import { chatStompSession } from "@/shared/socket";
 import { useToast } from "@/shared/ui/toast";
-import { CHAT_COMPOSER_MAX_LENGTH } from "@/widgets/chat-room-message-feed";
 
 const CHAT_ROOM_MESSAGE_PAGE_SIZE = 50;
+const CHAT_ROOM_MESSAGE_MAX_LENGTH = 3000;
 const INITIAL_PENDING_MESSAGE_ID = -1;
 const CHAT_ROOM_STACK_INTERACTIVE_DELAY_MS = 220;
 
@@ -47,11 +47,11 @@ function toRoomFeedPreviewFromMessage(message: ChatMessageItemVM): string {
   return content && content.length > 0 ? content : "메시지";
 }
 
-interface UseChatRoomStackPageModelOptions {
+interface UseChatRoomSessionModelOptions {
   roomId: number;
 }
 
-export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelOptions) {
+export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptions) {
   const queryClient = useQueryClient();
   const [draftMessage, setDraftMessage] = useState("");
   const [isExtraMenuOpen, setIsExtraMenuOpen] = useState(false);
@@ -325,14 +325,14 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
   );
 
   const handleDraftMessageChange = useCallback((nextValue: string) => {
-    setDraftMessage(nextValue.slice(0, CHAT_COMPOSER_MAX_LENGTH));
+    setDraftMessage(nextValue.slice(0, CHAT_ROOM_MESSAGE_MAX_LENGTH));
   }, []);
 
   const handleSendTextMessage = useCallback(() => {
     const content = draftMessage.trim();
     if (!content) return;
-    if (content.length > CHAT_COMPOSER_MAX_LENGTH) {
-      showToast(`메시지는 최대 ${CHAT_COMPOSER_MAX_LENGTH}자까지 전송할 수 있습니다.`, "error");
+    if (content.length > CHAT_ROOM_MESSAGE_MAX_LENGTH) {
+      showToast(`메시지는 최대 ${CHAT_ROOM_MESSAGE_MAX_LENGTH}자까지 전송할 수 있습니다.`, "error");
       return;
     }
 
@@ -403,7 +403,7 @@ export function useChatRoomStackPageModel({ roomId }: UseChatRoomStackPageModelO
     draftMessage,
     isExtraMenuOpen,
     isSendDisabled:
-      draftMessage.trim().length === 0 || draftMessage.trim().length > CHAT_COMPOSER_MAX_LENGTH,
+      draftMessage.trim().length === 0 || draftMessage.trim().length > CHAT_ROOM_MESSAGE_MAX_LENGTH,
     handleDraftMessageChange,
     handleSendTextMessage,
     handleImageSelect,
