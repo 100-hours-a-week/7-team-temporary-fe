@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import {
   dayPlanScheduleQueryKeys,
@@ -36,6 +36,7 @@ interface UseHomePlannerResult {
   hasMore: boolean;
   isLoading: boolean;
   isFetchingMore: boolean;
+  scrollContainerRef: RefObject<HTMLDivElement | null>;
   loadMoreRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -52,6 +53,8 @@ export function useHomePlanner({
     () => new Map(),
   );
   const [currentPage, setCurrentPage] = useState(1);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreLockRef = useRef(false);
 
   const queryDate = useMemo(() => formatDateToYmd(selectedDate ?? today), [selectedDate, today]);
   const weekStartDate = useMemo(() => formatDateToYmd(weekDays[0]), [weekDays]);
@@ -176,11 +179,46 @@ export function useHomePlanner({
     setHomePlan(scheduleQuery.data.dayPlanId, queryDate);
   }, [scheduleQuery.data?.dayPlanId, queryDate, setHomePlan]);
 
+  const handleLoadMore = useCallback(() => {
+    if (loadMoreLockRef.current) return;
+    if (!hasMore || scheduleQuery.isFetching) return;
+    loadMoreLockRef.current = true;
+    setCurrentPage((prev) => prev + 1);
+  }, [hasMore, scheduleQuery.isFetching]);
+
+  useEffect(() => {
+    if (!scheduleQuery.isFetching) {
+      loadMoreLockRef.current = false;
+    }
+  }, [scheduleQuery.isFetching]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const root = scrollContainerRef.current;
+    if (!root) return;
+
+    const handleScroll = () => {
+      if (!hasMore || scheduleQuery.isFetching) return;
+      const remaining = root.scrollHeight - root.scrollTop - root.clientHeight;
+      if (remaining <= 220) {
+        handleLoadMore();
+      }
+    };
+
+    root.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      root.removeEventListener("scroll", handleScroll);
+    };
+  }, [enabled, handleLoadMore, hasMore, scheduleQuery.isFetching]);
+
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled,
     hasMore,
     isFetching: scheduleQuery.isFetching,
-    onLoadMore: () => setCurrentPage((prev) => prev + 1),
+    onLoadMore: handleLoadMore,
+    rootRef: scrollContainerRef,
   });
 
   return {
@@ -202,6 +240,7 @@ export function useHomePlanner({
     hasMore,
     isLoading: isInitialLoading,
     isFetchingMore,
+    scrollContainerRef,
     loadMoreRef,
   };
 }
