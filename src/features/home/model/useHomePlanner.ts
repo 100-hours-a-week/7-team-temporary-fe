@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
-import { toTaskItemModelFromHomeTask, type TaskItemModel } from "@/entities/day-plan-schedule";
+import {
+  dayPlanScheduleQueryKeys,
+  toTaskItemModelFromHomeTask,
+  type TaskItemModel,
+} from "@/entities/day-plan-schedule";
 import { useHomePlanStore } from "@/entities/day-plan";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { formatDateToYmd } from "./date";
@@ -9,6 +13,7 @@ import { useHomePlannerQueries } from "./useHomePlannerQueries";
 import { useMergedTasks } from "./useMergedTasks";
 import { toHomeWeekPlanPresenceVM } from "./planPresenceViewModel";
 import { usePlannerStatus } from "./usePlannerStatus";
+import { useUpdateScheduleStatusMutation } from "./useScheduleMutations";
 
 const PAGE_SIZE = 10;
 
@@ -59,10 +64,27 @@ export function useHomePlanner({
     enabled,
   });
   const setHomePlan = useHomePlanStore((state) => state.setHomePlan);
+  const setDate = useHomePlanStore((state) => state.setDate);
+
+  useEffect(() => {
+    // 날짜 선택이 바뀌면 이전 dayPlanId를 즉시 비우고 기준 날짜를 동기화한다.
+    setDate(queryDate);
+  }, [queryDate, setDate]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [queryDate]);
+
+  const scheduleInvalidateKeys = useMemo(
+    () => [
+      dayPlanScheduleQueryKeys.dayPlanSchedule(queryDate, currentPage, PAGE_SIZE),
+      dayPlanScheduleQueryKeys.currentSchedule(),
+    ],
+    [currentPage, queryDate],
+  );
+  const updateScheduleStatusMutation = useUpdateScheduleStatusMutation({
+    invalidateKeys: scheduleInvalidateKeys,
+  });
 
   const { tasks, baseCompletionById, hasMore } = useMergedTasks({
     data: scheduleQuery.data,
@@ -99,14 +121,31 @@ export function useHomePlanner({
   );
   const handleToggleComplete = useCallback(
     (taskId: number) => {
+      const currentCompleted =
+        completionOverrides.get(taskId) ?? baseCompletionById.get(taskId) ?? false;
+      const nextCompleted = !currentCompleted;
+      const nextStatus = nextCompleted ? "DONE" : "TODO";
+
       setCompletionOverrides((prev) => {
         const next = new Map(prev);
-        const current = next.get(taskId) ?? baseCompletionById.get(taskId) ?? false;
-        next.set(taskId, !current);
+        next.set(taskId, nextCompleted);
         return next;
       });
+
+      updateScheduleStatusMutation.mutate(
+        { scheduleId: taskId, status: nextStatus },
+        {
+          onError: () => {
+            setCompletionOverrides((prev) => {
+              const next = new Map(prev);
+              next.set(taskId, currentCompleted);
+              return next;
+            });
+          },
+        },
+      );
     },
-    [baseCompletionById],
+    [baseCompletionById, completionOverrides, updateScheduleStatusMutation],
   );
 
   const currentTask = useMemo(() => {
@@ -129,9 +168,8 @@ export function useHomePlanner({
   // 상태 메시지/표시 텍스트는 usePlannerStatus에서 파생
 
   useEffect(() => {
-    if (scheduleQuery.data?.dayPlanId) {
-      setHomePlan(scheduleQuery.data.dayPlanId, queryDate);
-    }
+    if (!scheduleQuery.data?.dayPlanId) return;
+    setHomePlan(scheduleQuery.data.dayPlanId, queryDate);
   }, [scheduleQuery.data?.dayPlanId, queryDate, setHomePlan]);
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({

@@ -22,7 +22,9 @@ export {
   useAiArrangeScheduleMutation,
   useDeleteScheduleMutation,
   useScheduleChildrenMutation,
+  useUpdateScheduleStatusMutation,
   type ScheduleChildrenPayload,
+  type UpdateScheduleStatusPayload,
 } from "./model/useScheduleMutations";
 
 export { DAYS_IN_WEEK, END_HOUR, START_HOUR, WEEKDAY_LABELS, isSameDate } from "./model/calendar";

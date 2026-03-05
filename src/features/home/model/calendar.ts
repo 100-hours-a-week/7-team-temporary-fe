@@ -1,4 +1,4 @@
-export const WEEKDAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"] as const;
+export const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 export const KOREAN_WEEKDAY_LABELS_BY_GETDAY = ["일", "월", "화", "수", "목", "금", "토"] as const;
 export const DAYS_IN_WEEK = 7;
 export const START_HOUR = 0;
@@ -6,9 +6,9 @@ export const END_HOUR = 24;
 
 export const toStartOfWeek = (date: Date) => {
   const dayIndex = date.getDay();
-  const diffFromMonday = (dayIndex + 6) % 7;
+  const diffFromSunday = dayIndex;
   const start = new Date(date);
-  start.setDate(date.getDate() - diffFromMonday);
+  start.setDate(date.getDate() - diffFromSunday);
   start.setHours(0, 0, 0, 0);
   return start;
 };

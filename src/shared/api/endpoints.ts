@@ -64,6 +64,7 @@ export const Endpoint = {
   SCHEDULE: {
     BASE: chatPath("/schedule"),
     BY_ID: (scheduleId: number) => chatPath(`/schedule/${scheduleId}`),
+    STATUS: (scheduleId: number) => chatPath(`/schedule/${scheduleId}/status`),
     CHILDREN: chatPath("/schedule/children"),
   },
 
