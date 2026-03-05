@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useChatRoomDetailQuery, useChatRoomOwnerStatusQuery } from "@/entities/chat-room";
 import { useAuthStore } from "@/entities/user";
 import { ApiError, COMMON_ERROR_CODE, CommonError } from "@/shared/api";
@@ -18,6 +18,7 @@ import {
   useEditChatRoomForm,
   useEditChatRoomMutation,
 } from "../model";
+import { DeleteChatRoomConfirmOverlay } from "./DeleteChatRoomConfirmOverlay";
 import {
   DELETE_CHAT_ROOM_FAILURE_MESSAGE,
   DELETE_CHAT_ROOM_SUCCESS_MESSAGE,
@@ -56,6 +57,7 @@ function getRequestErrorMessage(error: unknown, fallbackMessage: string) {
 
 export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
   const { showToast } = useToast();
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const myUserId = useAuthStore((state) => state.userId ?? null);
   const chatRoomDetailQuery = useChatRoomDetailQuery({ roomId });
   const ownerStatusQuery = useChatRoomOwnerStatusQuery({
@@ -104,12 +106,15 @@ export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
       onDeleted?.();
     } catch (error) {
       showToast(getRequestErrorMessage(error, DELETE_CHAT_ROOM_FAILURE_MESSAGE), "error");
+    } finally {
+      setIsDeleteConfirmOpen(false);
     }
   }, [deleteChatRoomMutation, onDeleted, showToast]);
 
   const isDeletePending = deleteChatRoomMutation.isPending;
   const isEditPending = editChatRoomMutation.isPending;
   const isDetailReady = chatRoomDetailQuery.isSuccess;
+  const roomTitle = chatRoomDetailQuery.data?.title?.trim() || "현재";
   const canManageRoom = ownerStatusQuery.data?.isOwner === true;
   const isOwnerStatusLoading =
     isDetailReady && (ownerStatusQuery.isLoading || ownerStatusQuery.isFetching);
@@ -192,15 +197,23 @@ export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
           {canManageRoom ? (
             <button
               type="button"
-              onClick={() => void handleDeleteChatRoom()}
+              onClick={() => setIsDeleteConfirmOpen(true)}
               disabled={isDisabled}
-              className="mt-2 h-12 rounded-xl border border-[#F2B7B7] bg-[#FFF2F2] text-sm font-semibold text-[#DF454A]"
+              className="mt-2 h-12 rounded-xl border border-[#F2B7B7] bg-[#FFF2F2] text-sm font-semibold text-[#DF454A] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isDeletePending ? "삭제 중..." : "채팅방 삭제"}
             </button>
           ) : null}
         </form>
       </section>
+
+      <DeleteChatRoomConfirmOverlay
+        open={isDeleteConfirmOpen}
+        title={`${roomTitle} 채팅방을 정말 삭제하시겠습니까?`}
+        isPending={isDeletePending}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={() => void handleDeleteChatRoom()}
+      />
 
       <FixedActionBar>
         <PrimaryButton
