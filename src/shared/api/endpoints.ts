@@ -124,7 +124,8 @@ export const Endpoint = {
       return chatPath(`/chat-rooms?${searchParams.toString()}`);
     },
     PARTICIPANTS: chatPath("/chat-rooms/participants"),
-    OWNER_STATUS: (ownerId: number) => chatPath(`/chat-rooms/participants/${ownerId}`),
+    OWNER_STATUS: (roomId: number, ownerId: number) =>
+      chatPath(`/chat-rooms/${roomId}/owner/${ownerId}`),
     MESSAGES: (roomId: number) => chatPath(`/chat-rooms/${roomId}/message`),
     PARTICIPANT_MESSAGE: (participantId: number) =>
       chatPath(`/chat-rooms/participants/${participantId}/message`),

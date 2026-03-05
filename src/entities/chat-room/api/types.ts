@@ -28,7 +28,7 @@ export interface ChatRoomListResponseDto {
   totalPages: number;
 }
 
-/** GET /chat-rooms/participants/{ownerId} 응답 */
+/** GET /chat-rooms/{roomId}/owner/{ownerId} 응답 */
 export interface ChatRoomOwnerStatusDto {
   isOwner: boolean;
 }

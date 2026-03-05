@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { useChatRoomDetailQuery } from "@/entities/chat-room";
+import { useChatRoomDetailQuery, useChatRoomOwnerStatusQuery } from "@/entities/chat-room";
+import { useAuthStore } from "@/entities/user";
 import { ApiError, COMMON_ERROR_CODE, CommonError } from "@/shared/api";
 
 import { BaseInput, FormField } from "@/shared/form/ui";
@@ -55,7 +56,13 @@ function getRequestErrorMessage(error: unknown, fallbackMessage: string) {
 
 export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
   const { showToast } = useToast();
+  const myUserId = useAuthStore((state) => state.userId ?? null);
   const chatRoomDetailQuery = useChatRoomDetailQuery({ roomId });
+  const ownerStatusQuery = useChatRoomOwnerStatusQuery({
+    roomId,
+    ownerId: myUserId,
+    enabled: chatRoomDetailQuery.isSuccess,
+  });
   const editChatRoomMutation = useEditChatRoomMutation(roomId);
   const deleteChatRoomMutation = useDeleteChatRoomMutation(roomId);
 
@@ -102,8 +109,21 @@ export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
 
   const isDeletePending = deleteChatRoomMutation.isPending;
   const isEditPending = editChatRoomMutation.isPending;
-  const isDisabled = isDeletePending || isEditPending;
-  const detail = chatRoomDetailQuery.data;
+  const isDetailReady = chatRoomDetailQuery.isSuccess;
+  const canManageRoom = ownerStatusQuery.data?.isOwner === true;
+  const isOwnerStatusLoading =
+    isDetailReady && (ownerStatusQuery.isLoading || ownerStatusQuery.isFetching);
+  const isOwnerStatusError = isDetailReady && ownerStatusQuery.isError;
+  const isNotOwner =
+    isDetailReady && !isOwnerStatusLoading && !isOwnerStatusError && !canManageRoom;
+  const isPermissionBlocked =
+    !isDetailReady || isNotOwner || isOwnerStatusLoading || isOwnerStatusError;
+  const isDisabled = isDeletePending || isEditPending || isPermissionBlocked;
+
+  useEffect(() => {
+    if (!isOwnerStatusError) return;
+    showToast("수정 권한을 확인하지 못했습니다.", "error");
+  }, [isOwnerStatusError, showToast]);
 
   return (
     <>
@@ -134,6 +154,7 @@ export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
               invalid={!!errors.title}
               placeholder="그룹명을 입력해주세요."
               type="text"
+              disabled={isDisabled}
               className={EDIT_CHAT_ROOM_INPUT_TONE_CLASS_NAME}
             />
           </FormField>
@@ -148,6 +169,7 @@ export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
               invalid={!!errors.description}
               placeholder="그룹 채팅방 설명을 입력해주세요."
               type="text"
+              disabled={isDisabled}
               className={EDIT_CHAT_ROOM_INPUT_TONE_CLASS_NAME}
             />
           </FormField>
@@ -162,18 +184,21 @@ export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
               placeholder="모집 인원을 입력해주세요."
               type="text"
               inputMode="numeric"
+              disabled={isDisabled}
               className={EDIT_CHAT_ROOM_INPUT_TONE_CLASS_NAME}
             />
           </FormField>
 
-          <button
-            type="button"
-            onClick={() => void handleDeleteChatRoom()}
-            disabled={isDisabled}
-            className="mt-2 h-12 rounded-xl border border-[#F2B7B7] bg-[#FFF2F2] text-sm font-semibold text-[#DF454A]"
-          >
-            {isDeletePending ? "삭제 중..." : "채팅방 삭제"}
-          </button>
+          {canManageRoom ? (
+            <button
+              type="button"
+              onClick={() => void handleDeleteChatRoom()}
+              disabled={isDisabled}
+              className="mt-2 h-12 rounded-xl border border-[#F2B7B7] bg-[#FFF2F2] text-sm font-semibold text-[#DF454A]"
+            >
+              {isDeletePending ? "삭제 중..." : "채팅방 삭제"}
+            </button>
+          ) : null}
         </form>
       </section>
 
