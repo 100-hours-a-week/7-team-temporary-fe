@@ -91,6 +91,10 @@ export const Endpoint = {
     BY_ID: (reflectionId: number) => chatPath(`/reflections/${reflectionId}`),
   },
 
+  REPORTS: {
+    LIST: chatPath("/reports"),
+  },
+
   FRIENDS: {
     LIST: chatPath("/friends"),
     DELETE: (friendUserId: number) => chatPath(`/friends/${friendUserId}`),
