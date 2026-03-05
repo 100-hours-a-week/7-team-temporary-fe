@@ -10,9 +10,9 @@ const toDateFromIso = (dateString?: string | null) => {
 
 const toStartOfWeek = (date: Date) => {
   const dayIndex = date.getDay();
-  const diffFromMonday = (dayIndex + 6) % 7;
+  const diffFromSunday = dayIndex;
   const start = new Date(date);
-  start.setDate(date.getDate() - diffFromMonday);
+  start.setDate(date.getDate() - diffFromSunday);
   start.setHours(0, 0, 0, 0);
   return start;
 };

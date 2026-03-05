@@ -42,7 +42,7 @@ export function useWeeklyAchievementChart({ points }: UseWeeklyAchievementChartO
 
   const maxRate = useMemo(() => Math.max(...sourcePoints.map((item) => item.rate)), [sourcePoints]);
   const bestDay = useMemo(
-    () => sourcePoints.find((item) => item.rate === maxRate)?.day ?? "월",
+    () => sourcePoints.find((item) => item.rate === maxRate)?.day ?? "일",
     [maxRate, sourcePoints],
   );
   const averageRate = useMemo(
