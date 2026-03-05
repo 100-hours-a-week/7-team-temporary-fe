@@ -7,6 +7,7 @@ import { ApiError, COMMON_ERROR_CODE, CommonError } from "@/shared/api";
 
 import { BaseInput, FormField } from "@/shared/form/ui";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
+import { ConfirmDialog } from "@/shared/ui";
 import { useToast } from "@/shared/ui/toast";
 
 import {
@@ -18,7 +19,6 @@ import {
   useEditChatRoomForm,
   useEditChatRoomMutation,
 } from "../model";
-import { DeleteChatRoomConfirmOverlay } from "./DeleteChatRoomConfirmOverlay";
 import {
   DELETE_CHAT_ROOM_FAILURE_MESSAGE,
   DELETE_CHAT_ROOM_SUCCESS_MESSAGE,
@@ -195,25 +195,29 @@ export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
           </FormField>
 
           {canManageRoom ? (
-            <button
-              type="button"
-              onClick={() => setIsDeleteConfirmOpen(true)}
-              disabled={isDisabled}
-              className="mt-2 h-12 rounded-xl border border-[#F2B7B7] bg-[#FFF2F2] text-sm font-semibold text-[#DF454A] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isDeletePending ? "삭제 중..." : "채팅방 삭제"}
-            </button>
+            <ConfirmDialog
+              open={isDeleteConfirmOpen}
+              onOpenChange={setIsDeleteConfirmOpen}
+              title={`${roomTitle} 채팅방을 정말 삭제하시겠습니까?`}
+              confirmText={isDeletePending ? "삭제 중..." : "삭제"}
+              cancelText="취소"
+              confirmDisabled={isDeletePending}
+              cancelDisabled={isDeletePending}
+              showOverlay
+              onConfirm={() => void handleDeleteChatRoom()}
+              trigger={
+                <button
+                  type="button"
+                  disabled={isDisabled}
+                  className="mt-2 h-12 rounded-xl border border-[#F2B7B7] bg-[#FFF2F2] text-sm font-semibold text-[#DF454A] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isDeletePending ? "삭제 중..." : "채팅방 삭제"}
+                </button>
+              }
+            />
           ) : null}
         </form>
       </section>
-
-      <DeleteChatRoomConfirmOverlay
-        open={isDeleteConfirmOpen}
-        title={`${roomTitle} 채팅방을 정말 삭제하시겠습니까?`}
-        isPending={isDeletePending}
-        onCancel={() => setIsDeleteConfirmOpen(false)}
-        onConfirm={() => void handleDeleteChatRoom()}
-      />
 
       <FixedActionBar>
         <PrimaryButton

@@ -1,16 +1,18 @@
 "use client";
 
-import type { ReactNode } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useCallback,
+  useEffect,
+  useState,
+  type MouseEvent,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/shared/lib/utils";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-  DialogTrigger,
-} from "@/shared/ui/dialog";
 import { PrimaryButton } from "@/shared/ui/button";
 
 interface ConfirmDialogProps {
@@ -42,51 +44,112 @@ export function ConfirmDialog({
   onOpenChange,
   contentClassName,
   overlayClassName,
-  showOverlay = false,
+  showOverlay = true,
 }: ConfirmDialogProps) {
+  const isControlled = open !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const resolvedOpen = isControlled ? open : internalOpen;
+
+  const setResolvedOpen = useCallback(
+    (nextOpen: boolean) => {
+      if (!isControlled) {
+        setInternalOpen(nextOpen);
+      }
+      onOpenChange?.(nextOpen);
+    },
+    [isControlled, onOpenChange],
+  );
+
+  useEffect(() => {
+    if (!resolvedOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (cancelDisabled) return;
+      setResolvedOpen(false);
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [cancelDisabled, resolvedOpen, setResolvedOpen]);
+
+  const handleTriggerClick = useCallback(
+    (event: MouseEvent<HTMLElement>) => {
+      if ((event.currentTarget as HTMLButtonElement).disabled) return;
+      setResolvedOpen(true);
+    },
+    [setResolvedOpen],
+  );
+
+  const triggerElement = isValidElement(trigger)
+    ? cloneElement(
+        trigger as ReactElement<{ onClick?: (event: MouseEvent<HTMLElement>) => void }>,
+        {
+          onClick: (event: MouseEvent<HTMLElement>) => {
+            trigger.props.onClick?.(event);
+            if (event.defaultPrevented) return;
+            handleTriggerClick(event);
+          },
+        },
+      )
+    : trigger;
+
+  const close = () => {
+    if (cancelDisabled) return;
+    setResolvedOpen(false);
+  };
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={onOpenChange}
-    >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent
-        className={cn(
-          "w-[calc(100%-2rem)] sm:max-w-[425px]",
-          "data-[state=open]:slide-in-from-bottom-2 data-[state=closed]:slide-out-to-bottom-2",
-          "bg-white p-0 text-center",
-          "rounded-3xl sm:rounded-3xl [&>button]:hidden",
-          contentClassName,
-        )}
-        overlayClassName={cn("bg-black/40", overlayClassName)}
-        showOverlay={showOverlay}
-      >
-        <div className="px-6 pt-6 pb-6">
-          <DialogTitle className="text-lg font-semibold text-neutral-900">{title}</DialogTitle>
-          {description ? (
-            <DialogDescription className="mt-3 text-sm text-neutral-700">
-              {description}
-            </DialogDescription>
-          ) : null}
-          <div className="mt-6 flex gap-3">
-            <DialogClose asChild>
-              <PrimaryButton
-                className="w-full bg-neutral-100 text-neutral-500 hover:bg-neutral-100"
-                disabled={cancelDisabled}
+    <>
+      {triggerElement}
+      {resolvedOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
+              {showOverlay ? (
+                <div
+                  className={cn("absolute inset-0 bg-black/40", overlayClassName)}
+                  onClick={close}
+                />
+              ) : null}
+              <section
+                className={cn(
+                  "relative z-10 w-full max-w-[300px] rounded-3xl bg-white px-6 pb-6 text-center",
+                  contentClassName,
+                )}
               >
-                {cancelText}
-              </PrimaryButton>
-            </DialogClose>
-            <PrimaryButton
-              className="bg-primary-700 hover:bg-primary-700 w-full text-white"
-              onClick={onConfirm}
-              disabled={confirmDisabled}
-            >
-              {confirmText}
-            </PrimaryButton>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+                <div className="my-13">
+                  <h2 className="text-md mx-auto inline-block max-w-[260px] font-semibold break-keep text-neutral-900">
+                    {title}
+                  </h2>
+                  {description ? (
+                    <p className="mx-auto mt-1 max-w-[220px] text-sm text-neutral-700">
+                      {description}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <PrimaryButton
+                    className="w-full bg-neutral-100 text-neutral-500 hover:bg-neutral-100"
+                    disabled={cancelDisabled}
+                    onClick={close}
+                  >
+                    {cancelText}
+                  </PrimaryButton>
+                  <PrimaryButton
+                    className="bg-primary-700 hover:bg-primary-700 w-full text-white"
+                    onClick={onConfirm}
+                    disabled={confirmDisabled}
+                  >
+                    {confirmText}
+                  </PrimaryButton>
+                </div>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
