@@ -6,6 +6,7 @@ import type { ChatMessageItemVM } from "@/entities/chat-room";
 
 import { CHAT_MESSAGE_BUBBLE_MAX_WIDTH_CLASS, CHAT_MESSAGE_LINE_LIMIT } from "../model/constants";
 import { ChatMessageContentDialog } from "./ChatMessageContentDialog";
+import { ChatMessageImageDialog } from "./ChatMessageImageDialog";
 
 interface ChatMessageItemProps {
   message: ChatMessageItemVM;
@@ -86,24 +87,44 @@ function ChatMessageText({ content }: { content: string }) {
 }
 
 function ChatMessageImages({ imageUrls }: { imageUrls: string[] }) {
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+
   if (imageUrls.length === 0) return null;
 
   const gridClass = imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2";
 
   return (
-    <div className={`mt-2 grid ${gridClass} gap-2`}>
-      {imageUrls.map((url, index) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={`${url}-${index}`}
-          src={url}
-          alt={`전송 이미지 ${index + 1}`}
-          loading="lazy"
-          decoding="async"
-          className="h-[110px] w-full rounded-xl object-cover"
-        />
-      ))}
-    </div>
+    <>
+      <div className={`mt-2 grid ${gridClass} gap-2`}>
+        {imageUrls.map((url, index) => (
+          <button
+            key={`${url}-${index}`}
+            type="button"
+            onClick={() => setSelectedImageUrl(url)}
+            className="cursor-zoom-in"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt={`전송 이미지 ${index + 1}`}
+              loading="lazy"
+              decoding="async"
+              className="h-[110px] w-full rounded-xl object-cover"
+            />
+          </button>
+        ))}
+      </div>
+
+      <ChatMessageImageDialog
+        open={selectedImageUrl !== null}
+        imageUrl={selectedImageUrl}
+        alt="선택한 이미지 확대 보기"
+        onOpenChange={(open) => {
+          if (open) return;
+          setSelectedImageUrl(null);
+        }}
+      />
+    </>
   );
 }
 

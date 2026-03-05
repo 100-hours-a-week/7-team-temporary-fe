@@ -112,6 +112,8 @@ export const Endpoint = {
     CREATE: chatPath("/chat-rooms"),
     DETAIL: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
     JOIN: (roomId: number) => chatPath(`/chat-rooms/${roomId}/participants`),
+    LEAVE: (roomId: number, participantId: number) =>
+      chatPath(`/chat-rooms/${roomId}/participants/${participantId}`),
     SEND_MESSAGE: (roomId: number) => chatPath(`/chat-rooms/${roomId}/messages`),
     UPDATE: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
     DELETE: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
@@ -124,7 +126,8 @@ export const Endpoint = {
       return chatPath(`/chat-rooms?${searchParams.toString()}`);
     },
     PARTICIPANTS: chatPath("/chat-rooms/participants"),
-    OWNER_STATUS: (ownerId: number) => chatPath(`/chat-rooms/participants/${ownerId}`),
+    OWNER_STATUS: (roomId: number, ownerId: number) =>
+      chatPath(`/chat-rooms/${roomId}/owner/${ownerId}`),
     MESSAGES: (roomId: number) => chatPath(`/chat-rooms/${roomId}/message`),
     PARTICIPANT_MESSAGE: (participantId: number) =>
       chatPath(`/chat-rooms/participants/${participantId}/message`),

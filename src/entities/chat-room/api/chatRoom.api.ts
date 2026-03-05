@@ -62,13 +62,15 @@ export async function fetchChatRoomSearchList({
 }
 
 export async function fetchChatRoomOwnerStatus({
+  roomId,
   ownerId,
   signal,
 }: {
+  roomId: number;
   ownerId: number;
   signal?: AbortSignal;
 }): Promise<ChatRoomOwnerStatusDto> {
-  return apiFetch<ChatRoomOwnerStatusDto>(Endpoint.CHAT_ROOMS.OWNER_STATUS(ownerId), {
+  return apiFetch<ChatRoomOwnerStatusDto>(Endpoint.CHAT_ROOMS.OWNER_STATUS(roomId, ownerId), {
     signal,
     authRequired: true,
   });
