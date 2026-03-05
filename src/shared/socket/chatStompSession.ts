@@ -2,7 +2,7 @@
 
 import { Client, type IFrame, type StompSubscription } from "@stomp/stompjs";
 
-import { apiFetch, Endpoint } from "@/shared/api";
+import { ApiError, apiFetch, Endpoint } from "@/shared/api";
 import { AuthService, setAuthUserId } from "@/shared/auth";
 import {
   parseConnectedErrorCode,
@@ -12,6 +12,7 @@ import {
 import type {
   ChatSummaryChangedUserEventPayload,
   DisconnectHandshakePayload,
+  LastSeenUpdatePayload,
   MessageCreatedPayload,
   MessageDuplicatePayload,
   MessageSendAcceptedPayload,
@@ -52,7 +53,7 @@ const DUPLICATE_RECONNECT_MAX_RETRIES = 8;
 interface SendMessageFallbackRequestDto {
   idempotencyKey: string;
   messageType: MessageSendPayload["messageType"];
-  content: string;
+  content: string | null;
   imageKeys: string[];
 }
 
@@ -60,6 +61,10 @@ interface SendMessageFallbackResponseDto {
   messageId?: number;
   status?: string;
   sentAt?: string;
+}
+
+interface LastSeenUpdateFallbackRequestDto {
+  lastSeenMessageId: number;
 }
 
 // ─── Listener types ───────────────────────────────────────────────────────────
@@ -87,6 +92,11 @@ interface ActiveRoomEntry {
   onMessageCreated?: (payload: MessageCreatedPayload) => void;
   onParticipantJoined?: (payload: ParticipantJoinedPayload) => void;
   onParticipantLeft?: (payload: ParticipantLeftPayload) => void;
+}
+
+interface LastSeenProgress {
+  latestRequestedMessageId: number;
+  latestConfirmedMessageId: number;
 }
 
 // ─── Envelope parsing ─────────────────────────────────────────────────────────
@@ -247,6 +257,7 @@ class ChatStompSession {
   private duplicateReconnectTimer: number | null = null;
   private duplicateReconnectRetryCount = 0;
   private isDuplicateReconnectPending = false;
+  private lastSeenProgressByParticipant = new Map<number, LastSeenProgress>();
 
   // ─── Public getters ──────────────────────────────────────────────────────────
 
@@ -305,9 +316,11 @@ class ChatStompSession {
    * 반환된 함수를 호출하면 구독이 해제된다 (컴포넌트 unmount 시 사용).
    */
   subscribeToRoom({ roomId, participantId, ...callbacks }: SubscribeToRoomParams): () => void {
-    const resolvedParticipantId = participantId ?? this.connectedUserId;
-    if (resolvedParticipantId === null) {
-      console.warn("[chat-socket] subscribeToRoom: participantId 미확인 (소켓 미연결)");
+    if (typeof participantId !== "number" || participantId <= 0) {
+      console.warn("[chat-socket] subscribeToRoom: participantId 미확인으로 구독을 중단합니다.", {
+        roomId,
+        participantId,
+      });
       return () => undefined;
     }
 
@@ -317,7 +330,7 @@ class ChatStompSession {
     }
 
     const entry: ActiveRoomEntry = {
-      participantId: resolvedParticipantId,
+      participantId,
       stompSubscription: null,
       ...callbacks,
     };
@@ -352,6 +365,59 @@ class ChatStompSession {
       },
       onPublishError: () => {
         this.triggerSendMessageHttpFallback(payload.idempotencyKey, "publish_error");
+      },
+    });
+  }
+
+  sendLastSeenUpdate(payload: LastSeenUpdatePayload) {
+    if (payload.lastSeenMessageId <= 0) return;
+    const progress = this.lastSeenProgressByParticipant.get(payload.participantId);
+    const latestRequestedMessageId = progress?.latestRequestedMessageId ?? 0;
+    if (payload.lastSeenMessageId <= latestRequestedMessageId) return;
+
+    this.lastSeenProgressByParticipant.set(payload.participantId, {
+      latestRequestedMessageId: payload.lastSeenMessageId,
+      latestConfirmedMessageId: progress?.latestConfirmedMessageId ?? 0,
+    });
+
+    if (!this.client?.connected || !this.config) {
+      void this.sendLastSeenUpdateWithHttpFallback(payload, "socket_not_connected");
+      return;
+    }
+
+    this.publishWithReceipt({
+      client: this.client,
+      destination: this.config.lastSeenUpdateDestination,
+      body: JSON.stringify(payload),
+      eventName: "lastSeen.update",
+      payloadForLog: payload,
+      onReceiptTimeout: () => {
+        const latestRequested =
+          this.lastSeenProgressByParticipant.get(payload.participantId)?.latestRequestedMessageId ??
+          0;
+        if (payload.lastSeenMessageId < latestRequested) {
+          chatSocketLog("[chat-socket] skip stale lastSeen fallback on receipt timeout", {
+            participantId: payload.participantId,
+            lastSeenMessageId: payload.lastSeenMessageId,
+            latestRequested,
+          });
+          return;
+        }
+        void this.sendLastSeenUpdateWithHttpFallback(payload, "receipt_timeout");
+      },
+      onPublishError: () => {
+        const latestRequested =
+          this.lastSeenProgressByParticipant.get(payload.participantId)?.latestRequestedMessageId ??
+          0;
+        if (payload.lastSeenMessageId < latestRequested) {
+          chatSocketLog("[chat-socket] skip stale lastSeen fallback on publish error", {
+            participantId: payload.participantId,
+            lastSeenMessageId: payload.lastSeenMessageId,
+            latestRequested,
+          });
+          return;
+        }
+        void this.sendLastSeenUpdateWithHttpFallback(payload, "publish_error");
       },
     });
   }
@@ -515,6 +581,7 @@ class ChatStompSession {
     } else {
       this.resetReconnectState();
       this.activeRooms.clear();
+      this.lastSeenProgressByParticipant.clear();
       this.pendingMessagePayloads.clear();
       this.fallbackTriggeredMessageIds.clear();
     }
@@ -745,6 +812,71 @@ class ChatStompSession {
       console.error("[chat-socket] message.send HTTP fallback failed", {
         roomId: payload.roomId,
         idempotencyKey: payload.idempotencyKey,
+        reason,
+        error,
+      });
+    }
+  }
+
+  private async sendLastSeenUpdateWithHttpFallback(payload: LastSeenUpdatePayload, reason: string) {
+    const latestRequested =
+      this.lastSeenProgressByParticipant.get(payload.participantId)?.latestRequestedMessageId ?? 0;
+    if (payload.lastSeenMessageId < latestRequested) {
+      chatSocketLog("[chat-socket] skip stale lastSeen fallback request", {
+        participantId: payload.participantId,
+        lastSeenMessageId: payload.lastSeenMessageId,
+        latestRequested,
+        reason,
+      });
+      return;
+    }
+
+    const requestDto: LastSeenUpdateFallbackRequestDto = {
+      lastSeenMessageId: payload.lastSeenMessageId,
+    };
+
+    try {
+      await AuthService.refreshAndRetry(() =>
+        apiFetch<void, LastSeenUpdateFallbackRequestDto>(
+          Endpoint.CHAT_ROOMS.PARTICIPANT_MESSAGE(payload.participantId),
+          {
+            method: "PATCH",
+            body: requestDto,
+            authRequired: true,
+          },
+        ),
+      );
+
+      chatSocketLog("[chat-socket] lastSeen.update HTTP fallback success", {
+        participantId: payload.participantId,
+        lastSeenMessageId: payload.lastSeenMessageId,
+        reason,
+      });
+      const progress = this.lastSeenProgressByParticipant.get(payload.participantId);
+      this.lastSeenProgressByParticipant.set(payload.participantId, {
+        latestRequestedMessageId: Math.max(
+          payload.lastSeenMessageId,
+          progress?.latestRequestedMessageId ?? 0,
+        ),
+        latestConfirmedMessageId: Math.max(
+          payload.lastSeenMessageId,
+          progress?.latestConfirmedMessageId ?? 0,
+        ),
+      });
+    } catch (error) {
+      if (error instanceof ApiError && error.httpStatus === 409) {
+        chatSocketLog("[chat-socket] lastSeen.update fallback conflict ignored", {
+          participantId: payload.participantId,
+          lastSeenMessageId: payload.lastSeenMessageId,
+          reason,
+          code: error.code,
+          message: error.message,
+        });
+        return;
+      }
+      console.error("[chat-socket] lastSeen.update HTTP fallback failed", {
+        participantId: payload.participantId,
+        lastSeenMessageId: payload.lastSeenMessageId,
         reason,
         error,
       });
@@ -1058,6 +1190,28 @@ class ChatStompSession {
       if (event === "participant.left") {
         chatSocketLog("[chat-socket] participant.left", { roomId });
         entry.onParticipantLeft?.(payload as ParticipantLeftPayload);
+        return;
+      }
+
+      if (event === "lastSeenUpdated") {
+        const lastSeenPayload = payload as { participantId?: number; lastSeenMessageId?: number };
+        if (
+          typeof lastSeenPayload.participantId === "number" &&
+          typeof lastSeenPayload.lastSeenMessageId === "number"
+        ) {
+          const progress = this.lastSeenProgressByParticipant.get(lastSeenPayload.participantId);
+          this.lastSeenProgressByParticipant.set(lastSeenPayload.participantId, {
+            latestRequestedMessageId: Math.max(
+              lastSeenPayload.lastSeenMessageId,
+              progress?.latestRequestedMessageId ?? 0,
+            ),
+            latestConfirmedMessageId: Math.max(
+              lastSeenPayload.lastSeenMessageId,
+              progress?.latestConfirmedMessageId ?? 0,
+            ),
+          });
+        }
+        chatSocketLog("[chat-socket] lastSeenUpdated", { roomId, payload });
         return;
       }
 

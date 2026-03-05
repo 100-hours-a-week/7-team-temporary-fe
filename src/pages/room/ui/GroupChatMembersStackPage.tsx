@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback } from "react";
 
-import { useChatRoomDetailQuery } from "@/entities/chat-room";
-import { Icon } from "@/shared/ui/icon";
+import { useGroupChatMembersStackPageModel } from "../model";
+import { ChatRoomMembersList } from "@/entities/chat-room";
+import { useLeaveChatRoomMutation } from "@/features/chat-room-leave";
+import { useToast } from "@/shared/ui/toast";
 import { useStackPage } from "@/widgets/stack";
 
 interface GroupChatMembersStackPageProps {
@@ -11,95 +13,64 @@ interface GroupChatMembersStackPageProps {
 }
 
 export function GroupChatMembersStackPage({ roomId }: GroupChatMembersStackPageProps) {
-  const { setHeaderContent, setHeaderRightContent } = useStackPage();
-  const chatRoomDetailQuery = useChatRoomDetailQuery({ roomId });
-  const detail = chatRoomDetailQuery.data;
+  const { pop } = useStackPage();
+  const { showToast } = useToast();
+  const leaveChatRoomMutation = useLeaveChatRoomMutation();
+  const { isLoading, isError, items, myParticipantId, isMyRoomOwner } =
+    useGroupChatMembersStackPageModel({ roomId });
 
-  useEffect(() => {
-    setHeaderContent(<span className="text-[18px] font-semibold text-black">그룹원 목록</span>);
-    setHeaderRightContent(null);
-    return () => {
-      setHeaderContent(null);
-      setHeaderRightContent(null);
-    };
-  }, [setHeaderContent, setHeaderRightContent]);
+  const handleLeaveChatRoom = useCallback(async () => {
+    if (typeof myParticipantId !== "number" || myParticipantId <= 0) {
+      if (isMyRoomOwner) {
+        showToast("방장은 채팅방을 나갈 수 없습니다.", "error");
+        return;
+      }
+      showToast("참여자 정보를 확인하지 못했습니다.", "error");
+      return;
+    }
+
+    try {
+      await leaveChatRoomMutation.mutateAsync({
+        roomId,
+        participantId: myParticipantId,
+      });
+      showToast("채팅방에서 나갔습니다.", "success");
+      pop();
+      window.setTimeout(() => {
+        pop();
+      }, 360);
+    } catch {
+      showToast("채팅방 나가기에 실패했습니다.", "error");
+    }
+  }, [isMyRoomOwner, leaveChatRoomMutation, myParticipantId, pop, roomId, showToast]);
 
   return (
     <section className="scrollbar-hide h-full overflow-y-auto px-6 pt-4 pb-8">
-      {chatRoomDetailQuery.isLoading ? (
+      {isLoading ? (
         <div className="rounded-2xl bg-neutral-100 px-4 py-6 text-center text-sm text-neutral-600">
           그룹원 목록을 불러오는 중...
         </div>
       ) : null}
 
-      {chatRoomDetailQuery.isError ? (
+      {isError ? (
         <div className="rounded-2xl bg-[#FFF2F2] px-4 py-6 text-center text-sm text-[#DF454A]">
           그룹원 목록을 불러오지 못했습니다.
         </div>
       ) : null}
 
-      {detail ? (
+      {items.length > 0 ? (
         <>
-          <ul className="flex flex-col gap-2">
-            <GroupMemberListItem
-              nickname={detail.owner.nickname}
-              profileImageUrl={detail.owner.profileImageUrl}
-              isOwner
-            />
-
-            {detail.participants.map((participant) => (
-              <GroupMemberListItem
-                key={participant.participantId ?? participant.userId}
-                nickname={participant.nickname}
-                profileImageUrl={participant.profileImageUrl}
-                isOwner={false}
-              />
-            ))}
-          </ul>
+          <ChatRoomMembersList items={items} />
+          <button
+            type="button"
+            onClick={() => void handleLeaveChatRoom()}
+            disabled={leaveChatRoomMutation.isPending}
+            className="mt-4 h-12 w-full rounded-xl border border-neutral-200 bg-neutral-100 text-sm font-semibold text-neutral-700"
+          >
+            {leaveChatRoomMutation.isPending ? "나가는 중..." : "채팅방 나가기"}
+          </button>
         </>
       ) : null}
     </section>
-  );
-}
-
-interface GroupMemberListItemProps {
-  nickname: string;
-  profileImageUrl: string | null;
-  isOwner: boolean;
-}
-
-function GroupMemberListItem({ nickname, profileImageUrl, isOwner }: GroupMemberListItemProps) {
-  const avatarLetter = nickname.charAt(0).toUpperCase() || "?";
-
-  return (
-    <li className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-100 text-sm font-semibold text-neutral-600">
-        {profileImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={profileImageUrl}
-            alt={`${nickname} 프로필 이미지`}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <span aria-hidden>{avatarLetter}</span>
-        )}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1">
-          <div className="truncate text-sm font-semibold text-neutral-900">{nickname}</div>
-          {isOwner ? (
-            <Icon
-              name="crown"
-              className="h-4 w-4 shrink-0 text-[#E0A100]"
-              aria-label="방장"
-            />
-          ) : null}
-        </div>
-      </div>
-    </li>
   );
 }

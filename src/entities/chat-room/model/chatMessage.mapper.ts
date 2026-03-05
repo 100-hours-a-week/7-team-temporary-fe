@@ -7,6 +7,17 @@ interface ToChatMessageListModelOptions {
   myUserId: number | null;
 }
 
+function toSenderProfileVM(
+  value: { url: string; expiresAt?: string | null; key?: string } | null | undefined,
+) {
+  if (!value || typeof value.url !== "string" || value.url.length === 0) return null;
+  return {
+    url: value.url,
+    expiresAt: value.expiresAt ?? null,
+    key: value.key,
+  };
+}
+
 function toChatMessageItemVM(
   dto: ChatMessageDto,
   { myUserId }: ToChatMessageListModelOptions,
@@ -21,8 +32,13 @@ function toChatMessageItemVM(
     messageType: dto.messageType,
     senderType,
     senderId,
-    senderName: senderType === "AI" ? "AI" : null,
-    senderProfileImageUrl: null,
+    senderNickname:
+      senderType === "AI"
+        ? "AI"
+        : typeof dto.senderNickname === "string"
+          ? dto.senderNickname
+          : null,
+    senderProfile: toSenderProfileVM(dto.senderProfile),
     isMine,
     content: dto.content,
     imageUrls: (dto.images ?? []).map((image) => image.url).filter((url): url is string => !!url),
@@ -59,8 +75,13 @@ export function messageCreatedPayloadToVM(
     messageType: payload.messageType,
     senderType: payload.senderType,
     senderId: payload.senderId,
-    senderName: payload.senderType === "AI" ? "AI" : null,
-    senderProfileImageUrl: null,
+    senderNickname:
+      payload.senderType === "AI"
+        ? "AI"
+        : typeof payload.senderNickname === "string"
+          ? payload.senderNickname
+          : null,
+    senderProfile: toSenderProfileVM(payload.senderProfile),
     isMine,
     content: payload.content,
     imageUrls: payload.images.map((img) => img.url).filter((url): url is string => !!url),

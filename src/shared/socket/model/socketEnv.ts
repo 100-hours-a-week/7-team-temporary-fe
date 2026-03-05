@@ -12,6 +12,8 @@ const UNSUBSCRIBE_ROOM_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_UNSUBSCRIBE_ROOM_DEST?.trim() ?? "/pub/room/unsubscribe";
 const MESSAGE_SEND_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_MESSAGE_SEND_DEST?.trim() ?? "/pub/room/message";
+const LAST_SEEN_UPDATE_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_LAST_SEEN_UPDATE_DEST?.trim() ?? "/pub/room/last-seen";
 const USER_QUEUE_ROOM_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST?.trim() ?? "/user/queue/room";
 const RECONNECT_DELAY_MS = Number(process.env.NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS ?? 5000);
@@ -28,6 +30,7 @@ export interface ChatSocketStartConfig {
   subscribeRoomDestination: string;
   unsubscribeRoomDestination: string;
   messageSendDestination: string;
+  lastSeenUpdateDestination: string;
   userQueueRoomDestination: string;
   reconnectDelayMs: number;
 }
@@ -79,6 +82,7 @@ export function resolveChatSocketStartConfig(): ChatSocketStartConfig | null {
     subscribeRoomDestination: SUBSCRIBE_ROOM_DESTINATION,
     unsubscribeRoomDestination: UNSUBSCRIBE_ROOM_DESTINATION,
     messageSendDestination: MESSAGE_SEND_DESTINATION,
+    lastSeenUpdateDestination: LAST_SEEN_UPDATE_DESTINATION,
     userQueueRoomDestination: USER_QUEUE_ROOM_DESTINATION,
     reconnectDelayMs: Number.isFinite(RECONNECT_DELAY_MS) ? RECONNECT_DELAY_MS : 5000,
   };

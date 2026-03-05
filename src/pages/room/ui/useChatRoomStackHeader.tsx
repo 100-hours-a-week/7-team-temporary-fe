@@ -17,18 +17,15 @@ export function useChatRoomStackHeader({ roomId }: UseChatRoomStackHeaderOptions
 
   useLayoutEffect(() => {
     setHeaderContent(<span className="text-[18px] font-semibold text-black">채팅방</span>);
-    return () => {
-      setHeaderContent(null);
-      setHeaderRightContent(null);
-    };
-  }, [setHeaderContent, setHeaderRightContent]);
-
-  useLayoutEffect(() => {
     setHeaderRightContent(
       <ChatRoomHeaderActions
         onMembersClick={() => push(<GroupChatMembersStackPage roomId={roomId} />)}
         onSettingsClick={() => push(<EditGroupChatRoomStackPage roomId={roomId} />)}
       />,
     );
-  }, [push, roomId, setHeaderRightContent]);
+    return () => {
+      setHeaderContent(null);
+      setHeaderRightContent(null);
+    };
+  }, [push, roomId, setHeaderContent, setHeaderRightContent]);
 }
