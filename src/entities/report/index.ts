@@ -1,5 +1,19 @@
-export { fetchWeeklyReport } from "./api";
-export type { WeeklyReportDto, WeeklyReportDailyStatDto } from "./api";
+export { fetchReportMessages, fetchWeeklyReport } from "./api";
+export type {
+  ReportMessageDto,
+  ReportMessageListDto,
+  ReportMessageSenderType,
+  ReportMessageType,
+  WeeklyReportDailyStatDto,
+  WeeklyReportDto,
+} from "./api";
 
-export { reportQueryKeys, useWeeklyReportQuery } from "./model";
-export type { WeeklyReportVM, WeeklyReportDailyStatVM } from "./model";
+export { reportQueryKeys, useReportMessagesInfiniteQuery, useWeeklyReportQuery } from "./model";
+export type {
+  ReportMessageItemVM,
+  ReportMessageListVM,
+  ReportMessageSenderTypeVM,
+  ReportMessageTypeVM,
+  WeeklyReportDailyStatVM,
+  WeeklyReportVM,
+} from "./model";

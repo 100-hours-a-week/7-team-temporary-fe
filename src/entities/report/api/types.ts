@@ -11,3 +11,21 @@ export interface WeeklyReportDto {
   aiReportResponseUsed: number;
   dailyStats: WeeklyReportDailyStatDto[];
 }
+
+export type ReportMessageSenderType = "USER" | "AI" | "SYSTEM";
+export type ReportMessageType = "TEXT" | "IMAGE";
+
+export interface ReportMessageDto {
+  messageId: number;
+  senderType: ReportMessageSenderType;
+  messageType: ReportMessageType;
+  content: string | null;
+  sentAt: string;
+}
+
+export interface ReportMessageListDto {
+  content: ReportMessageDto[];
+  nextCursor: number | null;
+  hasNext: boolean;
+  size: number;
+}
