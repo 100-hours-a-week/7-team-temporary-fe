@@ -7,7 +7,6 @@ import {
   useEffect,
   useState,
   type MouseEvent,
-  type ReactElement,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -83,17 +82,16 @@ export function ConfirmDialog({
     [setResolvedOpen],
   );
 
-  const triggerElement = isValidElement(trigger)
-    ? cloneElement(
-        trigger as ReactElement<{ onClick?: (event: MouseEvent<HTMLElement>) => void }>,
-        {
-          onClick: (event: MouseEvent<HTMLElement>) => {
-            trigger.props.onClick?.(event);
-            if (event.defaultPrevented) return;
-            handleTriggerClick(event);
-          },
+  const triggerElement = isValidElement<{
+    onClick?: (event: MouseEvent<HTMLElement>) => void;
+  }>(trigger)
+    ? cloneElement(trigger, {
+        onClick: (event: MouseEvent<HTMLElement>) => {
+          trigger.props.onClick?.(event);
+          if (event.defaultPrevented) return;
+          handleTriggerClick(event);
         },
-      )
+      })
     : trigger;
 
   const close = () => {
