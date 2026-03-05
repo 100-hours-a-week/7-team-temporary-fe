@@ -16,3 +16,6 @@ export const FRIEND_SEARCH_SIZE = 10;
 export const FRIEND_REQUEST_SUCCESS_MESSAGE = "친구 요청을 성공적으로 보냈습니다.";
 export const FRIEND_REQUEST_FAILURE_MESSAGE =
   "친구 요청 전송에 실패했습니다. 잠시 후 다시 시도해주세요.";
+
+export const FRIEND_CHAT_ENTER_FAILURE_MESSAGE =
+  "채팅방 입장에 실패했습니다. 잠시 후 다시 시도해주세요.";
