@@ -2,7 +2,6 @@
 
 import { useLayoutEffect } from "react";
 
-import { useChatRoomDetailQuery } from "@/entities/chat-room";
 import { useStackPage } from "@/widgets/stack";
 
 import { ChatRoomHeaderActions } from "./ChatRoomHeaderActions";
@@ -15,23 +14,18 @@ interface UseChatRoomStackHeaderOptions {
 
 export function useChatRoomStackHeader({ roomId }: UseChatRoomStackHeaderOptions) {
   const { push, setHeaderContent, setHeaderRightContent } = useStackPage();
-  const chatRoomDetailQuery = useChatRoomDetailQuery({ roomId });
-  const headerTitle = chatRoomDetailQuery.data?.title?.trim() || "채팅방";
 
   useLayoutEffect(() => {
-    setHeaderContent(<span className="text-[18px] font-semibold text-black">{headerTitle}</span>);
-    return () => {
-      setHeaderContent(null);
-      setHeaderRightContent(null);
-    };
-  }, [headerTitle, setHeaderContent, setHeaderRightContent]);
-
-  useLayoutEffect(() => {
+    setHeaderContent(<span className="text-[18px] font-semibold text-black">채팅방</span>);
     setHeaderRightContent(
       <ChatRoomHeaderActions
         onMembersClick={() => push(<GroupChatMembersStackPage roomId={roomId} />)}
         onSettingsClick={() => push(<EditGroupChatRoomStackPage roomId={roomId} />)}
       />,
     );
-  }, [push, roomId, setHeaderRightContent]);
+    return () => {
+      setHeaderContent(null);
+      setHeaderRightContent(null);
+    };
+  }, [push, roomId, setHeaderContent, setHeaderRightContent]);
 }
