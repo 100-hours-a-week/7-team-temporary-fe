@@ -31,9 +31,28 @@ const formatReportDate = (date: Date) => {
   return `${year}년 ${month}월 ${day}일`;
 };
 
-export const getWeeklyReportPeriodLabel = (baseDate?: string | null) => {
+const formatIsoDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+export const getWeeklyReportStartDate = (baseDate?: string | null) => {
   const referenceDate = toDateFromIso(baseDate);
   const weekStart = toStartOfWeek(referenceDate);
+  return formatIsoDate(weekStart);
+};
+
+export const getWeeklyReportPeriodLabelFromRange = (startDate: string, endDate: string) => {
+  const start = toDateFromIso(startDate);
+  const end = toDateFromIso(endDate);
+  return `${formatReportDate(start)} ~ ${formatReportDate(end)}`;
+};
+
+export const getWeeklyReportPeriodLabel = (baseDate?: string | null) => {
+  const weekStart = toStartOfWeek(toDateFromIso(baseDate));
   const weekEnd = addDays(weekStart, DAYS_IN_WEEK - 1);
 
   return `${formatReportDate(weekStart)} ~ ${formatReportDate(weekEnd)}`;
