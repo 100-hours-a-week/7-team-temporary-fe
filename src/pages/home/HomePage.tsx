@@ -46,6 +46,7 @@ export function HomePage({ enabled = true }: HomePageProps) {
           label="회고 작성"
           onClick={handleOpenRetroWrite}
           disabled={reflectionStatus?.alreadyWrote !== false || isReflectionFetching}
+          className="disabled:bg-ink-500 disabled:text-white/70 disabled:opacity-100 disabled:shadow-none"
         />
         <FloatingActionButton
           icon="edit"
