@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 
 import type { ChatRoomSummaryDto } from "@/entities/chat-room";
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/shared/ui";
+import { ConfirmDialog } from "@/shared/ui";
 import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 import { Icon } from "@/shared/ui/icon";
 import { SearchBar } from "@/shared/ui/search";
@@ -85,20 +85,14 @@ export function ChatSearchStackPage() {
         />
       </FloatingActionDock>
 
-      <Dialog
+      <ConfirmDialog
         open={isJoinDialogOpen}
         onOpenChange={handleJoinDialogOpenChange}
-      >
-        <DialogContent className="w-[calc(100%-2rem)] rounded-3xl bg-white p-0 text-center sm:max-w-[425px] [&>button]:hidden">
-          <div className="px-6 pt-6 pb-6">
-            <DialogTitle className="text-lg font-semibold text-neutral-900">
-              {selectedRoom?.title ?? ""}
-            </DialogTitle>
-            <DialogDescription className="mt-3 text-sm text-neutral-700">
-              {selectedRoom?.description ?? ""}
-            </DialogDescription>
-
-            <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-600">
+        title={selectedRoom?.title ?? ""}
+        description={
+          <div className="space-y-3">
+            <p className="text-sm text-neutral-700">{selectedRoom?.description ?? ""}</p>
+            <div className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-600">
               <Icon
                 name="user_filled"
                 className="h-4 w-4 text-neutral-500"
@@ -108,29 +102,23 @@ export function ChatSearchStackPage() {
                 {selectedRoom?.participantsCount ?? 0}/{selectedRoom?.maxParticipants ?? 0}
               </span>
             </div>
-
-            <div className="mt-6 flex gap-3">
-              <DialogClose asChild>
-                <button
-                  type="button"
-                  disabled={isJoinPending}
-                  className="h-12 w-full rounded-xl bg-neutral-100 text-sm font-semibold text-neutral-500"
-                >
-                  취소
-                </button>
-              </DialogClose>
-              <button
-                type="button"
-                onClick={() => void handleJoinRoom()}
-                disabled={isJoinPending}
-                className="bg-primary-700 hover:bg-primary-700 h-12 w-full rounded-xl text-sm font-semibold text-white"
-              >
-                {isJoinPending ? "입장 중..." : "함께하기"}
-              </button>
-            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        }
+        confirmText={isJoinPending ? "입장 중..." : "함께하기"}
+        cancelText="취소"
+        confirmDisabled={isJoinPending}
+        cancelDisabled={isJoinPending}
+        showOverlay
+        onConfirm={() => void handleJoinRoom()}
+        trigger={
+          <button
+            type="button"
+            className="hidden"
+            aria-hidden
+            tabIndex={-1}
+          />
+        }
+      />
     </section>
   );
 }

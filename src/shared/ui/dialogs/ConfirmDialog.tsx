@@ -122,9 +122,9 @@ export function ConfirmDialog({
                     {title}
                   </h2>
                   {description ? (
-                    <p className="mx-auto mt-1 max-w-[220px] text-sm text-neutral-700">
+                    <div className="mx-auto mt-1 max-w-[220px] text-sm text-neutral-700">
                       {description}
-                    </p>
+                    </div>
                   ) : null}
                 </div>
                 <div className="mt-6 flex gap-3">
