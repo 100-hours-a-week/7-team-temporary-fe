@@ -10,9 +10,10 @@ import { useChatRoomStackHeader } from "./useChatRoomStackHeader";
 
 interface ChatRoomStackPageProps {
   roomId: number;
+  initialParticipantId?: number;
 }
 
-export function ChatRoomStackPage({ roomId }: ChatRoomStackPageProps) {
+export function ChatRoomStackPage({ roomId, initialParticipantId }: ChatRoomStackPageProps) {
   useChatRoomStackHeader({ roomId });
 
   const queryClient = useQueryClient();
@@ -23,5 +24,10 @@ export function ChatRoomStackPage({ roomId }: ChatRoomStackPageProps) {
     };
   }, [queryClient]);
 
-  return <ChatRoomSession roomId={roomId} />;
+  return (
+    <ChatRoomSession
+      roomId={roomId}
+      initialParticipantId={initialParticipantId}
+    />
+  );
 }

@@ -49,9 +49,13 @@ function toRoomFeedPreviewFromMessage(message: ChatMessageItemVM): string {
 
 interface UseChatRoomSessionModelOptions {
   roomId: number;
+  initialParticipantId?: number;
 }
 
-export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptions) {
+export function useChatRoomSessionModel({
+  roomId,
+  initialParticipantId,
+}: UseChatRoomSessionModelOptions) {
   const queryClient = useQueryClient();
   const [draftMessage, setDraftMessage] = useState("");
   const [isExtraMenuOpen, setIsExtraMenuOpen] = useState(false);
@@ -73,14 +77,21 @@ export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptio
   });
 
   const myParticipantId = useMemo(() => {
+    if (typeof initialParticipantId === "number" && initialParticipantId > 0) {
+      return initialParticipantId;
+    }
     if (myUserId === null) return undefined;
     const detail = chatRoomDetailQuery.data;
     if (!detail) return undefined;
 
+    if (detail.owner.userId === myUserId && detail.owner.participantId) {
+      return detail.owner.participantId;
+    }
+
     const participant = detail.participants.find((member) => member.userId === myUserId);
     if (participant?.participantId) return participant.participantId;
     return undefined;
-  }, [chatRoomDetailQuery.data, myUserId]);
+  }, [chatRoomDetailQuery.data, initialParticipantId, myUserId]);
 
   const myLastSeenMessageId = useMemo(() => {
     if (myUserId === null) return null;

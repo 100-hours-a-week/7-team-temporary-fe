@@ -9,9 +9,10 @@ import {
 
 interface ChatRoomSessionProps {
   roomId: number;
+  initialParticipantId?: number;
 }
 
-export function ChatRoomSession({ roomId }: ChatRoomSessionProps) {
+export function ChatRoomSession({ roomId, initialParticipantId }: ChatRoomSessionProps) {
   const {
     messages,
     myLastSeenMessageId,
@@ -27,7 +28,7 @@ export function ChatRoomSession({ roomId }: ChatRoomSessionProps) {
     handleSendTextMessage,
     handleImageSelect,
     handleToggleExtraMenu,
-  } = useChatRoomSessionModel({ roomId });
+  } = useChatRoomSessionModel({ roomId, initialParticipantId });
 
   return (
     <div className="flex h-full min-h-0 flex-col">

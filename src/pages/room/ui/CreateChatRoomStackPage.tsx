@@ -17,5 +17,16 @@ export function CreateChatRoomStackPage() {
     };
   }, [setHeaderContent, setHeaderRightContent]);
 
-  return <CreateChatRoomForm onCreated={(roomId) => push(<ChatRoomStackPage roomId={roomId} />)} />;
+  return (
+    <CreateChatRoomForm
+      onCreated={({ roomId, participantId }) =>
+        push(
+          <ChatRoomStackPage
+            roomId={roomId}
+            initialParticipantId={participantId}
+          />,
+        )
+      }
+    />
+  );
 }
