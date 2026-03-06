@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { WeeklyAchievementPoint } from "./types";
-import { WEEKLY_ACHIEVEMENT_MOCK, WEEKLY_ACHIEVEMENT_ZERO } from "./weeklyAchievement.constants";
+import { WEEKLY_ACHIEVEMENT_ZERO } from "./weeklyAchievement.constants";
 
 const TOOLTIP_GAP_PX = 8;
 const INITIAL_TOOLTIP_SHOW_DELAY_MS = 300;
@@ -22,7 +22,15 @@ const toWeeklyPoint = (value: unknown): WeeklyAchievementPoint | null => {
   return { day: payload.day, rate: payload.rate };
 };
 
-export function useWeeklyAchievementChart() {
+interface UseWeeklyAchievementChartOptions {
+  points: WeeklyAchievementPoint[];
+}
+
+export function useWeeklyAchievementChart({ points }: UseWeeklyAchievementChartOptions) {
+  const sourcePoints = useMemo(
+    () => (points.length > 0 ? points : WEEKLY_ACHIEVEMENT_ZERO),
+    [points],
+  );
   const [chartData, setChartData] = useState(WEEKLY_ACHIEVEMENT_ZERO);
   const [selectedPoint, setSelectedPoint] = useState<WeeklyAchievementPoint | null>(null);
   const [tooltipLeftPx, setTooltipLeftPx] = useState<number | null>(null);
@@ -32,18 +40,17 @@ export function useWeeklyAchievementChart() {
   const [needsInitialTooltipTracking, setNeedsInitialTooltipTracking] = useState(false);
   const chartWrapRef = useRef<HTMLDivElement>(null);
 
-  const maxRate = useMemo(() => Math.max(...WEEKLY_ACHIEVEMENT_MOCK.map((item) => item.rate)), []);
+  const maxRate = useMemo(() => Math.max(...sourcePoints.map((item) => item.rate)), [sourcePoints]);
   const bestDay = useMemo(
-    () => WEEKLY_ACHIEVEMENT_MOCK.find((item) => item.rate === maxRate)?.day ?? "월",
-    [maxRate],
+    () => sourcePoints.find((item) => item.rate === maxRate)?.day ?? "일",
+    [maxRate, sourcePoints],
   );
   const averageRate = useMemo(
     () =>
       Math.floor(
-        WEEKLY_ACHIEVEMENT_MOCK.reduce((sum, item) => sum + item.rate, 0) /
-          WEEKLY_ACHIEVEMENT_MOCK.length,
+        sourcePoints.reduce((sum, item) => sum + item.rate, 0) / Math.max(sourcePoints.length, 1),
       ),
-    [],
+    [sourcePoints],
   );
   const defaultPoint = useMemo<WeeklyAchievementPoint>(
     () => ({ day: bestDay, rate: maxRate }),
@@ -53,7 +60,7 @@ export function useWeeklyAchievementChart() {
   useEffect(() => {
     let tooltipDelayTimer: ReturnType<typeof setTimeout> | null = null;
     const frame = requestAnimationFrame(() => {
-      setChartData(WEEKLY_ACHIEVEMENT_MOCK);
+      setChartData(sourcePoints);
       setSelectedPoint(defaultPoint);
       setTooltipLeftPx(null);
       setTooltipTopPx(null);
@@ -69,37 +76,40 @@ export function useWeeklyAchievementChart() {
       cancelAnimationFrame(frame);
       if (tooltipDelayTimer) clearTimeout(tooltipDelayTimer);
     };
-  }, [defaultPoint]);
+  }, [defaultPoint, sourcePoints]);
 
-  const alignTooltipToDay = useCallback((day: string) => {
-    const wrap = chartWrapRef.current;
-    if (!wrap) return;
+  const alignTooltipToDay = useCallback(
+    (day: string) => {
+      const wrap = chartWrapRef.current;
+      if (!wrap) return;
 
-    const dayIndex = WEEKLY_ACHIEVEMENT_MOCK.findIndex((item) => item.day === day);
-    if (dayIndex < 0) return;
+      const dayIndex = sourcePoints.findIndex((item) => item.day === day);
+      if (dayIndex < 0) return;
 
-    const wrapRect = wrap.getBoundingClientRect();
-    const barNodes = wrap.querySelectorAll<SVGElement>(
-      ".recharts-bar-rectangle path, .recharts-bar-rectangle rect",
-    );
-    const targetBar = barNodes.item(dayIndex);
+      const wrapRect = wrap.getBoundingClientRect();
+      const barNodes = wrap.querySelectorAll<SVGElement>(
+        ".recharts-bar-rectangle path, .recharts-bar-rectangle rect",
+      );
+      const targetBar = barNodes.item(dayIndex);
 
-    if (targetBar) {
-      const barRect = targetBar.getBoundingClientRect();
-      setTooltipLeftPx(barRect.left + barRect.width / 2 - wrapRect.left);
-      setTooltipTopPx(barRect.top - wrapRect.top - TOOLTIP_GAP_PX);
-      return;
-    }
+      if (targetBar) {
+        const barRect = targetBar.getBoundingClientRect();
+        setTooltipLeftPx(barRect.left + barRect.width / 2 - wrapRect.left);
+        setTooltipTopPx(barRect.top - wrapRect.top - TOOLTIP_GAP_PX);
+        return;
+      }
 
-    const tickGroups = wrap.querySelectorAll<SVGGElement>("g.recharts-cartesian-axis-tick");
-    const targetTick = tickGroups.item(dayIndex);
-    const textNode = targetTick?.querySelector("text");
+      const tickGroups = wrap.querySelectorAll<SVGGElement>("g.recharts-cartesian-axis-tick");
+      const targetTick = tickGroups.item(dayIndex);
+      const textNode = targetTick?.querySelector("text");
 
-    if (!textNode) return;
-    const textRect = textNode.getBoundingClientRect();
-    setTooltipLeftPx(textRect.left + textRect.width / 2 - wrapRect.left);
-    setTooltipTopPx(TOOLTIP_GAP_PX);
-  }, []);
+      if (!textNode) return;
+      const textRect = textNode.getBoundingClientRect();
+      setTooltipLeftPx(textRect.left + textRect.width / 2 - wrapRect.left);
+      setTooltipTopPx(TOOLTIP_GAP_PX);
+    },
+    [sourcePoints],
+  );
 
   const handleSelectPoint = useCallback(
     (value: unknown) => {
@@ -183,7 +193,7 @@ export function useWeeklyAchievementChart() {
     bestDay,
     averageRate,
     maxRate,
-    cells: WEEKLY_ACHIEVEMENT_MOCK,
+    cells: sourcePoints,
     handleSelectPoint,
     handleChartMouseMove,
     handleChartMouseLeave,

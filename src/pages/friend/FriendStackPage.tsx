@@ -5,11 +5,18 @@ import { useCallback, useEffect, useState } from "react";
 import { FriendAddSheet } from "@/features/friend";
 import { FriendList } from "@/widgets/friend-list";
 import { useStackPage } from "@/widgets/stack";
+import { FriendChatRoomStackPage } from "./ui/FriendChatRoomStackPage";
 
 export function FriendStackPage() {
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
-  const { setHeaderContent, setHeaderRightContent } = useStackPage();
+  const { push, setHeaderContent, setHeaderRightContent } = useStackPage();
   const handleOpenAddSheet = useCallback(() => setIsAddSheetOpen(true), []);
+  const handleFriendChatRoomEntered = useCallback(
+    (roomId: number) => {
+      push(<FriendChatRoomStackPage roomId={roomId} />);
+    },
+    [push],
+  );
 
   useEffect(() => {
     setHeaderContent(<span className="text-xl font-semibold text-black">친구</span>);
@@ -30,7 +37,7 @@ export function FriendStackPage() {
 
   return (
     <>
-      <FriendList />
+      <FriendList onFriendChatRoomEntered={handleFriendChatRoomEntered} />
       <FriendAddSheet
         open={isAddSheetOpen}
         onOpenChange={setIsAddSheetOpen}

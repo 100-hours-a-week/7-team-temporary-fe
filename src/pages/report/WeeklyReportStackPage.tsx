@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import {
-  getWeeklyReportPeriodLabel,
+  useWeeklyReportData,
   WeeklyAchievementSection,
   WeeklyButlerSection,
 } from "@/features/report";
@@ -16,7 +16,10 @@ interface WeeklyReportStackPageProps {
 export function WeeklyReportStackPage({ baseDate }: WeeklyReportStackPageProps) {
   const { setHeaderContent } = useStackPage();
   const [isEntered, setIsEntered] = useState(false);
-  const reportPeriodLabel = getWeeklyReportPeriodLabel(baseDate);
+  const { report, achievementPoints, periodLabel, isButlerInputEnabled, isLoading, isError } =
+    useWeeklyReportData({
+      baseDate,
+    });
 
   useEffect(() => {
     setHeaderContent(
@@ -44,7 +47,7 @@ export function WeeklyReportStackPage({ baseDate }: WeeklyReportStackPageProps) 
           isEntered ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
         }`}
       >
-        <p className="text-base font-semibold text-black">{reportPeriodLabel}</p>
+        <p className="text-base font-semibold text-black">{periodLabel}</p>
       </div>
 
       <section
@@ -53,7 +56,11 @@ export function WeeklyReportStackPage({ baseDate }: WeeklyReportStackPageProps) 
         }`}
         style={{ transitionDelay: "80ms" }}
       >
-        <WeeklyAchievementSection />
+        <WeeklyAchievementSection
+          points={achievementPoints}
+          isLoading={isLoading}
+          isError={isError}
+        />
       </section>
 
       <section
@@ -62,7 +69,12 @@ export function WeeklyReportStackPage({ baseDate }: WeeklyReportStackPageProps) 
         }`}
         style={{ transitionDelay: "130ms" }}
       >
-        <WeeklyButlerSection />
+        <WeeklyButlerSection
+          reportId={report?.reportId ?? null}
+          aiReportResponseLimit={report?.aiReportResponseLimit ?? null}
+          aiReportResponseUsed={report?.aiReportResponseUsed ?? null}
+          isInputEnabled={isButlerInputEnabled}
+        />
       </section>
     </div>
   );

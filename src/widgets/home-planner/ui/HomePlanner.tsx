@@ -58,6 +58,8 @@ export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlanner
     hasPlan,
     hasMore,
     isLoading,
+    isFetchingMore,
+    scrollContainerRef,
     loadMoreRef,
     isCurrentTaskLoading,
   } = useHomePlanner({ enabled });
@@ -67,7 +69,10 @@ export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlanner
       id="HomePlanner"
       onRender={handlePlannerProfileRender}
     >
-      <div className="scrollbar-hide mx-0 h-full overflow-y-auto px-5 py-5">
+      <div
+        ref={scrollContainerRef}
+        className="scrollbar-hide mx-0 h-full overflow-y-auto px-5 py-5"
+      >
         <HomeWeekSelector
           monthIndex={headerMonthIndex}
           weekDays={weekDays}
@@ -182,7 +187,7 @@ export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlanner
                     ref={loadMoreRef}
                     className="h-px"
                   />
-                  {isLoading && hasMore ? (
+                  {isFetchingMore && hasMore ? (
                     <div className="text-center text-xs text-neutral-400">불러오는 중...</div>
                   ) : null}
                 </>

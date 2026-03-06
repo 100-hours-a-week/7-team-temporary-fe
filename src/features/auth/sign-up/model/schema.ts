@@ -20,6 +20,7 @@ export const signUpFormSchema = z.object({
     if (!error) return;
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: error });
   }),
+  isEmailChecked: z.boolean(),
   password: z.string().superRefine((value, ctx) => {
     const error = getPasswordError(value);
     if (!error) return;

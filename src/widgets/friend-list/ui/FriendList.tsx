@@ -13,7 +13,11 @@ import {
 } from "../model/constants";
 import { FriendListSkeleton } from "./FriendListSkeleton";
 
-export function FriendList() {
+interface FriendListProps {
+  onFriendChatRoomEntered?: (roomId: number) => void;
+}
+
+export function FriendList({ onFriendChatRoomEntered }: FriendListProps) {
   const {
     friendRequests,
     acceptFriendRequest,
@@ -23,12 +27,14 @@ export function FriendList() {
     friends,
     deleteFriend,
     deletingFriendId,
+    enterFriendChatRoom,
+    enteringFriendId,
     isLoading,
     isError,
     isFetching,
     hasMore,
     loadMore,
-  } = useFriendListSection();
+  } = useFriendListSection({ onFriendChatRoomEntered });
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled: true,
@@ -84,6 +90,8 @@ export function FriendList() {
                       vm={friend}
                       onDelete={deleteFriend}
                       isDeleting={deletingFriendId === friend.id}
+                      onChat={enterFriendChatRoom}
+                      isChatting={enteringFriendId === friend.id}
                     />
                   </li>
                 ))}

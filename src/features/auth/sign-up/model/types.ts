@@ -2,6 +2,7 @@ import type { UserEntity } from "@/entities/user";
 
 export interface SignUpFormModel {
   email: string;
+  isEmailChecked: boolean;
   password: string;
   nickname: string;
   gender: "MALE" | "FEMALE" | "";

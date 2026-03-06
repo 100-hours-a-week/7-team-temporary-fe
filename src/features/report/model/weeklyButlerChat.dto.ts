@@ -5,8 +5,10 @@ import type {
 
 export function toWeeklyButlerChatRequestDto(
   form: WeeklyButlerChatFormModel,
+  reportId: number,
 ): WeeklyButlerChatRequestDto {
   return {
+    reportId,
     inputMessage: form.message.trim(),
   };
 }

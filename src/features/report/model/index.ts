@@ -1,6 +1,7 @@
 export type { WeeklyAchievementPoint } from "./types";
 export { getWeeklyReportPeriodLabel } from "./weeklyReportDate";
 export { useWeeklyAchievementChart } from "./useWeeklyAchievementChart";
+export { useWeeklyReportData } from "./useWeeklyReportData";
 export {
   WEEKLY_BUTLER_GREETING_LINES,
   WEEKLY_BUTLER_QUICK_ACTIONS,
@@ -13,3 +14,4 @@ export type {
   WeeklyButlerChatUiState,
 } from "./weeklyButlerChat.types";
 export { useWeeklyButlerChatForm } from "./useWeeklyButlerChatForm";
+export { useWeeklyButlerSendMutation } from "./useWeeklyButlerSendMutation";

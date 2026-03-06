@@ -64,6 +64,7 @@ export const Endpoint = {
   SCHEDULE: {
     BASE: chatPath("/schedule"),
     BY_ID: (scheduleId: number) => chatPath(`/schedule/${scheduleId}`),
+    STATUS: (scheduleId: number) => chatPath(`/schedule/${scheduleId}/status`),
     CHILDREN: chatPath("/schedule/children"),
   },
 
@@ -91,6 +92,12 @@ export const Endpoint = {
     BY_ID: (reflectionId: number) => chatPath(`/reflections/${reflectionId}`),
   },
 
+  REPORTS: {
+    LIST: chatPath("/reports"),
+    MESSAGE: (reportId: number) => chatPath(`/reports/${reportId}/message`),
+    MESSAGES: (reportId: number) => chatPath(`/reports/${reportId}/messages`),
+  },
+
   FRIENDS: {
     LIST: chatPath("/friends"),
     DELETE: (friendUserId: number) => chatPath(`/friends/${friendUserId}`),
@@ -112,6 +119,7 @@ export const Endpoint = {
     CREATE: chatPath("/chat-rooms"),
     DETAIL: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
     JOIN: (roomId: number) => chatPath(`/chat-rooms/${roomId}/participants`),
+    JOIN_BY_FRIEND: (friendId: number) => chatPath(`/chat-rooms/participants/${friendId}`),
     LEAVE: (roomId: number, participantId: number) =>
       chatPath(`/chat-rooms/${roomId}/participants/${participantId}`),
     SEND_MESSAGE: (roomId: number) => chatPath(`/chat-rooms/${roomId}/messages`),

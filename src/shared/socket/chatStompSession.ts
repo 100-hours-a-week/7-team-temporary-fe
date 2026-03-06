@@ -21,6 +21,14 @@ import type {
   MessageSendRejectedPayload,
   ParticipantJoinedPayload,
   ParticipantLeftPayload,
+  ReportMessageSendAcceptedPayload,
+  ReportMessageCreatedPayload,
+  ReportMessageSendFailedPayload,
+  ReportMessageSendPayload,
+  ReportMessageSendRejectedPayload,
+  ReportStreamStartPayload,
+  ReportStreamChunkPayload,
+  ReportStreamEndPayload,
   SocketReconnectRequiredPayload,
   SocketResyncRequiredPayload,
   SocketServerDisconnectPayload,
@@ -49,6 +57,7 @@ const PUBLISH_RECEIPT_TIMEOUT_MS = 3000;
 const DUPLICATE_RECONNECT_BASE_DELAY_MS = 1000;
 const DUPLICATE_RECONNECT_MAX_DELAY_MS = 8000;
 const DUPLICATE_RECONNECT_MAX_RETRIES = 8;
+const REPORT_MESSAGE_ACK_TIMEOUT_MS = 5000;
 
 interface SendMessageFallbackRequestDto {
   idempotencyKey: string;
@@ -67,6 +76,10 @@ interface LastSeenUpdateFallbackRequestDto {
   lastSeenMessageId: number;
 }
 
+interface ReportMessageFallbackRequestDto {
+  inputMessage: string;
+}
+
 // ─── Listener types ───────────────────────────────────────────────────────────
 
 type UnreadChangedListener = (payload: UnreadChangedUserEventPayload) => void;
@@ -74,6 +87,13 @@ type ChatSummaryChangedListener = (payload: ChatSummaryChangedUserEventPayload) 
 type MessageSendAcceptedListener = (payload: MessageSendAcceptedPayload) => void;
 type MessageSendRejectedListener = (payload: MessageSendRejectedPayload) => void;
 type MessageSendFailedListener = (payload: MessageSendFailedPayload) => void;
+type ReportMessageSendAcceptedListener = (payload: ReportMessageSendAcceptedPayload) => void;
+type ReportMessageCreatedListener = (payload: ReportMessageCreatedPayload) => void;
+type ReportMessageSendRejectedListener = (payload: ReportMessageSendRejectedPayload) => void;
+type ReportMessageSendFailedListener = (payload: ReportMessageSendFailedPayload) => void;
+type ReportStreamStartListener = (payload: ReportStreamStartPayload) => void;
+type ReportStreamChunkListener = (payload: ReportStreamChunkPayload) => void;
+type ReportStreamEndListener = (payload: ReportStreamEndPayload) => void;
 type SocketResyncRequiredListener = (payload: SocketResyncRequiredPayload) => void;
 
 // ─── Room subscription types ──────────────────────────────────────────────────
@@ -97,6 +117,15 @@ interface ActiveRoomEntry {
 interface LastSeenProgress {
   latestRequestedMessageId: number;
   latestConfirmedMessageId: number;
+}
+
+interface PendingReportSendRequest {
+  payload: ReportMessageSendPayload;
+  resolve: () => void;
+  reject: (error: Error) => void;
+  ackTimeoutId: number | null;
+  fallbackTriggered: boolean;
+  settled: boolean;
 }
 
 // ─── Envelope parsing ─────────────────────────────────────────────────────────
@@ -162,6 +191,150 @@ function isUserQueueEvent(event: string | null, expected: string) {
   const normalized = normalizeEventName(event);
   if (!normalized) return true;
   return normalized === normalizeEventName(expected);
+}
+
+function isExactSocketEvent(event: string | null, expected: string) {
+  const normalized = normalizeEventName(event);
+  if (!normalized) return false;
+  return normalized === normalizeEventName(expected);
+}
+
+function toReportMessageErrorPayload(
+  candidate: unknown,
+): ReportMessageSendRejectedPayload | ReportMessageSendFailedPayload | null {
+  if (!candidate || typeof candidate !== "object") return null;
+  const value = candidate as {
+    code?: unknown;
+    message?: unknown;
+    retryable?: unknown;
+  };
+  if (typeof value.code !== "string" || typeof value.message !== "string") return null;
+  return {
+    code: value.code,
+    message: value.message,
+    retryable: typeof value.retryable === "boolean" ? value.retryable : false,
+  };
+}
+
+function toReportStreamChunkPayload(candidate: unknown): ReportStreamChunkPayload | null {
+  if (!candidate || typeof candidate !== "object") return null;
+  const value = candidate as {
+    reportId?: unknown;
+    messageId?: unknown;
+    senderType?: unknown;
+    messageType?: unknown;
+    delta?: unknown;
+    sequence?: unknown;
+  };
+  const reportId = toNumber(value.reportId);
+  const messageId = toNumber(value.messageId);
+  const sequence = toNumber(value.sequence);
+  if (reportId === null || messageId === null || sequence === null) return null;
+  if (value.senderType !== "USER" && value.senderType !== "AI" && value.senderType !== "SYSTEM") {
+    return null;
+  }
+  if (value.messageType !== "TEXT" && value.messageType !== "IMAGE") return null;
+  if (typeof value.delta !== "string") return null;
+
+  return {
+    reportId,
+    messageId,
+    senderType: value.senderType,
+    messageType: value.messageType,
+    delta: value.delta,
+    sequence,
+  };
+}
+
+function toReportStreamStartPayload(candidate: unknown): ReportStreamStartPayload | null {
+  if (!candidate || typeof candidate !== "object") return null;
+  const value = candidate as {
+    reportId?: unknown;
+    messageId?: unknown;
+    senderType?: unknown;
+    messageType?: unknown;
+    status?: unknown;
+  };
+  const reportId = toNumber(value.reportId);
+  const messageId = toNumber(value.messageId);
+  if (reportId === null || messageId === null) return null;
+  if (value.senderType !== "USER" && value.senderType !== "AI" && value.senderType !== "SYSTEM") {
+    return null;
+  }
+  if (value.messageType !== "TEXT" && value.messageType !== "IMAGE") return null;
+
+  return {
+    reportId,
+    messageId,
+    senderType: value.senderType,
+    messageType: value.messageType,
+    status: typeof value.status === "string" ? value.status : undefined,
+  };
+}
+
+function toReportStreamEndPayload(candidate: unknown): ReportStreamEndPayload | null {
+  if (!candidate || typeof candidate !== "object") return null;
+  const value = candidate as {
+    reportId?: unknown;
+    messageId?: unknown;
+    senderType?: unknown;
+    messageType?: unknown;
+    status?: unknown;
+    content?: unknown;
+  };
+  const reportId = toNumber(value.reportId);
+  const messageId = toNumber(value.messageId);
+  if (reportId === null || messageId === null) return null;
+  if (value.senderType !== "USER" && value.senderType !== "AI" && value.senderType !== "SYSTEM") {
+    return null;
+  }
+  if (value.messageType !== "TEXT" && value.messageType !== "IMAGE") return null;
+  if (value.content !== undefined && value.content !== null && typeof value.content !== "string") {
+    return null;
+  }
+
+  return {
+    reportId,
+    messageId,
+    senderType: value.senderType,
+    messageType: value.messageType,
+    status: typeof value.status === "string" ? value.status : undefined,
+    content: (value.content as string | null | undefined) ?? undefined,
+  };
+}
+
+function toReportMessageCreatedPayload(candidate: unknown): ReportMessageCreatedPayload | null {
+  if (!candidate || typeof candidate !== "object") return null;
+  const value = candidate as {
+    eventId?: unknown;
+    reportId?: unknown;
+    messageId?: unknown;
+    senderType?: unknown;
+    messageType?: unknown;
+    content?: unknown;
+    sentAt?: unknown;
+  };
+
+  const reportId = toNumber(value.reportId);
+  const messageId = toNumber(value.messageId);
+  if (reportId === null || messageId === null) return null;
+  if (value.senderType !== "USER" && value.senderType !== "AI" && value.senderType !== "SYSTEM") {
+    return null;
+  }
+  if (value.messageType !== "TEXT" && value.messageType !== "IMAGE") return null;
+  if (typeof value.sentAt !== "string") return null;
+  if (value.content !== null && typeof value.content !== "string") return null;
+
+  return {
+    eventId:
+      typeof value.eventId === "string" ? value.eventId : `report-message-${reportId}-${messageId}`,
+    reportId,
+    messageId,
+    senderType: value.senderType,
+    messageType: value.messageType,
+    content: (value.content as string | null) ?? null,
+    sentAt: value.sentAt,
+  };
 }
 
 function toUnreadChangedPayload(candidate: unknown): UnreadChangedUserEventPayload | null {
@@ -240,6 +413,7 @@ class ChatStompSession {
   private handshakeSubscription: StompSubscription | null = null;
   private userQueueSubscription: StompSubscription | null = null;
   private userQueueRoomSubscription: StompSubscription | null = null;
+  private userQueueReportSubscription: StompSubscription | null = null;
 
   // Active room subscriptions (preserved across auto-reconnects)
   private activeRooms = new Map<number, ActiveRoomEntry>();
@@ -250,6 +424,13 @@ class ChatStompSession {
   private messageSendAcceptedListeners = new Set<MessageSendAcceptedListener>();
   private messageSendRejectedListeners = new Set<MessageSendRejectedListener>();
   private messageSendFailedListeners = new Set<MessageSendFailedListener>();
+  private reportMessageSendAcceptedListeners = new Set<ReportMessageSendAcceptedListener>();
+  private reportMessageCreatedListeners = new Set<ReportMessageCreatedListener>();
+  private reportMessageSendRejectedListeners = new Set<ReportMessageSendRejectedListener>();
+  private reportMessageSendFailedListeners = new Set<ReportMessageSendFailedListener>();
+  private reportStreamStartListeners = new Set<ReportStreamStartListener>();
+  private reportStreamChunkListeners = new Set<ReportStreamChunkListener>();
+  private reportStreamEndListeners = new Set<ReportStreamEndListener>();
   private socketResyncRequiredListeners = new Set<SocketResyncRequiredListener>();
   private pendingMessagePayloads = new Map<string, MessageSendPayload>();
   private fallbackTriggeredMessageIds = new Set<string>();
@@ -258,6 +439,7 @@ class ChatStompSession {
   private duplicateReconnectRetryCount = 0;
   private isDuplicateReconnectPending = false;
   private lastSeenProgressByParticipant = new Map<number, LastSeenProgress>();
+  private pendingReportSendRequest: PendingReportSendRequest | null = null;
 
   // ─── Public getters ──────────────────────────────────────────────────────────
 
@@ -299,6 +481,55 @@ class ChatStompSession {
     this.messageSendFailedListeners.add(listener);
     return () => {
       this.messageSendFailedListeners.delete(listener);
+    };
+  }
+
+  onReportMessageSendAccepted(listener: ReportMessageSendAcceptedListener) {
+    this.reportMessageSendAcceptedListeners.add(listener);
+    return () => {
+      this.reportMessageSendAcceptedListeners.delete(listener);
+    };
+  }
+
+  onReportMessageCreated(listener: ReportMessageCreatedListener) {
+    this.reportMessageCreatedListeners.add(listener);
+    return () => {
+      this.reportMessageCreatedListeners.delete(listener);
+    };
+  }
+
+  onReportMessageSendRejected(listener: ReportMessageSendRejectedListener) {
+    this.reportMessageSendRejectedListeners.add(listener);
+    return () => {
+      this.reportMessageSendRejectedListeners.delete(listener);
+    };
+  }
+
+  onReportMessageSendFailed(listener: ReportMessageSendFailedListener) {
+    this.reportMessageSendFailedListeners.add(listener);
+    return () => {
+      this.reportMessageSendFailedListeners.delete(listener);
+    };
+  }
+
+  onReportStreamChunk(listener: ReportStreamChunkListener) {
+    this.reportStreamChunkListeners.add(listener);
+    return () => {
+      this.reportStreamChunkListeners.delete(listener);
+    };
+  }
+
+  onReportStreamStart(listener: ReportStreamStartListener) {
+    this.reportStreamStartListeners.add(listener);
+    return () => {
+      this.reportStreamStartListeners.delete(listener);
+    };
+  }
+
+  onReportStreamEnd(listener: ReportStreamEndListener) {
+    this.reportStreamEndListeners.add(listener);
+    return () => {
+      this.reportStreamEndListeners.delete(listener);
     };
   }
 
@@ -366,6 +597,48 @@ class ChatStompSession {
       onPublishError: () => {
         this.triggerSendMessageHttpFallback(payload.idempotencyKey, "publish_error");
       },
+    });
+  }
+
+  sendReportMessage(payload: ReportMessageSendPayload): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.pendingReportSendRequest && !this.pendingReportSendRequest.settled) {
+        reject(new Error("이미 리포트 메시지를 전송 중입니다."));
+        return;
+      }
+
+      this.pendingReportSendRequest = {
+        payload,
+        resolve,
+        reject,
+        ackTimeoutId: null,
+        fallbackTriggered: false,
+        settled: false,
+      };
+
+      const ackTimeoutId = window.setTimeout(() => {
+        this.triggerReportMessageHttpFallback("ack_timeout");
+      }, REPORT_MESSAGE_ACK_TIMEOUT_MS);
+      this.pendingReportSendRequest.ackTimeoutId = ackTimeoutId;
+
+      if (!this.client?.connected || !this.config) {
+        this.triggerReportMessageHttpFallback("socket_not_connected");
+        return;
+      }
+
+      this.publishWithReceipt({
+        client: this.client,
+        destination: this.config.reportMessageSendDestination,
+        body: JSON.stringify(payload),
+        eventName: "report.message.send",
+        payloadForLog: { reportId: payload.reportId },
+        onReceiptTimeout: () => {
+          this.triggerReportMessageHttpFallback("receipt_timeout");
+        },
+        onPublishError: () => {
+          this.triggerReportMessageHttpFallback("publish_error");
+        },
+      });
     });
   }
 
@@ -572,6 +845,7 @@ class ChatStompSession {
     this.handshakeSubscription = null;
     this.userQueueSubscription = null;
     this.userQueueRoomSubscription = null;
+    this.userQueueReportSubscription = null;
 
     if (preserveRooms) {
       // stompSubscription refs are on the old socket; null them but keep room metadata
@@ -584,6 +858,13 @@ class ChatStompSession {
       this.lastSeenProgressByParticipant.clear();
       this.pendingMessagePayloads.clear();
       this.fallbackTriggeredMessageIds.clear();
+      if (this.pendingReportSendRequest && !this.pendingReportSendRequest.settled) {
+        this.settlePendingReportSendAsFailure({
+          code: "SOCKET_STOPPED",
+          message: "소켓 연결이 종료되어 전송이 취소되었습니다.",
+          retryable: true,
+        });
+      }
     }
 
     if (client) {
@@ -755,6 +1036,91 @@ class ChatStompSession {
     void this.sendMessageWithHttpFallback(payload, reason);
   }
 
+  private clearPendingReportAckTimeout() {
+    const timeoutId = this.pendingReportSendRequest?.ackTimeoutId ?? null;
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+  }
+
+  private settlePendingReportSendAsSuccess(payload?: ReportMessageSendAcceptedPayload) {
+    const pending = this.pendingReportSendRequest;
+    if (!pending || pending.settled) return;
+
+    pending.settled = true;
+    this.clearPendingReportAckTimeout();
+    this.pendingReportSendRequest = null;
+    this.emitListeners(
+      this.reportMessageSendAcceptedListeners,
+      payload ?? { reportId: pending.payload.reportId },
+      "reportMessageSendAccepted",
+    );
+    pending.resolve();
+  }
+
+  private settlePendingReportSendAsFailure(payload: ReportMessageSendRejectedPayload) {
+    const pending = this.pendingReportSendRequest;
+    if (!pending || pending.settled) return;
+
+    pending.settled = true;
+    this.clearPendingReportAckTimeout();
+    this.pendingReportSendRequest = null;
+    this.emitListeners(
+      this.reportMessageSendRejectedListeners,
+      payload,
+      "reportMessageSendRejected",
+    );
+    pending.reject(new Error(payload.message || "리포트 메시지 전송에 실패했습니다."));
+  }
+
+  private triggerReportMessageHttpFallback(reason: string) {
+    const pending = this.pendingReportSendRequest;
+    if (!pending || pending.settled) return;
+    if (pending.fallbackTriggered) return;
+    pending.fallbackTriggered = true;
+
+    void this.sendReportMessageWithHttpFallback(pending.payload, reason);
+  }
+
+  private async sendReportMessageWithHttpFallback(
+    payload: ReportMessageSendPayload,
+    reason: string,
+  ) {
+    const requestDto: ReportMessageFallbackRequestDto = {
+      inputMessage: payload.inputMessage,
+    };
+
+    try {
+      await AuthService.refreshAndRetry(() =>
+        apiFetch<void, ReportMessageFallbackRequestDto>(
+          Endpoint.REPORTS.MESSAGE(payload.reportId),
+          {
+            method: "POST",
+            body: requestDto,
+            authRequired: true,
+          },
+        ),
+      );
+
+      chatSocketLog("[chat-socket] report.message.send HTTP fallback success", {
+        reportId: payload.reportId,
+        reason,
+      });
+      this.settlePendingReportSendAsSuccess({ reportId: payload.reportId });
+    } catch (error) {
+      console.error("[chat-socket] report.message.send HTTP fallback failed", {
+        reportId: payload.reportId,
+        reason,
+        error,
+      });
+      this.settlePendingReportSendAsFailure({
+        code: "REPORT_MESSAGE_FALLBACK_FAILED",
+        message: "리포트 메시지 전송에 실패했습니다.",
+        retryable: false,
+      });
+    }
+  }
+
   private async sendMessageWithHttpFallback(payload: MessageSendPayload, reason: string) {
     const requestDto: SendMessageFallbackRequestDto = {
       idempotencyKey: payload.idempotencyKey,
@@ -895,10 +1261,12 @@ class ChatStompSession {
     this.handshakeSubscription = null;
     this.userQueueSubscription = null;
     this.userQueueRoomSubscription = null;
+    this.userQueueReportSubscription = null;
 
     this.handshakeSubscription = this.subscribeHandshakeChannel(client, config);
     this.userQueueSubscription = this.subscribeUserQueue(client, config);
     this.userQueueRoomSubscription = this.subscribeUserRoomQueue(client, config);
+    this.userQueueReportSubscription = this.subscribeUserReportQueue(client, config);
 
     // Publish socket.connect handshake
     client.publish({
@@ -1086,6 +1454,10 @@ class ChatStompSession {
         }
       }
 
+      if (this.handleReportQueueEvent(event, payload)) {
+        return;
+      }
+
       console.warn("[chat-socket] user queue payload 파싱 실패", {
         body: message.body,
         headers: message.headers,
@@ -1153,8 +1525,139 @@ class ChatStompSession {
         return;
       }
 
+      if (this.handleReportQueueEvent(event, payload)) {
+        return;
+      }
+
       chatSocketLog("[chat-socket] unknown room queue event", { event, body: message.body });
     });
+  }
+
+  // ─── User report queue (/user/queue/report) ─────────────────────────────────
+
+  private subscribeUserReportQueue(client: Client, config: ChatSocketStartConfig) {
+    return client.subscribe(config.userQueueReportDestination, (message) => {
+      const envelope = parseEventEnvelope(message.body);
+      if (!envelope) return;
+      const { event, payload } = envelope;
+
+      if (this.handleReportQueueEvent(event, payload)) {
+        return;
+      }
+
+      chatSocketLog("[chat-socket] unknown report queue event", { event, body: message.body });
+    });
+  }
+
+  private handleReportQueueEvent(event: string | null, payload: unknown): boolean {
+    if (isExactSocketEvent(event, "report.message.created")) {
+      const createdPayload = toReportMessageCreatedPayload(payload);
+      if (!createdPayload) return false;
+
+      chatSocketLog("[chat-socket] report.message.created", {
+        reportId: createdPayload.reportId,
+        messageId: createdPayload.messageId,
+        senderType: createdPayload.senderType,
+      });
+      this.emitListeners(
+        this.reportMessageCreatedListeners,
+        createdPayload,
+        "reportMessageCreated",
+      );
+      return true;
+    }
+
+    if (isExactSocketEvent(event, "report.message.sendAccepted")) {
+      const acceptedPayload: ReportMessageSendAcceptedPayload =
+        payload && typeof payload === "object"
+          ? (payload as ReportMessageSendAcceptedPayload)
+          : { reportId: this.pendingReportSendRequest?.payload.reportId };
+      chatSocketLog("[chat-socket] report.message.sendAccepted", acceptedPayload);
+      this.settlePendingReportSendAsSuccess(acceptedPayload);
+      return true;
+    }
+
+    if (isExactSocketEvent(event, "report.message.sendRejected")) {
+      const rejectedPayload = toReportMessageErrorPayload(payload);
+      if (!rejectedPayload) return false;
+
+      chatSocketLog("[chat-socket] report.message.sendRejected", rejectedPayload);
+      this.settlePendingReportSendAsFailure({
+        code: rejectedPayload.code,
+        message: rejectedPayload.message,
+        retryable:
+          typeof rejectedPayload.retryable === "boolean" ? rejectedPayload.retryable : false,
+      });
+      return true;
+    }
+
+    if (isExactSocketEvent(event, "report.message.sendFailed")) {
+      const failedPayload = toReportMessageErrorPayload(payload);
+      if (!failedPayload) return false;
+
+      chatSocketLog("[chat-socket] report.message.sendFailed", failedPayload);
+      this.emitListeners(
+        this.reportMessageSendFailedListeners,
+        {
+          code: failedPayload.code,
+          message: failedPayload.message,
+          retryable: typeof failedPayload.retryable === "boolean" ? failedPayload.retryable : false,
+        },
+        "reportMessageSendFailed",
+      );
+
+      if (failedPayload.retryable) {
+        this.triggerReportMessageHttpFallback("report_message_send_failed");
+      } else {
+        this.settlePendingReportSendAsFailure({
+          code: failedPayload.code,
+          message: failedPayload.message,
+          retryable: false,
+        });
+      }
+      return true;
+    }
+
+    if (isExactSocketEvent(event, "report.stream.chunk")) {
+      const chunkPayload = toReportStreamChunkPayload(payload);
+      if (!chunkPayload) return false;
+
+      chatSocketLog("[chat-socket] report.stream.chunk", {
+        reportId: chunkPayload.reportId,
+        messageId: chunkPayload.messageId,
+        sequence: chunkPayload.sequence,
+      });
+      this.emitListeners(this.reportStreamChunkListeners, chunkPayload, "reportStreamChunk");
+      return true;
+    }
+
+    if (isExactSocketEvent(event, "report.stream.start")) {
+      const startPayload = toReportStreamStartPayload(payload);
+      if (!startPayload) return false;
+
+      chatSocketLog("[chat-socket] report.stream.start", {
+        reportId: startPayload.reportId,
+        messageId: startPayload.messageId,
+        status: startPayload.status,
+      });
+      this.emitListeners(this.reportStreamStartListeners, startPayload, "reportStreamStart");
+      return true;
+    }
+
+    if (isExactSocketEvent(event, "report.stream.end")) {
+      const endPayload = toReportStreamEndPayload(payload);
+      if (!endPayload) return false;
+
+      chatSocketLog("[chat-socket] report.stream.end", {
+        reportId: endPayload.reportId,
+        messageId: endPayload.messageId,
+        status: endPayload.status,
+      });
+      this.emitListeners(this.reportStreamEndListeners, endPayload, "reportStreamEnd");
+      return true;
+    }
+
+    return false;
   }
 
   // ─── Room broadcast subscription (/sub/room/{roomId}) ────────────────────────
