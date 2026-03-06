@@ -7,12 +7,12 @@ import { BaseInput, FormField } from "@/shared/form/ui";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 
+import type { CreateChatRoomResponseDto, CreateChatRoomFormModel } from "../model/types";
 import {
   createChatRoomDescriptionRules,
   createChatRoomGroupNameRules,
   createChatRoomMaxParticipantsRules,
 } from "../model/validation";
-import type { CreateChatRoomFormModel } from "../model/types";
 import { useCreateChatRoomMutation } from "../model/useCreateChatRoomMutation";
 import { useCreateChatRoomForm } from "../model/useCreateChatRoomForm";
 import {
@@ -23,7 +23,7 @@ import {
 } from "./constants";
 
 interface CreateChatRoomFormProps {
-  onCreated?: (roomId: number) => void;
+  onCreated?: (createdRoom: CreateChatRoomResponseDto) => void;
 }
 
 function getCreateChatRoomErrorMessage(error: unknown) {
@@ -58,7 +58,10 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
         if (typeof createdRoom?.roomId !== "number") {
           throw new Error("생성된 채팅방 식별자가 없습니다.");
         }
-        onCreated?.(createdRoom.roomId);
+        if (typeof createdRoom?.participantId !== "number") {
+          throw new Error("생성된 참가자 식별자가 없습니다.");
+        }
+        onCreated?.(createdRoom);
       } catch (error) {
         showToast(getCreateChatRoomErrorMessage(error), "error");
       }

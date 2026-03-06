@@ -10,7 +10,6 @@ import {
   toStompHeaderErrorCode,
 } from "./model/connectedMessage";
 import type {
-  ChatSummaryChangedUserEventPayload,
   DisconnectHandshakePayload,
   LastSeenUpdatePayload,
   MessageCreatedPayload,
@@ -83,7 +82,6 @@ interface ReportMessageFallbackRequestDto {
 // ─── Listener types ───────────────────────────────────────────────────────────
 
 type UnreadChangedListener = (payload: UnreadChangedUserEventPayload) => void;
-type ChatSummaryChangedListener = (payload: ChatSummaryChangedUserEventPayload) => void;
 type MessageSendAcceptedListener = (payload: MessageSendAcceptedPayload) => void;
 type MessageSendRejectedListener = (payload: MessageSendRejectedPayload) => void;
 type MessageSendFailedListener = (payload: MessageSendFailedPayload) => void;
@@ -378,28 +376,6 @@ function toUnreadChangedPayload(candidate: unknown): UnreadChangedUserEventPaylo
   return null;
 }
 
-function toChatSummaryChangedPayload(
-  candidate: unknown,
-): ChatSummaryChangedUserEventPayload | null {
-  if (!candidate || typeof candidate !== "object") return null;
-  const value = candidate as Partial<ChatSummaryChangedUserEventPayload> & {
-    userId?: number | string;
-    roomId?: number | string;
-  };
-  const userId = toNumber(value.userId);
-  const roomId = toNumber(value.roomId);
-  if (userId !== null && roomId !== null) {
-    return {
-      eventId:
-        typeof value.eventId === "string" ? value.eventId : `summary-${roomId}-${Date.now()}`,
-      userId,
-      roomId,
-      changedFields: Array.isArray(value.changedFields) ? (value.changedFields as string[]) : [],
-    };
-  }
-  return null;
-}
-
 // ─── ChatStompSession ──────────────────────────────────────────────────────────
 
 class ChatStompSession {
@@ -420,7 +396,6 @@ class ChatStompSession {
 
   // Event listeners
   private unreadChangedListeners = new Set<UnreadChangedListener>();
-  private chatSummaryChangedListeners = new Set<ChatSummaryChangedListener>();
   private messageSendAcceptedListeners = new Set<MessageSendAcceptedListener>();
   private messageSendRejectedListeners = new Set<MessageSendRejectedListener>();
   private messageSendFailedListeners = new Set<MessageSendFailedListener>();
@@ -453,13 +428,6 @@ class ChatStompSession {
     this.unreadChangedListeners.add(listener);
     return () => {
       this.unreadChangedListeners.delete(listener);
-    };
-  }
-
-  onChatSummaryChanged(listener: ChatSummaryChangedListener) {
-    this.chatSummaryChangedListeners.add(listener);
-    return () => {
-      this.chatSummaryChangedListeners.delete(listener);
     };
   }
 
@@ -1429,19 +1397,6 @@ class ChatStompSession {
         if (unreadPayload) {
           chatSocketLog("[chat-socket] unreadChanged", unreadPayload);
           this.emitListeners(this.unreadChangedListeners, unreadPayload, "unreadChanged");
-          return;
-        }
-      }
-
-      if (isUserQueueEvent(event, "chatSummaryChanged")) {
-        const summaryPayload = toChatSummaryChangedPayload(payload);
-        if (summaryPayload) {
-          chatSocketLog("[chat-socket] chatSummaryChanged", summaryPayload);
-          this.emitListeners(
-            this.chatSummaryChangedListeners,
-            summaryPayload,
-            "chatSummaryChanged",
-          );
           return;
         }
       }

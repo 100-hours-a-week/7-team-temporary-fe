@@ -38,6 +38,10 @@ export function useGroupChatMembersStackPageModel({
     const detail = chatRoomDetailQuery.data;
     if (!detail) return null;
 
+    if (detail.owner.userId === myUserId) {
+      return detail.owner.participantId ?? null;
+    }
+
     const participant = detail.participants.find((member) => member.userId === myUserId);
     return participant?.participantId ?? null;
   }, [chatRoomDetailQuery.data, myUserId]);

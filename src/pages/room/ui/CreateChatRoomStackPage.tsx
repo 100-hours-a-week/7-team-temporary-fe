@@ -6,7 +6,7 @@ import { useStackPage } from "@/widgets/stack";
 import { ChatRoomStackPage } from "./ChatRoomStackPage";
 
 export function CreateChatRoomStackPage() {
-  const { push, setHeaderContent, setHeaderRightContent } = useStackPage();
+  const { replace, setHeaderContent, setHeaderRightContent } = useStackPage();
 
   useEffect(() => {
     setHeaderContent(<span className="text-[18px] font-semibold text-black">채팅방 생성</span>);
@@ -17,5 +17,16 @@ export function CreateChatRoomStackPage() {
     };
   }, [setHeaderContent, setHeaderRightContent]);
 
-  return <CreateChatRoomForm onCreated={(roomId) => push(<ChatRoomStackPage roomId={roomId} />)} />;
+  return (
+    <CreateChatRoomForm
+      onCreated={({ roomId, participantId }) =>
+        replace(
+          <ChatRoomStackPage
+            roomId={roomId}
+            initialParticipantId={participantId}
+          />,
+        )
+      }
+    />
+  );
 }

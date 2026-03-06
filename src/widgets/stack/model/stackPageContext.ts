@@ -13,6 +13,7 @@ export interface StackEntry {
 export interface StackPageContextValue {
   push: (element: ReactNode) => void;
   pop: () => void;
+  replace: (element: ReactNode) => void;
   depth: number;
   stack: StackEntry[];
   poppingKey: string | null;
