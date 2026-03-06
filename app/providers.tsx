@@ -14,6 +14,9 @@ import { FcmForegroundListener } from "@/shared/firebase/FcmForegroundListener";
 import { useAiArrangeNoticeStore } from "@/features/home";
 import { useHomePlanStore } from "@/entities/day-plan";
 import { useUserPreferencesStore } from "@/entities/user";
+import { chatStompSession } from "@/shared/socket";
+const CHAT_SOCKET_LOG_ENABLED =
+  process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_CHAT_SOCKET_DEBUG === "true";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -32,6 +35,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     configureAuthHandlers({
       getAccessToken: () => useAuthStore.getState().accessToken,
       setAuthenticated: (token) => useAuthStore.getState().setAuthenticated(token),
+      setUserId: (userId) => useAuthStore.getState().setUserId(userId),
       clearAuth: () => useAuthStore.getState().clearAuth(),
     });
   }, []);
@@ -106,6 +110,33 @@ export function Providers({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken) {
+      if (CHAT_SOCKET_LOG_ENABLED) {
+        console.log("[chat-socket] providers: accessToken 없음 -> stop");
+      }
+      chatStompSession.stop({
+        code: "LOGOUT",
+        message: "로그아웃으로 연결을 종료합니다.",
+      });
+      return;
+    }
+
+    if (CHAT_SOCKET_LOG_ENABLED) {
+      console.log("[chat-socket] providers: accessToken 감지 -> start");
+    }
+    chatStompSession.start(accessToken);
+  }, [accessToken]);
+
+  useEffect(() => {
+    return () => {
+      chatStompSession.stop({
+        code: "APP_UNMOUNT",
+        message: "앱 언마운트로 연결을 종료합니다.",
+      });
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

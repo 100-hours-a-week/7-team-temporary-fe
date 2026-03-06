@@ -18,6 +18,8 @@ export interface RetroCoreItem {
 
 export interface MyRetroCardVM extends RetroCoreItem {
   visibilityText: string;
+  isOpen: boolean;
+  imageKeys: string[];
 }
 
 export interface PublicRetroCardVM extends RetroCoreItem {

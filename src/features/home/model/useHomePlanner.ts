@@ -1,24 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import {
+  dayPlanScheduleQueryKeys,
   toTaskItemModelFromHomeTask,
   type TaskItemModel,
-  useHomePlanStore,
-} from "@/entities/day-plan";
+} from "@/entities/day-plan-schedule";
+import { useHomePlanStore } from "@/entities/day-plan";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
+import { formatDateToYmd } from "./date";
 import { useHomePlannerCalendar } from "./useHomePlannerCalendar";
 import { useHomePlannerQueries } from "./useHomePlannerQueries";
 import { useMergedTasks } from "./useMergedTasks";
 import { toHomeWeekPlanPresenceVM } from "./planPresenceViewModel";
 import { usePlannerStatus } from "./usePlannerStatus";
+import { useUpdateScheduleStatusMutation } from "./useScheduleMutations";
 
 const PAGE_SIZE = 10;
-const formatDateParam = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
 
 interface UseHomePlannerResult {
   today: Date;
@@ -38,6 +35,8 @@ interface UseHomePlannerResult {
   hasPlan: (day: Date) => boolean;
   hasMore: boolean;
   isLoading: boolean;
+  isFetchingMore: boolean;
+  scrollContainerRef: RefObject<HTMLDivElement | null>;
   loadMoreRef: RefObject<HTMLDivElement | null>;
 }
 
@@ -54,19 +53,13 @@ export function useHomePlanner({
     () => new Map(),
   );
   const [currentPage, setCurrentPage] = useState(1);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreLockRef = useRef(false);
 
-  const queryDate = useMemo(() => formatDateParam(selectedDate ?? today), [selectedDate, today]);
-  const weekStartDate = useMemo(() => formatDateParam(weekDays[0]), [weekDays]);
-  const weekEndDate = useMemo(() => formatDateParam(weekDays[weekDays.length - 1]), [weekDays]);
-  const {
-    data,
-    isLoading,
-    isError,
-    periodSchedulesModel,
-    currentScheduleData,
-    isCurrentTaskLoading,
-    isCurrentTaskError,
-  } = useHomePlannerQueries({
+  const queryDate = useMemo(() => formatDateToYmd(selectedDate ?? today), [selectedDate, today]);
+  const weekStartDate = useMemo(() => formatDateToYmd(weekDays[0]), [weekDays]);
+  const weekEndDate = useMemo(() => formatDateToYmd(weekDays[weekDays.length - 1]), [weekDays]);
+  const { scheduleQuery, periodSchedulesQuery, currentScheduleQuery } = useHomePlannerQueries({
     queryDate,
     currentPage,
     pageSize: PAGE_SIZE,
@@ -75,20 +68,37 @@ export function useHomePlanner({
     enabled,
   });
   const setHomePlan = useHomePlanStore((state) => state.setHomePlan);
+  const setDate = useHomePlanStore((state) => state.setDate);
+
+  useEffect(() => {
+    // 날짜 선택이 바뀌면 이전 dayPlanId를 즉시 비우고 기준 날짜를 동기화한다.
+    setDate(queryDate);
+  }, [queryDate, setDate]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [queryDate]);
 
+  const scheduleInvalidateKeys = useMemo(
+    () => [
+      dayPlanScheduleQueryKeys.dayPlanSchedule(queryDate, currentPage, PAGE_SIZE),
+      dayPlanScheduleQueryKeys.currentSchedule(),
+    ],
+    [currentPage, queryDate],
+  );
+  const updateScheduleStatusMutation = useUpdateScheduleStatusMutation({
+    invalidateKeys: scheduleInvalidateKeys,
+  });
+
   const { tasks, baseCompletionById, hasMore } = useMergedTasks({
-    data,
+    data: scheduleQuery.data,
     currentPage,
     pageSize: PAGE_SIZE,
     overrides: completionOverrides,
     resetKey: queryDate,
   });
 
-  const weekDates = useMemo(() => weekDays.map((day) => formatDateParam(day)), [weekDays]);
+  const weekDates = useMemo(() => weekDays.map((day) => formatDateToYmd(day)), [weekDays]);
   const isWeeklyReportAvailable = useMemo(() => {
     const weekEndDate = new Date(weekDays[weekDays.length - 1]);
     weekEndDate.setHours(23, 59, 59, 999);
@@ -99,59 +109,116 @@ export function useHomePlanner({
     () =>
       toHomeWeekPlanPresenceVM({
         weekDates,
-        periodSchedules: periodSchedulesModel,
+        periodSchedules: periodSchedulesQuery.data,
         selectedDate: queryDate,
-        selectedDateHasPlan: data?.totalElements !== undefined ? data.totalElements > 0 : undefined,
+        selectedDateHasPlan:
+          scheduleQuery.data?.totalElements !== undefined
+            ? scheduleQuery.data.totalElements > 0
+            : undefined,
       }),
-    [weekDates, periodSchedulesModel, queryDate, data?.totalElements],
+    [weekDates, periodSchedulesQuery.data, queryDate, scheduleQuery.data?.totalElements],
   );
 
   const hasPlan = useCallback(
-    (day: Date) => hasPlanVM.hasPlanByDate.get(formatDateParam(day)) ?? false,
+    (day: Date) => hasPlanVM.hasPlanByDate.get(formatDateToYmd(day)) ?? false,
     [hasPlanVM],
   );
+
+  const isInitialLoading = currentPage === 1 && scheduleQuery.isLoading && tasks.length === 0;
+  const isFetchingMore = currentPage > 1 && scheduleQuery.isFetching;
   const handleToggleComplete = useCallback(
     (taskId: number) => {
+      const currentCompleted =
+        completionOverrides.get(taskId) ?? baseCompletionById.get(taskId) ?? false;
+      const nextCompleted = !currentCompleted;
+      const nextStatus = nextCompleted ? "DONE" : "TODO";
+
       setCompletionOverrides((prev) => {
         const next = new Map(prev);
-        const current = next.get(taskId) ?? baseCompletionById.get(taskId) ?? false;
-        next.set(taskId, !current);
+        next.set(taskId, nextCompleted);
         return next;
       });
+
+      updateScheduleStatusMutation.mutate(
+        { scheduleId: taskId, status: nextStatus },
+        {
+          onError: () => {
+            setCompletionOverrides((prev) => {
+              const next = new Map(prev);
+              next.set(taskId, currentCompleted);
+              return next;
+            });
+          },
+        },
+      );
     },
-    [baseCompletionById],
+    [baseCompletionById, completionOverrides, updateScheduleStatusMutation],
   );
 
   const currentTask = useMemo(() => {
-    if (!currentScheduleData) return null;
-    const baseTask = toTaskItemModelFromHomeTask(currentScheduleData);
+    if (!currentScheduleQuery.data) return null;
+    const baseTask = toTaskItemModelFromHomeTask(currentScheduleQuery.data);
     return {
       ...baseTask,
       isCompleted: completionOverrides.get(baseTask.taskId) ?? baseTask.isCompleted,
     };
-  }, [completionOverrides, currentScheduleData]);
+  }, [completionOverrides, currentScheduleQuery.data]);
   const { statusMessage, currentTaskStatus, todayScheduleLabel } = usePlannerStatus({
-    isError,
-    isLoading,
+    isError: scheduleQuery.isError,
+    isLoading: isInitialLoading,
     tasks,
     currentTask,
-    isCurrentTaskLoading,
-    isCurrentTaskError,
+    isCurrentTaskLoading: currentScheduleQuery.isLoading,
+    isCurrentTaskError: currentScheduleQuery.isError,
     selectedDate: selectedDate ?? today,
   });
   // 상태 메시지/표시 텍스트는 usePlannerStatus에서 파생
 
   useEffect(() => {
-    if (data?.dayPlanId) {
-      setHomePlan(data.dayPlanId, queryDate);
+    if (!scheduleQuery.data?.dayPlanId) return;
+    setHomePlan(scheduleQuery.data.dayPlanId, queryDate);
+  }, [scheduleQuery.data?.dayPlanId, queryDate, setHomePlan]);
+
+  const handleLoadMore = useCallback(() => {
+    if (loadMoreLockRef.current) return;
+    if (!hasMore || scheduleQuery.isFetching) return;
+    loadMoreLockRef.current = true;
+    setCurrentPage((prev) => prev + 1);
+  }, [hasMore, scheduleQuery.isFetching]);
+
+  useEffect(() => {
+    if (!scheduleQuery.isFetching) {
+      loadMoreLockRef.current = false;
     }
-  }, [data?.dayPlanId, queryDate, setHomePlan]);
+  }, [scheduleQuery.isFetching]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const root = scrollContainerRef.current;
+    if (!root) return;
+
+    const handleScroll = () => {
+      if (!hasMore || scheduleQuery.isFetching) return;
+      const remaining = root.scrollHeight - root.scrollTop - root.clientHeight;
+      if (remaining <= 220) {
+        handleLoadMore();
+      }
+    };
+
+    root.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      root.removeEventListener("scroll", handleScroll);
+    };
+  }, [enabled, handleLoadMore, hasMore, scheduleQuery.isFetching]);
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled,
     hasMore,
-    isFetching: isLoading,
-    onLoadMore: () => setCurrentPage((prev) => prev + 1),
+    isFetching: scheduleQuery.isFetching,
+    onLoadMore: handleLoadMore,
+    rootRef: scrollContainerRef,
   });
 
   return {
@@ -166,12 +233,14 @@ export function useHomePlanner({
     statusMessage,
     currentTask,
     currentTaskStatus,
-    isCurrentTaskLoading,
+    isCurrentTaskLoading: currentScheduleQuery.isLoading,
     handleToggleComplete,
     handleMoveWeek,
     hasPlan,
     hasMore,
-    isLoading,
+    isLoading: isInitialLoading,
+    isFetchingMore,
+    scrollContainerRef,
     loadMoreRef,
   };
 }

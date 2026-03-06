@@ -1,99 +1,56 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback } from "react";
 
-import {
-  FRIEND_REQUEST_MOCKS,
-  type FriendListItemVM,
-  type FriendRequestItemVM,
-  useDeleteFriendMutation,
-  useDeleteFriendRequestMutation,
-  useFriendsQuery,
-} from "@/entities/friend";
+import { useDeleteFriendMutation } from "@/entities/friend";
+import { useFriendChatEnterAction } from "./useFriendChatEnterAction";
+import { useFriendListData } from "./useFriendListData";
+import { useFriendRequestActions } from "./useFriendRequestActions";
 
-const FRIEND_LIST_PAGE = 1;
-const FRIEND_LIST_SIZE = 10;
+interface UseFriendListSectionOptions {
+  onFriendChatRoomEntered?: (roomId: number) => void;
+}
 
-export function useFriendListSection() {
-  const [currentPage, setCurrentPage] = useState(FRIEND_LIST_PAGE);
-  const [fetchedFriends, setFetchedFriends] = useState<FriendListItemVM[]>([]);
-  const [friendRequests, setFriendRequests] = useState<FriendRequestItemVM[]>(() =>
-    [...FRIEND_REQUEST_MOCKS].sort(
-      (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
-    ),
-  );
-  const [totalPages, setTotalPages] = useState<number | null>(null);
-  const deleteFriendMutation = useDeleteFriendMutation();
-  const deleteFriendRequestMutation = useDeleteFriendRequestMutation();
-
-  const friendsQuery = useFriendsQuery({
-    page: currentPage,
-    size: FRIEND_LIST_SIZE,
+export function useFriendListSection({
+  onFriendChatRoomEntered,
+}: UseFriendListSectionOptions = {}) {
+  const friendListData = useFriendListData();
+  const friendRequestActions = useFriendRequestActions({
+    onAccepted: friendListData.prependFriend,
   });
+  const friendChatEnterAction = useFriendChatEnterAction({
+    onEntered: onFriendChatRoomEntered,
+  });
+  const deleteFriendMutation = useDeleteFriendMutation();
 
-  useEffect(() => {
-    if (!friendsQuery.data) return;
-
-    setTotalPages(friendsQuery.data.totalPages);
-    setFetchedFriends((prev) => {
-      const base = currentPage === FRIEND_LIST_PAGE ? [] : prev;
-      const merged = new Map(base.map((item) => [item.id, item]));
-      friendsQuery.data.content.forEach((item) => merged.set(item.id, item));
-      return Array.from(merged.values());
-    });
-  }, [currentPage, friendsQuery.data]);
-
-  const hasMore =
-    totalPages === null
-      ? (friendsQuery.data?.content.length ?? 0) === FRIEND_LIST_SIZE
-      : currentPage < totalPages;
-
-  const loadMore = useCallback(() => {
-    if (!hasMore) return;
-    if (friendsQuery.isFetching) return;
-    setCurrentPage((prev) => prev + 1);
-  }, [friendsQuery.isFetching, hasMore]);
-
-  const friends = useMemo(() => fetchedFriends, [fetchedFriends]);
   const handleDeleteFriend = useCallback(
     (friendUserId: number) => {
       if (deleteFriendMutation.isPending) return;
 
       deleteFriendMutation.mutate(friendUserId, {
         onSuccess: () => {
-          setFetchedFriends((prev) => prev.filter((friend) => friend.id !== friendUserId));
+          friendListData.removeFriend(friendUserId);
         },
       });
     },
-    [deleteFriendMutation],
-  );
-
-  const handleRejectFriendRequest = useCallback(
-    (requestId: number) => {
-      if (deleteFriendRequestMutation.isPending) return;
-
-      deleteFriendRequestMutation.mutate(requestId, {
-        onSuccess: () => {
-          setFriendRequests((prev) => prev.filter((request) => request.requestId !== requestId));
-        },
-      });
-    },
-    [deleteFriendRequestMutation],
+    [deleteFriendMutation, friendListData],
   );
 
   return {
-    friendRequests,
-    rejectFriendRequest: handleRejectFriendRequest,
-    rejectingRequestId: deleteFriendRequestMutation.isPending
-      ? deleteFriendRequestMutation.variables
-      : null,
-    friends,
+    friendRequests: friendRequestActions.friendRequests,
+    acceptFriendRequest: friendRequestActions.acceptFriendRequest,
+    acceptingRequestId: friendRequestActions.acceptingRequestId,
+    rejectFriendRequest: friendRequestActions.rejectFriendRequest,
+    rejectingRequestId: friendRequestActions.rejectingRequestId,
+    friends: friendListData.friends,
     deleteFriend: handleDeleteFriend,
     deletingFriendId: deleteFriendMutation.isPending ? deleteFriendMutation.variables : null,
-    isLoading: friendsQuery.isLoading,
-    isError: friendsQuery.isError,
-    isFetching: friendsQuery.isFetching,
-    hasMore,
-    loadMore,
+    enterFriendChatRoom: friendChatEnterAction.enterFriendChatRoom,
+    enteringFriendId: friendChatEnterAction.enteringFriendId,
+    isLoading: friendListData.isInitialLoading || friendRequestActions.isInitialLoading,
+    isError: friendListData.isError || friendRequestActions.isError,
+    isFetching: friendListData.isFetching || friendRequestActions.isFetching,
+    hasMore: friendListData.hasMore,
+    loadMore: friendListData.loadMore,
   };
 }

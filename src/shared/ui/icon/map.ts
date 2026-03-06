@@ -38,6 +38,10 @@ import UserDelete from "./assets/User-Delete.svg";
 import Comform from "./assets/Comform-icon.svg";
 import Reject from "./assets/Reject-icon.svg";
 import WeeklyReport from "./assets/Weekly-Report-icon.svg";
+import Room from "./assets/Room.svg";
+import Room_filled from "./assets/Room-fill.svg";
+import Plus from "./assets/Plus-icon.svg";
+import Crown from "./assets/Crown-icon.svg";
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -80,6 +84,10 @@ export const IconMap = {
   comform: Comform,
   reject: Reject,
   weekly_report: WeeklyReport,
+  room: Room,
+  room_filled: Room_filled,
+  plus: Plus,
+  crown: Crown,
 } as const satisfies Record<string, SvgComponent>;
 
 export type IconName = keyof typeof IconMap;

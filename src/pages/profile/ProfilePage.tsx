@@ -10,6 +10,7 @@ import { useProfileImagePresign } from "@/features/image";
 import { ActionButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
 import { AuthService } from "@/shared/auth";
+import { chatStompSession } from "@/shared/socket";
 
 import { MyInfoStackPage } from "./MyInfoStackPage";
 
@@ -76,6 +77,7 @@ export function ProfilePage({ enabled = true }: ProfilePageProps) {
   };
 
   const handleLogout = async () => {
+    chatStompSession.stop();
     await AuthService.logout();
   };
 

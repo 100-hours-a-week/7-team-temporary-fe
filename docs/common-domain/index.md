@@ -12,3 +12,4 @@
 - [에러 처리 / 사용자 피드백 정책](./section.md)
 - [폼 처리 및 유효성 검증 (Forms & Validation)](./forms-validation.md)
 - [용어 정의 (Glossary)](./glossary.md)
+- [채팅 메시지 전송 FE 가이드 참고](./chat-message-send-fe-guide-reference.md)

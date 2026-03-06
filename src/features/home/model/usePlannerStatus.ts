@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
-import type { TaskItemModel } from "@/entities/day-plan";
+import type { TaskItemModel } from "@/entities/day-plan-schedule";
+import { formatScheduleLabel } from "./date";
 
 interface PlannerStatusMessage {
   text: string;
@@ -21,16 +22,6 @@ interface UsePlannerStatusResult {
   statusMessage: PlannerStatusMessage | null;
   currentTaskStatus: PlannerStatusMessage | null;
   todayScheduleLabel: string;
-}
-
-const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
-
-function formatScheduleLabel(date: Date) {
-  if (Number.isNaN(date.getTime())) return "";
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const weekday = WEEKDAY_LABELS[date.getDay()] ?? "";
-  return `${month}.${day} (${weekday}) 일정`;
 }
 
 export function usePlannerStatus({

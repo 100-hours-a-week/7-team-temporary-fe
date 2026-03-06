@@ -4,22 +4,25 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "r
 import { useQueryClient } from "@tanstack/react-query";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 
-import { END_HOUR, START_HOUR, TaskBasketAddSheet } from "@/features/home";
 import {
-  dayPlanQueryKeys,
+  END_HOUR,
+  START_HOUR,
+  TaskBasketAddSheet,
+  useDeleteScheduleMutation,
+} from "@/features/home";
+import {
+  dayPlanScheduleQueryKeys,
   EditableTaskItem,
   ExcludedTaskItem,
+  type DayPlanScheduleListModel,
   type EditableTaskItemModel,
   type TodoCartTaskItemModel,
   useDayPlanScheduleByIdQuery,
-  useHomePlanStore,
-  type DayPlanScheduleResponseDto,
-} from "@/entities/day-plan";
+} from "@/entities/day-plan-schedule";
+import { useHomePlanStore } from "@/entities/day-plan";
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
-import { Icon } from "@/shared/ui/icon";
-import { Endpoint } from "@/shared/api";
-import { buildTimeRange, isAfterDayEnd, parseTimeToMinutes } from "@/shared/lib";
-import { useApiMutation } from "@/shared/query";
+import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
+import { buildTimeRange, formatHHmmRange, isAfterDayEnd, parseHHmmToMinutes } from "@/shared/lib";
 import { ConfirmDialog } from "@/shared/ui";
 import { useToast } from "@/shared/ui/toast";
 import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
@@ -74,7 +77,7 @@ export function PlannerEditStackPage() {
   const { data: myProfile } = useMyProfileQuery();
   const scheduleKeys = useMemo(
     () =>
-      dayPlanQueryKeys.dayPlanScheduleCacheKeys({
+      dayPlanScheduleQueryKeys.dayPlanScheduleCacheKeys({
         dayPlanId,
         dayPlanDate,
         page: 1,
@@ -205,25 +208,21 @@ export function PlannerEditStackPage() {
 
   const hasResizeConflict = useCallback(
     (scheduleId: number, startAt: string, endAt: string) => {
-      const startMinutes = parseTimeToMinutes(startAt);
-      const endMinutes = parseTimeToMinutes(endAt);
+      const startMinutes = parseHHmmToMinutes(startAt);
+      const endMinutes = parseHHmmToMinutes(endAt);
       if (startMinutes === null || endMinutes === null) return true;
       if (endMinutes <= startMinutes) return true;
       return mergedTasks.some((task) => {
         if (task.scheduleId === scheduleId) return false;
-        const taskStart = parseTimeToMinutes(task.startAt);
-        const taskEnd = parseTimeToMinutes(task.endAt);
+        const taskStart = parseHHmmToMinutes(task.startAt);
+        const taskEnd = parseHHmmToMinutes(task.endAt);
         if (taskStart === null || taskEnd === null) return false;
         return startMinutes < taskEnd && endMinutes > taskStart;
       });
     },
     [mergedTasks],
   );
-  const deleteScheduleMutation = useApiMutation<number, void, void>({
-    url: (scheduleId) => Endpoint.SCHEDULE.BY_ID(scheduleId),
-    method: "DELETE",
-    authRequired: true,
-    refreshOnUnauthorized: true,
+  const deleteScheduleMutation = useDeleteScheduleMutation({
     invalidateKeys: invalidateScheduleKeys,
   });
 
@@ -261,7 +260,7 @@ export function PlannerEditStackPage() {
     });
     if (!dayPlanId || scheduleKeys.length === 0) return;
     scheduleKeys.forEach((key) => {
-      queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
+      queryClient.setQueryData(key, (prev: DayPlanScheduleListModel | undefined) =>
         updateScheduleCache(
           prev,
           resolvedTask.scheduleId,
@@ -330,7 +329,7 @@ export function PlannerEditStackPage() {
         setDroppedTasks((prev) => prev.filter((task) => task.scheduleId !== deleteTargetId));
         if (dayPlanId && scheduleKeys.length > 0) {
           scheduleKeys.forEach((key) => {
-            queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
+            queryClient.setQueryData(key, (prev: DayPlanScheduleListModel | undefined) =>
               removeScheduleCache(prev, deleteTargetId),
             );
           });
@@ -468,20 +467,13 @@ export function PlannerEditStackPage() {
           />
         </div>
 
-        <div className="pointer-events-none fixed bottom-0 left-1/2 z-[60] w-full max-w-[420px] -translate-x-1/2">
-          <button
-            type="button"
-            aria-label="플래너 수정"
+        <FloatingActionDock>
+          <FloatingActionButton
+            icon="basket"
+            label="태스크 바스켓"
             onClick={handleOpenTaskBasket}
-            className="bg-ink-900 hover:bg-primary-500 pointer-events-auto absolute right-5 bottom-[calc(env(safe-area-inset-bottom)+110px)] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg"
-          >
-            <Icon
-              name="basket"
-              className="h-8 w-8"
-              aria-hidden
-            />
-          </button>
-        </div>
+          />
+        </FloatingActionDock>
 
         <ExcludedTasksSheet
           dayPlanId={dayPlanId}
@@ -537,7 +529,6 @@ export function PlannerEditStackPage() {
           tasks={sheetTasks}
           dayPlanId={dayPlanId}
           invalidateKeys={invalidateScheduleKeys}
-          onAddTask={() => undefined}
           editingTask={editingTask}
           onUpdateTask={handleUpdateTask}
         />
@@ -547,7 +538,7 @@ export function PlannerEditStackPage() {
 }
 
 function getDayEndLimitMinutes(dayEndTime?: string | null) {
-  const parsed = parseTimeToMinutes(dayEndTime);
+  const parsed = parseHHmmToMinutes(dayEndTime);
   if (parsed === null) return null;
   if (parsed < 12 * 60) return null;
   return Math.floor(parsed / 10) * 10;
@@ -592,11 +583,11 @@ function getPreviewTimeRange(
   durationMinutes: number,
 ) {
   if (insertPreview) {
-    return `${insertPreview.startAt} ~ ${insertPreview.endAt}`;
+    return formatHHmmRange(insertPreview.startAt, insertPreview.endAt, "");
   }
   if (previewSlot) {
     const range = buildTimeRange(previewSlot.hour, previewSlot.minute, durationMinutes);
-    return `${range.startAt} ~ ${range.endAt}`;
+    return formatHHmmRange(range.startAt, range.endAt, "");
   }
   return "";
 }

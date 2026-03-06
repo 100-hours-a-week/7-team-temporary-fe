@@ -10,6 +10,7 @@ import { HomePage } from "@/pages/home";
 import { ProfilePage } from "@/pages/profile";
 import { NotificationStackPage } from "@/pages/notification";
 import { RetroPage } from "@/pages/retro";
+import { RoomPage } from "@/pages/room";
 
 interface AppShellHeaderProps {
   onReportClick?: () => void;
@@ -52,6 +53,17 @@ function AppShellHeader({ onReportClick }: AppShellHeaderProps) {
     );
   }
 
+  if (activeTab === "room") {
+    return (
+      <AppHeader
+        title="방"
+        onFriendClick={handleFriendClick}
+        onNotificationClick={handleNotificationClick}
+        onReportClick={onReportClick}
+      />
+    );
+  }
+
   if (activeTab === "profile") {
     return (
       <AppHeader
@@ -84,6 +96,12 @@ function AppShellContent({ onReportClick }: AppShellContentProps) {
           className="h-full"
         >
           <RetroPage enabled={activeTab === "retro"} />
+        </TabScope>
+        <TabScope
+          tab="room"
+          className="h-full"
+        >
+          <RoomPage enabled={activeTab === "room"} />
         </TabScope>
         <TabScope
           tab="profile"

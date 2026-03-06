@@ -9,6 +9,7 @@
 export type AuthHandlers = {
   getAccessToken?: () => string | undefined;
   setAuthenticated?: (token: string) => void;
+  setUserId?: (userId: number) => void;
   clearAuth?: () => void;
 };
 
@@ -38,6 +39,13 @@ export function getAccessToken() {
  */
 export function setAuthenticated(token: string) {
   handlers.setAuthenticated?.(token);
+}
+
+/**
+ * 소켓 handshake 등에서 확인한 userId를 전역 인증 스토어에 반영한다.
+ */
+export function setAuthUserId(userId: number) {
+  handlers.setUserId?.(userId);
 }
 
 /**

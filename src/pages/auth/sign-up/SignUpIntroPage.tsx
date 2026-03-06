@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 import type { SignUpFlowStep } from "./model";
-import { useSignUpSteps } from "./model";
+import { useOnboardingStepNextEnabled, useSignUpSteps } from "./model";
 import { SignUpFormContainer, useSignUpFormContext } from "./ui/SignUpFormContainer";
 import { FocusTimeStep, ProfileStep, SleepTimeStep, StartStep, TermsStep } from "./ui/steps/index";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
@@ -51,8 +51,9 @@ function SignUpIntroContent() {
     next,
     prev,
   } = useSignUpSteps();
-  const { canSubmit, submitForm } = useSignUpFormContext();
+  const { canSubmit, control, submitForm } = useSignUpFormContext();
   const { setHeaderContent } = useStackPage();
+  const isCurrentStepReady = useOnboardingStepNextEnabled({ step, control });
 
   useEffect(() => {
     if (!isOnboarding || totalOnboardingSteps <= 0) {
@@ -100,7 +101,12 @@ function SignUpIntroContent() {
                 회원가입
               </PrimaryButton>
             ) : (
-              <PrimaryButton onClick={next}>다음</PrimaryButton>
+              <PrimaryButton
+                onClick={next}
+                disabled={!isCurrentStepReady}
+              >
+                다음
+              </PrimaryButton>
             )}
           </>
         )}

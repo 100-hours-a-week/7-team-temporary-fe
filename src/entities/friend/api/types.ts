@@ -24,6 +24,7 @@ export interface FriendSearchItemResponseDto {
   nickname?: string;
   email?: string;
   profileImage?: FriendProfileImageResponseDto | null;
+  relationStatus?: FriendRelationStatusDto;
 }
 
 export interface FriendSearchResponseDto {
@@ -32,4 +33,33 @@ export interface FriendSearchResponseDto {
   size: number;
   totalElements: number;
   totalPages: number;
+}
+
+export interface FriendRequestItemResponseDto {
+  requestId: number;
+  fromUserId: number;
+  fromUserEmail?: string;
+  fromUserNickname?: string;
+  profileImage?: FriendProfileImageResponseDto | null;
+  createdAt?: string;
+}
+
+export interface FriendRequestListResponseDto {
+  content: FriendRequestItemResponseDto[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export type FriendRelationStatusDto = "NONE" | "PENDING" | "FRIEND" | "SELF";
+
+export type FriendRequestStatus = "ACCEPTED";
+
+export interface UpdateFriendRequestStatusRequestDto {
+  status: FriendRequestStatus;
+}
+
+export interface CreateFriendRequestResponseDto {
+  requestId: number;
 }

@@ -1,7 +1,7 @@
-import type { DayPlanScheduleResponseDto, EditableTaskItemModel } from "@/entities/day-plan";
+import type { DayPlanScheduleListModel, EditableTaskItemModel } from "@/entities/day-plan-schedule";
 
 export function updateScheduleCache(
-  prev: DayPlanScheduleResponseDto | undefined,
+  prev: DayPlanScheduleListModel | undefined,
   scheduleId: number,
   startAt: string,
   endAt: string,
@@ -51,7 +51,7 @@ export function updateScheduleCache(
 }
 
 export function removeScheduleCache(
-  prev: DayPlanScheduleResponseDto | undefined,
+  prev: DayPlanScheduleListModel | undefined,
   scheduleId: number,
 ) {
   if (!prev) return prev;

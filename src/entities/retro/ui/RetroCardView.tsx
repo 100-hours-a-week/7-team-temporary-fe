@@ -6,6 +6,7 @@ import type { MyRetroCardVM, PublicRetroCardVM } from "../model";
 import { MoreButton } from "@/shared/ui/button";
 import { HorizontalImageAlbum } from "@/shared/ui/image";
 import { Icon } from "@/shared/ui/icon";
+import { RetroVisibilityToggle } from "@/shared/ui/retro";
 
 import { RetroContentText } from "./RetroContentText";
 
@@ -16,6 +17,8 @@ interface RetroCardViewProps {
   onLikeClick: () => void;
   onMoreClick: () => void;
   actionSheet?: ReactNode;
+  onVisibilityToggle?: (checked: boolean) => void;
+  isOpenChecked?: boolean;
 }
 
 export function RetroCardView({
@@ -25,12 +28,14 @@ export function RetroCardView({
   onLikeClick,
   onMoreClick,
   actionSheet,
+  onVisibilityToggle,
+  isOpenChecked,
 }: RetroCardViewProps) {
   const authorNickname = "authorNickname" in vm ? vm.authorNickname : undefined;
   const visibilityText = "visibilityText" in vm ? vm.visibilityText : undefined;
 
   return (
-    <article className="pt-3 pb-3">
+    <article className="pb-3">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h3 className="text-[16px] font-semibold text-black">{vm.dateLabel} 회고</h3>
@@ -76,7 +81,12 @@ export function RetroCardView({
               {likeCount}
             </span>
           </button>
-          {visibilityText ? (
+          {onVisibilityToggle !== undefined && isOpenChecked !== undefined ? (
+            <RetroVisibilityToggle
+              checked={isOpenChecked}
+              onCheckedChange={onVisibilityToggle}
+            />
+          ) : visibilityText ? (
             <span className="text-[14px] font-semibold text-black">{visibilityText}</span>
           ) : null}
         </div>

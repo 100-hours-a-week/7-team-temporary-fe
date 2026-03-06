@@ -1,11 +1,11 @@
-const configuredTaskApiBaseUrl = process.env.NEXT_PUBLIC_API_TASK_BASE_URL?.trim();
-const configuredChatApiBaseUrl = process.env.NEXT_PUBLIC_API_CHAT_BASE_URL?.trim();
+/**
+ * API 엔드포인트 레지스트리
+ *
+ * ## 환경 변수
+ * - NEXT_PUBLIC_API_CHAT_BASE_URL        : chat 서비스 base URL (기본값: /api/chat)
+ */
 
-const TASK_API_BASE_URL = (
-  configuredTaskApiBaseUrl && configuredTaskApiBaseUrl.length > 0
-    ? configuredTaskApiBaseUrl
-    : "/api/task"
-).replace(/\/$/, "");
+const configuredChatApiBaseUrl = process.env.NEXT_PUBLIC_API_CHAT_BASE_URL?.trim();
 
 const CHAT_API_BASE_URL = (
   configuredChatApiBaseUrl && configuredChatApiBaseUrl.length > 0
@@ -13,70 +13,131 @@ const CHAT_API_BASE_URL = (
     : "/api/chat"
 ).replace(/\/$/, "");
 
-/**
- * task base url + endpoint path 결합 유틸
- */
-const taskPath = (endpoint: string): string => `${TASK_API_BASE_URL}${endpoint}`;
 const chatPath = (endpoint: string): string => `${CHAT_API_BASE_URL}${endpoint}`;
 
 export const Endpoint = {
+  // ─────────────────────────────────────────────────────────────────────────
+  // TASK SERVICE  (chatPath 전용)
+  // 소유: 인증·사용자·일정·알림 도메인
+  // ─────────────────────────────────────────────────────────────────────────
+
   TOKEN: {
-    BASE: taskPath("/token"),
-    REFRESH: taskPath("/token"),
+    BASE: chatPath("/token"),
+    REFRESH: chatPath("/token"),
   },
+
   USER: {
-    BASE: taskPath("/users"),
-    IMAGE: taskPath("/users/image"),
+    BASE: chatPath("/users"),
+    IMAGE: chatPath("/users/image"),
     CHECK: {
-      NICKNAME: (nickname: string) => taskPath(`/users?nickname=${encodeURIComponent(nickname)}`),
-      EMAIL: (email: string) => taskPath(`/users/email?email=${encodeURIComponent(email)}`),
+      NICKNAME: (nickname: string) => chatPath(`/users?nickname=${encodeURIComponent(nickname)}`),
+      EMAIL: (email: string) => chatPath(`/users/email?email=${encodeURIComponent(email)}`),
     },
-    NICKNAME: taskPath("/users/nickname"),
-    PASSWORD: taskPath("/users/password"),
+    NICKNAME: chatPath("/users/nickname"),
+    PASSWORD: chatPath("/users/password"),
   },
+
   IMAGES: {
-    PRESIGNED_URL: taskPath("/images"),
-    VIEW: (imageKey: string) => taskPath(`/images/${imageKey}`), // GET
+    PRESIGNED_URL: chatPath("/images"),
+    VIEW: (imageKey: string) => chatPath(`/images/${imageKey}`),
   },
+
   TERMS: {
-    LIST: taskPath("/terms"),
+    LIST: chatPath("/terms"),
   },
+
   TERMS_SIGN: {
-    LIST: taskPath("/terms-sign"),
-    UPDATE: (termsId: number) => taskPath(`/terms-sign/${termsId}`),
+    LIST: chatPath("/terms-sign"),
+    UPDATE: (termsId: number) => chatPath(`/terms-sign/${termsId}`),
   },
+
   DAY_PLAN: {
-    SCHEDULE: taskPath("/day-plan/schedule"),
-    PERIOD_SCHEDULES: taskPath("/day-plan/period/schedules"),
-    SCHEDULE_BY_ID: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/schedule`),
-    REFLECTION: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/reflection`),
+    SCHEDULE: chatPath("/day-plan/schedule"),
+    PERIOD_SCHEDULES: chatPath("/day-plan/period/schedules"),
+    SCHEDULE_BY_ID: (dayPlanId: number) => chatPath(`/day-plan/${dayPlanId}/schedule`),
+    REFLECTION: (dayPlanId: number) => chatPath(`/day-plan/${dayPlanId}/reflection`),
     AI_ARRANGEMENT: (dayPlanId: number) =>
       chatPath(`/day-plan/${dayPlanId}/schedules/ai-arrangement`),
-    SCHEDULES_BY_ID: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/schedules`),
+    SCHEDULES_BY_ID: (dayPlanId: number) => chatPath(`/day-plan/${dayPlanId}/schedules`),
   },
+
   SCHEDULE: {
-    BASE: taskPath("/schedule"),
-    BY_ID: (scheduleId: number) => taskPath(`/schedule/${scheduleId}`),
-    CHILDREN: taskPath("/schedule/children"),
+    BASE: chatPath("/schedule"),
+    BY_ID: (scheduleId: number) => chatPath(`/schedule/${scheduleId}`),
+    STATUS: (scheduleId: number) => chatPath(`/schedule/${scheduleId}/status`),
+    CHILDREN: chatPath("/schedule/children"),
   },
+
   FCM: {
-    TOKENS: taskPath("/fcm-tokens"),
+    TOKENS: chatPath("/fcm-tokens"),
   },
+
   NOTIFICATIONS: {
-    LIST: taskPath("/notifications"),
+    LIST: chatPath("/notifications"),
   },
+
+  ISSUE: {
+    BASE: chatPath("/issue"),
+  },
+
+  RETRO: {
+    // 인증 필요 (프록시 경유)
+    BASE: chatPath("/reflections"),
+    UPDATE: (reflectionId: number) => chatPath(`/reflections/${reflectionId}`),
+    UPDATE_VISIBILITY: (reflectionId: number) => chatPath(`/reflections/${reflectionId}`),
+    DELETE: (reflectionId: number) => chatPath(`/reflections/${reflectionId}`),
+    LIKE: (reflectionId: number) => chatPath(`/reflections/${reflectionId}/like`),
+    // 비인증 공개 (백엔드 직접)
+    PUBLIC_LIST: chatPath("/reflections"),
+    BY_ID: (reflectionId: number) => chatPath(`/reflections/${reflectionId}`),
+  },
+
+  REPORTS: {
+    LIST: chatPath("/reports"),
+    MESSAGE: (reportId: number) => chatPath(`/reports/${reportId}/message`),
+    MESSAGES: (reportId: number) => chatPath(`/reports/${reportId}/messages`),
+  },
+
   FRIENDS: {
     LIST: chatPath("/friends"),
     DELETE: (friendUserId: number) => chatPath(`/friends/${friendUserId}`),
   },
+
   FRIEND_REQUESTS: {
+    LIST: chatPath("/friend-requests"),
+    CREATE: (targetUserId: number) => chatPath(`/friend-requests/${targetUserId}`),
+    UPDATE: (requestId: number) => chatPath(`/friend-requests/${requestId}`),
     DELETE: (requestId: number) => chatPath(`/friend-requests/${requestId}`),
   },
-  ISSUE: {
-    BASE: taskPath("/issue"),
-  },
-  RETRO: {
-    BASE: chatPath("/reflections"),
-    LIKES: (reflectionId: number) => chatPath(`/reflections/${reflectionId}/likes`),
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CHAT SERVICE  (chatPath 전용)
+  // 소유: 채팅방 도메인
+  // ─────────────────────────────────────────────────────────────────────────
+
+  CHAT_ROOMS: {
+    CREATE: chatPath("/chat-rooms"),
+    DETAIL: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
+    JOIN: (roomId: number) => chatPath(`/chat-rooms/${roomId}/participants`),
+    JOIN_BY_FRIEND: (friendId: number) => chatPath(`/chat-rooms/participants/${friendId}`),
+    LEAVE: (roomId: number, participantId: number) =>
+      chatPath(`/chat-rooms/${roomId}/participants/${participantId}`),
+    SEND_MESSAGE: (roomId: number) => chatPath(`/chat-rooms/${roomId}/messages`),
+    UPDATE: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
+    DELETE: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
+    SEARCH: ({ title, page = 1, size = 10 }: { title: string; page?: number; size?: number }) => {
+      const searchParams = new URLSearchParams({
+        title,
+        page: String(page),
+        size: String(size),
+      });
+      return chatPath(`/chat-rooms?${searchParams.toString()}`);
+    },
+    PARTICIPANTS: chatPath("/chat-rooms/participants"),
+    OWNER_STATUS: (roomId: number, ownerId: number) =>
+      chatPath(`/chat-rooms/${roomId}/owner/${ownerId}`),
+    MESSAGES: (roomId: number) => chatPath(`/chat-rooms/${roomId}/message`),
+    PARTICIPANT_MESSAGE: (participantId: number) =>
+      chatPath(`/chat-rooms/participants/${participantId}/message`),
   },
 } as const;

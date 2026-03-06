@@ -1,8 +1,8 @@
 "use client";
 
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { ExcludedTaskItem } from "@/entities/day-plan";
-import type { ExcludedTaskItemModel } from "@/entities/day-plan";
+import { ExcludedTaskItem } from "@/entities/day-plan-schedule";
+import type { ExcludedTaskItemModel } from "@/entities/day-plan-schedule";
 
 const meta: Meta<typeof ExcludedTaskItem> = {
   title: "features/home/ExcludedTaskItem",

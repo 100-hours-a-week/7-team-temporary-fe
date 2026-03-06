@@ -3,12 +3,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
-  dayPlanQueryKeys,
-  type DayPlanScheduleResponseDto,
+  dayPlanScheduleQueryKeys,
+  type DayPlanScheduleListModel,
+  type DayPlanSchedulePatchModel,
   type EditableTaskItemModel,
-  type UpdateDayPlanSchedulePatchRequestDto,
-  updateDayPlanSchedule,
-} from "@/entities/day-plan";
+  patchDayPlanSchedule,
+} from "@/entities/day-plan-schedule";
 
 import { removeScheduleCache, updateScheduleCache } from "../lib/scheduleCache";
 
@@ -21,13 +21,13 @@ type UsePlannerEditOptimisticUpdateParams = {
 
 type PlannerEditScheduleUpdateVariables = {
   scheduleId: number;
-  payload: UpdateDayPlanSchedulePatchRequestDto;
+  payload: DayPlanSchedulePatchModel;
   task: EditableTaskItemModel;
 };
 
 type PlannerEditScheduleUpdateContext = {
-  prevSchedules: Array<readonly [readonly unknown[], DayPlanScheduleResponseDto | undefined]>;
-  prevExcluded: DayPlanScheduleResponseDto | undefined;
+  prevSchedules: Array<readonly [readonly unknown[], DayPlanScheduleListModel | undefined]>;
+  prevExcluded: DayPlanScheduleListModel | undefined;
 };
 
 export function usePlannerEditOptimisticUpdate({
@@ -44,20 +44,25 @@ export function usePlannerEditOptimisticUpdate({
     PlannerEditScheduleUpdateVariables,
     PlannerEditScheduleUpdateContext | undefined
   >({
-    mutationFn: async (variables) => updateDayPlanSchedule(variables.scheduleId, variables.payload),
+    mutationFn: async (variables) => patchDayPlanSchedule(variables.scheduleId, variables.payload),
     onMutate: async (variables) => {
       captureScrollPosition();
       if (!dayPlanId || scheduleKeys.length === 0) return undefined;
 
-      const excludedKey = dayPlanQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
+      const excludedKey = dayPlanScheduleQueryKeys.dayPlanSchedulesById(
+        dayPlanId,
+        "EXCLUDED",
+        1,
+        10,
+      );
       const prevSchedules = scheduleKeys.map((key) => [
         key,
-        queryClient.getQueryData<DayPlanScheduleResponseDto>(key),
-      ]) as Array<readonly [readonly unknown[], DayPlanScheduleResponseDto | undefined]>;
-      const prevExcluded = queryClient.getQueryData<DayPlanScheduleResponseDto>(excludedKey);
+        queryClient.getQueryData<DayPlanScheduleListModel>(key),
+      ]) as Array<readonly [readonly unknown[], DayPlanScheduleListModel | undefined]>;
+      const prevExcluded = queryClient.getQueryData<DayPlanScheduleListModel>(excludedKey);
 
       scheduleKeys.forEach((key) => {
-        queryClient.setQueryData(key, (prev: DayPlanScheduleResponseDto | undefined) =>
+        queryClient.setQueryData(key, (prev: DayPlanScheduleListModel | undefined) =>
           updateScheduleCache(
             prev,
             variables.scheduleId,
@@ -67,7 +72,7 @@ export function usePlannerEditOptimisticUpdate({
           ),
         );
       });
-      queryClient.setQueryData(excludedKey, (prev: DayPlanScheduleResponseDto | undefined) =>
+      queryClient.setQueryData(excludedKey, (prev: DayPlanScheduleListModel | undefined) =>
         removeScheduleCache(prev, variables.scheduleId),
       );
 
@@ -79,7 +84,12 @@ export function usePlannerEditOptimisticUpdate({
     },
     onError: (_error, _variables, context) => {
       if (!dayPlanId || !context) return;
-      const excludedKey = dayPlanQueryKeys.dayPlanSchedulesById(dayPlanId, "EXCLUDED", 1, 10);
+      const excludedKey = dayPlanScheduleQueryKeys.dayPlanSchedulesById(
+        dayPlanId,
+        "EXCLUDED",
+        1,
+        10,
+      );
 
       context.prevSchedules.forEach(([key, prev]) => {
         queryClient.setQueryData(key, prev);

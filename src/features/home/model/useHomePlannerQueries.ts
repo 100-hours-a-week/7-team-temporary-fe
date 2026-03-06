@@ -1,8 +1,5 @@
-import {
-  useCurrentScheduleQuery,
-  useDayPlanPeriodSchedulesQuery,
-  useDayPlanScheduleQuery,
-} from "@/entities/day-plan";
+import { useCurrentScheduleQuery, useDayPlanScheduleQuery } from "@/entities/day-plan-schedule";
+import { useDayPlanPeriodSchedulesQuery } from "@/entities/day-plan-presence";
 
 interface UseHomePlannerQueriesParams {
   queryDate: string;
@@ -14,13 +11,9 @@ interface UseHomePlannerQueriesParams {
 }
 
 interface UseHomePlannerQueriesResult {
-  data: ReturnType<typeof useDayPlanScheduleQuery>["data"];
-  isLoading: boolean;
-  isError: boolean;
-  periodSchedulesModel: ReturnType<typeof useDayPlanPeriodSchedulesQuery>["data"];
-  currentScheduleData: ReturnType<typeof useCurrentScheduleQuery>["data"];
-  isCurrentTaskLoading: boolean;
-  isCurrentTaskError: boolean;
+  scheduleQuery: ReturnType<typeof useDayPlanScheduleQuery>;
+  periodSchedulesQuery: ReturnType<typeof useDayPlanPeriodSchedulesQuery>;
+  currentScheduleQuery: ReturnType<typeof useCurrentScheduleQuery>;
 }
 
 /*
@@ -41,7 +34,7 @@ export function useHomePlannerQueries({
   weekEndDate,
   enabled = true,
 }: UseHomePlannerQueriesParams): UseHomePlannerQueriesResult {
-  const { data, isLoading, isError } = useDayPlanScheduleQuery({
+  const scheduleQuery = useDayPlanScheduleQuery({
     date: queryDate,
     page: currentPage,
     size: pageSize,
@@ -57,12 +50,8 @@ export function useHomePlannerQueries({
   const currentScheduleQuery = useCurrentScheduleQuery({ enabled });
 
   return {
-    data,
-    isLoading,
-    isError,
-    periodSchedulesModel: periodSchedulesQuery.data,
-    currentScheduleData: currentScheduleQuery.data,
-    isCurrentTaskLoading: currentScheduleQuery.isLoading,
-    isCurrentTaskError: currentScheduleQuery.isError,
+    scheduleQuery,
+    periodSchedulesQuery,
+    currentScheduleQuery,
   };
 }

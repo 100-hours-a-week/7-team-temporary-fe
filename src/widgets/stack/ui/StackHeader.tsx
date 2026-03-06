@@ -8,6 +8,7 @@ interface StackHeaderProps {
   actionLabel?: string | null;
   onActionClick?: () => void;
   headerContent?: ReactNode;
+  headerRightContent?: ReactNode;
 }
 
 export function StackHeader({
@@ -15,6 +16,7 @@ export function StackHeader({
   actionLabel = "뒤로",
   onActionClick,
   headerContent,
+  headerRightContent,
 }: StackHeaderProps) {
   const centerSlot =
     headerContent ??
@@ -34,7 +36,7 @@ export function StackHeader({
         ) : null
       }
       centerSlot={centerSlot}
-      rightSlot={<div className="h-full w-[30px]" />}
+      rightSlot={headerRightContent ?? <div className="h-full w-[30px]" />}
     />
   );
 }

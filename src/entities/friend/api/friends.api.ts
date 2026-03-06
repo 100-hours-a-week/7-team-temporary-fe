@@ -1,8 +1,13 @@
 import { apiFetch, Endpoint } from "@/shared/api";
 import { AuthService } from "@/shared/auth";
 
-import { getMockFriendsResponse } from "./mock";
-import type { FriendListResponseDto, FriendSearchResponseDto } from "./types";
+import type {
+  CreateFriendRequestResponseDto,
+  FriendListResponseDto,
+  FriendRequestListResponseDto,
+  FriendSearchResponseDto,
+  UpdateFriendRequestStatusRequestDto,
+} from "./types";
 
 interface FetchFriendsParams {
   page?: number;
@@ -17,15 +22,28 @@ interface FetchFriendSearchByNicknameParams {
   signal?: AbortSignal;
 }
 
+interface FetchFriendRequestsParams {
+  page?: number;
+  size?: number;
+  signal?: AbortSignal;
+}
+
 interface DeleteFriendRequestParams {
   requestId: number;
+}
+
+interface UpdateFriendRequestStatusParams {
+  requestId: number;
+  status: UpdateFriendRequestStatusRequestDto["status"];
 }
 
 interface DeleteFriendParams {
   friendUserId: number;
 }
 
-const FRIEND_LIST_ENABLE_MOCK_FALLBACK = true;
+interface CreateFriendRequestParams {
+  targetUserId: number;
+}
 
 function toFriendListSearchParams({ page = 1, size = 10 }: { page?: number; size?: number }) {
   return new URLSearchParams({
@@ -50,6 +68,8 @@ function toFriendSearchByNicknameSearchParams({
   });
 }
 
+//---------------실제 api 호출-----------------
+
 export async function fetchFriends({
   page = 1,
   size = 10,
@@ -57,20 +77,12 @@ export async function fetchFriends({
 }: FetchFriendsParams): Promise<FriendListResponseDto> {
   const searchParams = toFriendListSearchParams({ page, size });
 
-  try {
-    return await AuthService.refreshAndRetry(() =>
-      apiFetch<FriendListResponseDto>(`${Endpoint.FRIENDS.LIST}?${searchParams.toString()}`, {
-        signal,
-        authRequired: true,
-      }),
-    );
-  } catch (error) {
-    if (!FRIEND_LIST_ENABLE_MOCK_FALLBACK) {
-      throw error;
-    }
-
-    return getMockFriendsResponse({ page, size });
-  }
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<FriendListResponseDto>(`${Endpoint.FRIENDS.LIST}?${searchParams.toString()}`, {
+      signal,
+      authRequired: true,
+    }),
+  );
 }
 
 export async function fetchFriendSearchByNickname({
@@ -89,6 +101,24 @@ export async function fetchFriendSearchByNickname({
   );
 }
 
+export async function fetchFriendRequests({
+  page = 1,
+  size = 10,
+  signal,
+}: FetchFriendRequestsParams): Promise<FriendRequestListResponseDto> {
+  const searchParams = toFriendListSearchParams({ page, size });
+
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<FriendRequestListResponseDto>(
+      `${Endpoint.FRIEND_REQUESTS.LIST}?${searchParams.toString()}`,
+      {
+        signal,
+        authRequired: true,
+      },
+    ),
+  );
+}
+
 export async function deleteFriendRequest({ requestId }: DeleteFriendRequestParams): Promise<void> {
   return AuthService.refreshAndRetry(() =>
     apiFetch<void>(Endpoint.FRIEND_REQUESTS.DELETE(requestId), {
@@ -98,10 +128,37 @@ export async function deleteFriendRequest({ requestId }: DeleteFriendRequestPara
   );
 }
 
+export async function updateFriendRequestStatus({
+  requestId,
+  status,
+}: UpdateFriendRequestStatusParams): Promise<void> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<void, UpdateFriendRequestStatusRequestDto>(
+      Endpoint.FRIEND_REQUESTS.UPDATE(requestId),
+      {
+        method: "PATCH",
+        authRequired: true,
+        body: { status },
+      },
+    ),
+  );
+}
+
 export async function deleteFriend({ friendUserId }: DeleteFriendParams): Promise<void> {
   return AuthService.refreshAndRetry(() =>
     apiFetch<void>(Endpoint.FRIENDS.DELETE(friendUserId), {
       method: "DELETE",
+      authRequired: true,
+    }),
+  );
+}
+
+export async function createFriendRequest({
+  targetUserId,
+}: CreateFriendRequestParams): Promise<CreateFriendRequestResponseDto> {
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<CreateFriendRequestResponseDto>(Endpoint.FRIEND_REQUESTS.CREATE(targetUserId), {
+      method: "POST",
       authRequired: true,
     }),
   );

@@ -6,3 +6,5 @@ export { MoreButton } from "./MoreButton";
 export { SelectCard } from "./SelectCard";
 export { FixedActionBar } from "./FixedActionBar";
 export { SectionActionButton } from "./SectionActionButton";
+export { FloatingActionButton } from "./FloatingActionButton";
+export { FloatingActionDock } from "./FloatingActionDock";

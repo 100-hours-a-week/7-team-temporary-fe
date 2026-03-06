@@ -12,3 +12,4 @@ export type {
 export * from "./issue";
 export * from "./retro";
 export * from "./friend";
+export * from "./report";
