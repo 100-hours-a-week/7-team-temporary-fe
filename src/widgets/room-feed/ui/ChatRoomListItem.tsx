@@ -39,13 +39,11 @@ export function ChatRoomListItem({ item, onClick }: ChatRoomListItemProps) {
 
       <div className="mt-2 flex items-end justify-between gap-3">
         <div className="min-w-0 flex-1">
-          {item.lastMessage !== undefined ? (
-            <p className="truncate text-[14px] text-neutral-500">{item.lastMessage}</p>
-          ) : null}
+          <p className="truncate text-[14px] text-neutral-500">{item.lastMessage ?? "\u00A0"}</p>
         </div>
 
         {item.lastMessageAt !== undefined ? (
-          <span className="text-[14px] text-neutral-500">
+          <span className="shrink-0 text-[14px] text-neutral-500">
             {formatLastMessageTime(item.lastMessageAt)}
           </span>
         ) : null}
