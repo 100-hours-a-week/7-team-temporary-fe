@@ -59,15 +59,10 @@ export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptio
   const [pendingMessages, setPendingMessages] = useState<Map<string, ChatMessageItemVM>>(
     () => new Map(),
   );
-  const pendingMessagesRef = useRef(pendingMessages);
   const lastSeenUpdatedMessageIdRef = useRef(0);
   const lastRoomFeedPatchedMessageIdRef = useRef(0);
   const nextPendingIdRef = useRef(INITIAL_PENDING_MESSAGE_ID);
   const { showToast } = useToast();
-
-  useEffect(() => {
-    pendingMessagesRef.current = pendingMessages;
-  }, [pendingMessages]);
 
   const myUserId = useAuthStore((state) => state.userId ?? null);
   const isRoomEnabled = roomId > 0;
@@ -177,35 +172,16 @@ export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptio
     [queryClient, roomId],
   );
 
-  const refetchMessageList = useCallback(() => {
-    if (!isChatRuntimeEnabled) return;
-    void queryClient.refetchQueries({
-      queryKey: chatRoomQueryKeys.messagesInfinite(roomId, CHAT_ROOM_MESSAGE_PAGE_SIZE, myUserId),
-      type: "active",
-    });
-  }, [isChatRuntimeEnabled, myUserId, queryClient, roomId]);
-
   useEffect(() => {
-    return chatStompSession.onMessageSendAccepted(({ idempotencyKey, sentAt }) => {
-      const pendingMessage = pendingMessagesRef.current.get(idempotencyKey);
+    return chatStompSession.onMessageSendAccepted(({ idempotencyKey }) => {
       setPendingMessages((prev) => {
         if (!prev.has(idempotencyKey)) return prev;
         const next = new Map(prev);
         next.delete(idempotencyKey);
         return next;
       });
-
-      // self-message 요약 이벤트 누락 케이스 대비: 목록 데이터 재검증
-      void queryClient.invalidateQueries({ queryKey: chatRoomQueryKeys.listAll() });
-
-      if (!pendingMessage) return;
-
-      patchRoomFeedLatestMessage({
-        lastMessage: toRoomFeedPreviewFromPendingMessage(pendingMessage),
-        lastMessageAt: sentAt || pendingMessage.sentAt,
-      });
     });
-  }, [patchRoomFeedLatestMessage, queryClient]);
+  }, []);
 
   useEffect(() => {
     if (myUserId === null) return;
@@ -231,9 +207,10 @@ export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptio
         next.delete(idempotencyKey);
         return next;
       });
+      void queryClient.invalidateQueries({ queryKey: chatRoomQueryKeys.listAll() });
       showToast(message || "메시지 전송에 실패했습니다.", "error");
     });
-  }, [showToast]);
+  }, [queryClient, showToast]);
 
   useEffect(() => {
     return chatStompSession.onMessageSendRejected(({ idempotencyKey, message }) => {
@@ -242,9 +219,10 @@ export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptio
         next.delete(idempotencyKey);
         return next;
       });
+      void queryClient.invalidateQueries({ queryKey: chatRoomQueryKeys.listAll() });
       showToast(message || "메시지 전송이 거절되었습니다.", "error");
     });
-  }, [showToast]);
+  }, [queryClient, showToast]);
 
   const historicalMessageIds = useMemo(
     () => new Set(chatMessagesQuery.messages.map((message) => message.messageId)),
@@ -345,6 +323,10 @@ export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptio
 
     setPendingMessages((prev) => new Map(prev).set(idempotencyKey, pendingMessage));
     setDraftMessage("");
+    patchRoomFeedLatestMessage({
+      lastMessage: toRoomFeedPreviewFromPendingMessage(pendingMessage),
+      lastMessageAt: pendingMessage.sentAt,
+    });
 
     chatStompSession.sendMessage({
       idempotencyKey,
@@ -353,8 +335,7 @@ export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptio
       content,
       imageKeys: [],
     });
-    refetchMessageList();
-  }, [createPendingMessage, draftMessage, refetchMessageList, roomId, showToast]);
+  }, [createPendingMessage, draftMessage, patchRoomFeedLatestMessage, roomId, showToast]);
 
   const handleImageSelect = useCallback(
     async (file: File) => {
@@ -371,6 +352,10 @@ export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptio
           imageUrls: [],
         });
         setPendingMessages((prev) => new Map(prev).set(idempotencyKey, pendingMessage));
+        patchRoomFeedLatestMessage({
+          lastMessage: toRoomFeedPreviewFromPendingMessage(pendingMessage),
+          lastMessageAt: pendingMessage.sentAt,
+        });
 
         chatStompSession.sendMessage({
           idempotencyKey,
@@ -379,13 +364,12 @@ export function useChatRoomSessionModel({ roomId }: UseChatRoomSessionModelOptio
           content: null,
           imageKeys: [imageKey],
         });
-        refetchMessageList();
       } catch (error) {
         console.error("[chat-room] 이미지 메시지 전송 준비 실패", error);
         showToast("이미지 업로드에 실패했습니다.", "error");
       }
     },
-    [createPendingMessage, refetchMessageList, roomId, showToast],
+    [createPendingMessage, patchRoomFeedLatestMessage, roomId, showToast],
   );
 
   const handleToggleExtraMenu = useCallback(() => {
