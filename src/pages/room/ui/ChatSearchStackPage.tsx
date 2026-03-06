@@ -13,15 +13,15 @@ import { CreateChatRoomStackPage } from "./CreateChatRoomStackPage";
 import { ChatRoomStackPage } from "./ChatRoomStackPage";
 
 export function ChatSearchStackPage() {
-  const { push } = useStackPage();
+  const { push, replace } = useStackPage();
   const handleOpenCreateChatRoom = useCallback(() => {
     push(<CreateChatRoomStackPage />);
   }, [push]);
   const handleOpenChatRoom = useCallback(
     (roomId: number) => {
-      push(<ChatRoomStackPage roomId={roomId} />);
+      replace(<ChatRoomStackPage roomId={roomId} />);
     },
-    [push],
+    [replace],
   );
   useChatSearchStackHeader();
   const {

@@ -12,6 +12,7 @@ export interface CreateChatRoomRequestDto {
 
 export interface CreateChatRoomResponseDto {
   roomId: number;
+  participantId: number;
 }
 
 export const CREATE_CHAT_ROOM_FORM_DEFAULTS: CreateChatRoomFormModel = {

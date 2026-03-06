@@ -15,8 +15,6 @@ import { useAiArrangeNoticeStore } from "@/features/home";
 import { useHomePlanStore } from "@/entities/day-plan";
 import { useUserPreferencesStore } from "@/entities/user";
 import { chatStompSession } from "@/shared/socket";
-const CHAT_SOCKET_LOG_ENABLED =
-  process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_CHAT_SOCKET_DEBUG === "true";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -113,9 +111,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!accessToken) {
-      if (CHAT_SOCKET_LOG_ENABLED) {
-        console.log("[chat-socket] providers: accessToken 없음 -> stop");
-      }
       chatStompSession.stop({
         code: "LOGOUT",
         message: "로그아웃으로 연결을 종료합니다.",
@@ -123,9 +118,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (CHAT_SOCKET_LOG_ENABLED) {
-      console.log("[chat-socket] providers: accessToken 감지 -> start");
-    }
     chatStompSession.start(accessToken);
   }, [accessToken]);
 

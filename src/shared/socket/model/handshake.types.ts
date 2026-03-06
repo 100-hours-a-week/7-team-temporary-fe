@@ -90,13 +90,6 @@ export interface UnreadChangedUserEventPayload {
   participantsCount?: number;
 }
 
-export interface ChatSummaryChangedUserEventPayload {
-  eventId: string;
-  userId: number;
-  roomId: number;
-  changedFields: string[];
-}
-
 // ─── Room queue: Server → Client (/user/queue/room) ──────────────────────────
 
 export interface SubscribedRoomEventPayload {

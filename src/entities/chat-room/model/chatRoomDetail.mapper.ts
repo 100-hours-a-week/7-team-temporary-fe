@@ -4,7 +4,7 @@ import type { ChatRoomDetailModel, ChatRoomMemberVM } from "./types";
 
 function toOwnerVM(owner: ChatRoomOwnerDto): ChatRoomMemberVM {
   return {
-    participantId: null,
+    participantId: owner.participantId ?? null,
     userId: owner.userId,
     nickname: owner.nickname,
     cameraEnabled: owner.cameraEnabled,

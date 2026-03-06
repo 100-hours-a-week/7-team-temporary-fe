@@ -25,6 +25,22 @@ export function useStackPageState(): StackPageContextValue {
     });
   }, []);
 
+  const replace = useCallback((element: StackEntry["element"]) => {
+    setStack((prev) => {
+      if (prev.length === 0) {
+        const next = [
+          { key: createStackKey(), element, headerContent: null, headerRightContent: null },
+        ];
+        window.history.pushState({ stackDepth: next.length }, "");
+        return next;
+      }
+      return [
+        ...prev.slice(0, -1),
+        { key: createStackKey(), element, headerContent: null, headerRightContent: null },
+      ];
+    });
+  }, []);
+
   const pop = useCallback(() => {
     if (stack.length === 0 || poppingKey) return;
     const currentTopKey = stack[stack.length - 1]?.key;
@@ -107,6 +123,7 @@ export function useStackPageState(): StackPageContextValue {
     () => ({
       push,
       pop,
+      replace,
       depth: stack.length,
       stack,
       poppingKey,
@@ -118,6 +135,7 @@ export function useStackPageState(): StackPageContextValue {
     [
       push,
       pop,
+      replace,
       stack,
       poppingKey,
       headerContent,

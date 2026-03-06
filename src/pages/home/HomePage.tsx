@@ -1,10 +1,7 @@
 import { useHomePlanStore, useDayPlanReflectionStatusQuery } from "@/entities/day-plan";
-import { RetroWriteStackPage } from "@/pages/retro";
-import { WeeklyReportStackPage } from "@/pages/report";
 import { useStackPage } from "@/widgets/stack";
 import { HomePlanner } from "@/widgets/home-planner";
 import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
-import { PlannerEditStackPage } from "./ui/PlannerEditStackPage";
 
 interface HomePageProps {
   enabled?: boolean;
@@ -18,20 +15,29 @@ export function HomePage({ enabled = true }: HomePageProps) {
     useDayPlanReflectionStatusQuery({ dayPlanId });
 
   const handleOpenPlannerEdit = () => {
-    push(<PlannerEditStackPage />);
+    void (async () => {
+      const { PlannerEditStackPage } = await import("./ui/PlannerEditStackPage");
+      push(<PlannerEditStackPage />);
+    })();
   };
 
   const handleOpenRetroWrite = () => {
-    push(
-      <RetroWriteStackPage
-        baseDate={homeDate}
-        dayPlanId={dayPlanId}
-      />,
-    );
+    void (async () => {
+      const { RetroWriteStackPage } = await import("@/pages/retro/ui/RetroWriteStackPage");
+      push(
+        <RetroWriteStackPage
+          baseDate={homeDate}
+          dayPlanId={dayPlanId}
+        />,
+      );
+    })();
   };
 
   const handleOpenWeeklyReport = () => {
-    push(<WeeklyReportStackPage baseDate={homeDate} />);
+    void (async () => {
+      const { WeeklyReportStackPage } = await import("@/pages/report/WeeklyReportStackPage");
+      push(<WeeklyReportStackPage baseDate={homeDate} />);
+    })();
   };
 
   return (
