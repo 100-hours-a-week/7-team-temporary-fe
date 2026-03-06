@@ -42,7 +42,12 @@ import {
   resolveChatSocketStartConfig,
   type ChatSocketStartConfig,
 } from "./model/socketEnv";
-import { chatSocketLog, resolveStompDebugLogger } from "./model/socketLogger";
+import {
+  chatSocketError,
+  chatSocketLog,
+  chatSocketWarn,
+  resolveStompDebugLogger,
+} from "./model/socketLogger";
 import { ensureBearerToken, resolveDeviceIdFromJwt } from "./model/token";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -516,7 +521,7 @@ class ChatStompSession {
    */
   subscribeToRoom({ roomId, participantId, ...callbacks }: SubscribeToRoomParams): () => void {
     if (typeof participantId !== "number" || participantId <= 0) {
-      console.warn("[chat-socket] subscribeToRoom: participantId 미확인으로 구독을 중단합니다.", {
+      chatSocketWarn("[chat-socket] subscribeToRoom: participantId 미확인으로 구독을 중단합니다.", {
         roomId,
         participantId,
       });
@@ -548,7 +553,7 @@ class ChatStompSession {
     this.pendingMessagePayloads.set(payload.idempotencyKey, payload);
 
     if (!this.client?.connected || !this.config) {
-      console.warn("[chat-socket] sendMessage: 소켓 미연결 상태");
+      chatSocketWarn("[chat-socket] sendMessage: 소켓 미연결 상태");
       this.triggerSendMessageHttpFallback(payload.idempotencyKey, "socket_not_connected");
       return;
     }
@@ -680,7 +685,7 @@ class ChatStompSession {
     const bearerToken = ensureBearerToken(accessToken);
     const deviceId = resolveDeviceIdFromJwt(bearerToken);
     if (!deviceId) {
-      console.warn("[chat-socket] skip connect: JWT payload에 deviceId가 없습니다.");
+      chatSocketWarn("[chat-socket] skip connect: JWT payload에 deviceId가 없습니다.");
       return;
     }
 
@@ -727,7 +732,7 @@ class ChatStompSession {
 
     client.onStompError = (frame: IFrame) => {
       const headerCode = toStompHeaderErrorCode(frame.headers["message"], frame.headers["code"]);
-      console.warn("[chat-socket] STOMP error", {
+      chatSocketWarn("[chat-socket] STOMP error", {
         command: frame.command,
         headers: frame.headers,
         body: frame.body,
@@ -738,7 +743,7 @@ class ChatStompSession {
     };
 
     client.onWebSocketError = (error) => {
-      console.error("[chat-socket] WebSocket error", error);
+      chatSocketError("[chat-socket] WebSocket error", error);
     };
 
     client.onWebSocketClose = (event) => {
@@ -804,7 +809,7 @@ class ChatStompSession {
           receiptId,
         });
       } catch (error) {
-        console.error("[chat-socket] socket.disconnect publish failed", error);
+        chatSocketError("[chat-socket] socket.disconnect publish failed", error);
       }
     }
 
@@ -932,7 +937,7 @@ class ChatStompSession {
       try {
         listener(payload);
       } catch (error) {
-        console.error(`[chat-socket] ${label} listener error`, error);
+        chatSocketError(`[chat-socket] ${label} listener error`, error);
       }
     });
   }
@@ -960,7 +965,7 @@ class ChatStompSession {
 
     const timeoutId = window.setTimeout(() => {
       if (isReceiptReceived) return;
-      console.warn(`[chat-socket] ${eventName} receipt timeout`, {
+      chatSocketWarn(`[chat-socket] ${eventName} receipt timeout`, {
         destination,
         receiptId,
         timeoutMs: PUBLISH_RECEIPT_TIMEOUT_MS,
@@ -986,7 +991,7 @@ class ChatStompSession {
       });
     } catch (error) {
       window.clearTimeout(timeoutId);
-      console.error(`[chat-socket] ${eventName} publish failed`, {
+      chatSocketError(`[chat-socket] ${eventName} publish failed`, {
         destination,
         receiptId,
         error,
@@ -1076,7 +1081,7 @@ class ChatStompSession {
       });
       this.settlePendingReportSendAsSuccess({ reportId: payload.reportId });
     } catch (error) {
-      console.error("[chat-socket] report.message.send HTTP fallback failed", {
+      chatSocketError("[chat-socket] report.message.send HTTP fallback failed", {
         reportId: payload.reportId,
         reason,
         error,
@@ -1143,7 +1148,7 @@ class ChatStompSession {
         );
       }
     } catch (error) {
-      console.error("[chat-socket] message.send HTTP fallback failed", {
+      chatSocketError("[chat-socket] message.send HTTP fallback failed", {
         roomId: payload.roomId,
         idempotencyKey: payload.idempotencyKey,
         reason,
@@ -1208,7 +1213,7 @@ class ChatStompSession {
         });
         return;
       }
-      console.error("[chat-socket] lastSeen.update HTTP fallback failed", {
+      chatSocketError("[chat-socket] lastSeen.update HTTP fallback failed", {
         participantId: payload.participantId,
         lastSeenMessageId: payload.lastSeenMessageId,
         reason,
@@ -1262,7 +1267,7 @@ class ChatStompSession {
       // 1. socket.connected error
       const errorCode = parseConnectedErrorCode(message);
       if (errorCode) {
-        console.warn("[chat-socket] socket.connected error", {
+        chatSocketWarn("[chat-socket] socket.connected error", {
           code: errorCode,
           body: message.body,
         });
@@ -1413,7 +1418,7 @@ class ChatStompSession {
         return;
       }
 
-      console.warn("[chat-socket] user queue payload 파싱 실패", {
+      chatSocketWarn("[chat-socket] user queue payload 파싱 실패", {
         body: message.body,
         headers: message.headers,
       });
@@ -1735,7 +1740,7 @@ class ChatStompSession {
       // start() detects token change → calls stopClient(preserveRooms=true) → reconnects
       this.start(nextToken);
     } catch (error) {
-      console.warn("[chat-socket] refresh and reconnect failed", error);
+      chatSocketWarn("[chat-socket] refresh and reconnect failed", error);
       this.stop({
         code: "TOKEN_EXPIRED",
         message: "토큰 갱신 실패로 연결을 종료합니다.",

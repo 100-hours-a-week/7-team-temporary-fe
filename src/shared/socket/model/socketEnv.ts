@@ -21,8 +21,7 @@ const USER_QUEUE_ROOM_DESTINATION =
 const USER_QUEUE_REPORT_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_REPORT_DEST?.trim() ?? "/user/queue/report";
 const RECONNECT_DELAY_MS = Number(process.env.NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS ?? 5000);
-const CHAT_SOCKET_LOG_ENABLED =
-  process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_CHAT_SOCKET_DEBUG === "true";
+const CHAT_SOCKET_LOG_ENABLED = false;
 
 export interface ChatSocketStartConfig {
   brokerURL: string;
@@ -49,6 +48,15 @@ export function isChatSocketLogEnabled() {
   return CHAT_SOCKET_LOG_ENABLED;
 }
 
+function chatSocketEnvWarn(message: string, payload?: unknown) {
+  if (!isChatSocketLogEnabled()) return;
+  if (typeof payload === "undefined") {
+    console.warn(message);
+    return;
+  }
+  console.warn(message, payload);
+}
+
 export function resolveChatSocketDisconnectDestination() {
   return DISCONNECT_DESTINATION;
 }
@@ -57,12 +65,12 @@ export function resolveChatSocketStartConfig(): ChatSocketStartConfig | null {
   const brokerURL = resolveBrokerUrl();
 
   if (!brokerURL) {
-    console.warn("[chat-socket] skip connect: NEXT_PUBLIC_CHAT_STOMP_BROKER_URL 미설정");
+    chatSocketEnvWarn("[chat-socket] skip connect: NEXT_PUBLIC_CHAT_STOMP_BROKER_URL 미설정");
     return null;
   }
 
   if (!/^wss?:\/\//.test(brokerURL)) {
-    console.warn("[chat-socket] skip connect: broker URL은 ws:// 또는 wss:// 형식 필요", {
+    chatSocketEnvWarn("[chat-socket] skip connect: broker URL은 ws:// 또는 wss:// 형식 필요", {
       brokerURL,
     });
     return null;
@@ -74,7 +82,7 @@ export function resolveChatSocketStartConfig(): ChatSocketStartConfig | null {
     !SUBSCRIBE_USER_DESTINATION ||
     !SUBSCRIBED_USER_DESTINATION
   ) {
-    console.warn("[chat-socket] skip connect: destination env 값이 누락되었습니다.");
+    chatSocketEnvWarn("[chat-socket] skip connect: destination env 값이 누락되었습니다.");
     return null;
   }
 
