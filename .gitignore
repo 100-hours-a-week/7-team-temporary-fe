@@ -60,6 +60,8 @@ scripts/
 .agents/
 
 tmp/
+local-assets/
+first-performance-optimization-metrics-check.assets/
 
 .github/issue
 # Sentry Config File

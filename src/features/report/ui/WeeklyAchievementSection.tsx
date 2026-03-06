@@ -17,6 +17,7 @@ export function WeeklyAchievementSection({
   isLoading = false,
   isError = false,
 }: WeeklyAchievementSectionProps) {
+  const hasNoCompletedRecord = points.every((point) => point.rate === 0);
   const {
     chartData,
     selectedPoint,
@@ -41,6 +42,7 @@ export function WeeklyAchievementSection({
         <WeeklyAchievementSummary
           bestDay={bestDay}
           averageRate={averageRate}
+          showNoCompletedRecordMessage={hasNoCompletedRecord}
         />
         <WeeklyAchievementChart
           chartData={chartData}
