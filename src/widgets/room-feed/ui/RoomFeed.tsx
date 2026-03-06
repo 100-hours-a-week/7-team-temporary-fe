@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import type { ChatRoomListItemVM } from "@/entities/chat-room";
-import { useGroupChatRoomListQuery } from "@/entities/chat-room";
+import { chatRoomQueryKeys, useGroupChatRoomListQuery } from "@/entities/chat-room";
 import { usePaginatedAccumulator, useInfiniteScrollTrigger } from "@/shared/hooks";
 import { chatStompSession } from "@/shared/socket";
 import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
+import { useStackPage } from "@/widgets/stack";
 
 import { ChatRoomList } from "./ChatRoomList";
 
@@ -62,6 +65,8 @@ function isPatchResolvedByServer(
 }
 
 export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }: RoomFeedProps) {
+  const { depth } = useStackPage();
+  const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<RoomSection>(ROOM_SECTION.GROUP_CHAT);
   const [currentPage, setCurrentPage] = useState(CHAT_ROOM_LIST_PAGE);
   const [roomRealtimePatches, setRoomRealtimePatches] = useState<
@@ -76,7 +81,9 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
     enabled: enabled && isGroupChatSection,
     page: currentPage,
     size: CHAT_ROOM_LIST_SIZE,
+    refetchOnMount: "always",
   });
+  const previousStackDepthRef = useRef(depth);
 
   const {
     fetchedItems: rooms,
@@ -99,6 +106,17 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });
   }, [activeSection]);
+
+  useEffect(() => {
+    const previousDepth = previousStackDepthRef.current;
+    previousStackDepthRef.current = depth;
+
+    if (!enabled || !isGroupChatSection) return;
+    if (previousDepth <= 0 || depth !== 0) return;
+
+    setCurrentPage(CHAT_ROOM_LIST_PAGE);
+    void queryClient.invalidateQueries({ queryKey: chatRoomQueryKeys.listAll() });
+  }, [depth, enabled, isGroupChatSection, queryClient]);
 
   const patchedRooms = useMemo(
     () =>

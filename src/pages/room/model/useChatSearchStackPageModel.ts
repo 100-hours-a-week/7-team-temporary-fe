@@ -47,6 +47,7 @@ export function useChatSearchStackPageModel({ onJoinSuccess }: UseChatSearchStac
         size: CHAT_SEARCH_SIZE,
         signal,
       }),
+    refetchOnMount: "always",
   });
   const filteredRooms = searchListQuery.data?.content ?? [];
 
