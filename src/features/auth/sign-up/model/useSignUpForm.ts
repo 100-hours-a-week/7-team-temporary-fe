@@ -12,6 +12,7 @@ import type { SignUpFormModel } from "./types";
 
 const DEFAULT_FORM: SignUpFormModel = {
   email: "",
+  isEmailChecked: false,
   password: "",
   nickname: "",
   gender: "",
