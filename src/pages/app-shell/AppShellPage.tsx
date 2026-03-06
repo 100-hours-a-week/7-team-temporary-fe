@@ -1,16 +1,49 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { AppHeader, ReportSheet } from "@/widgets/app-header";
 import { BottomNav, TabRoot, TabScope, useTab } from "@/widgets/tab-stack";
 import { StackPageRoot, StackPageScope, useStackPage } from "@/widgets/stack";
-import { FriendStackPage } from "@/pages/friend";
-import { HomePage } from "@/pages/home";
-import { ProfilePage } from "@/pages/profile";
-import { NotificationStackPage } from "@/pages/notification";
-import { RetroPage } from "@/pages/retro";
-import { RoomPage } from "@/pages/room";
+
+interface TabPageProps {
+  enabled?: boolean;
+}
+
+function TabPageFallback() {
+  return (
+    <div
+      className="h-full w-full"
+      aria-hidden
+    />
+  );
+}
+
+const HomePage = dynamic<TabPageProps>(
+  () => import("@/pages/home/HomePage").then((module) => module.HomePage),
+  {
+    loading: TabPageFallback,
+  },
+);
+const RetroPage = dynamic<TabPageProps>(
+  () => import("@/pages/retro/RetroPage").then((module) => module.RetroPage),
+  {
+    loading: TabPageFallback,
+  },
+);
+const RoomPage = dynamic<TabPageProps>(
+  () => import("@/pages/room/RoomPage").then((module) => module.RoomPage),
+  {
+    loading: TabPageFallback,
+  },
+);
+const ProfilePage = dynamic<TabPageProps>(
+  () => import("@/pages/profile/ProfilePage").then((module) => module.ProfilePage),
+  {
+    loading: TabPageFallback,
+  },
+);
 
 interface AppShellHeaderProps {
   onReportClick?: () => void;
@@ -25,9 +58,11 @@ function AppShellHeader({ onReportClick }: AppShellHeaderProps) {
   const { push } = useStackPage();
 
   const handleNotificationClick = async () => {
+    const { NotificationStackPage } = await import("@/pages/notification");
     push(<NotificationStackPage />);
   };
   const handleFriendClick = async () => {
+    const { FriendStackPage } = await import("@/pages/friend");
     push(<FriendStackPage />);
   };
 
