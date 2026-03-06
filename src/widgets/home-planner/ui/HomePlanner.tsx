@@ -7,7 +7,7 @@ import { SectionCard, ShinyText } from "@/shared/ui";
 import { SectionActionButton } from "@/shared/ui/button";
 import { Icon } from "@/shared/ui/icon";
 import { HomeTaskItem } from "@/entities/day-plan-schedule";
-import { useHomePlanner } from "@/features/home";
+import { useHomePlanner } from "../model/useHomePlanner";
 import { HomeWeekSelector } from "@/widgets/home-week";
 
 interface HomePlannerProps {

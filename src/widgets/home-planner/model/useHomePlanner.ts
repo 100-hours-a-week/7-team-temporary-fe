@@ -13,7 +13,7 @@ import { useHomePlannerQueries } from "./useHomePlannerQueries";
 import { useMergedTasks } from "./useMergedTasks";
 import { toHomeWeekPlanPresenceVM } from "./planPresenceViewModel";
 import { usePlannerStatus } from "./usePlannerStatus";
-import { useUpdateScheduleStatusMutation } from "./useScheduleMutations";
+import { useUpdateScheduleStatusMutation } from "@/features/home";
 
 const PAGE_SIZE = 10;
 
@@ -172,7 +172,6 @@ export function useHomePlanner({
     isCurrentTaskError: currentScheduleQuery.isError,
     selectedDate: selectedDate ?? today,
   });
-  // 상태 메시지/표시 텍스트는 usePlannerStatus에서 파생
 
   useEffect(() => {
     if (!scheduleQuery.data?.dayPlanId) return;
@@ -191,27 +190,6 @@ export function useHomePlanner({
       loadMoreLockRef.current = false;
     }
   }, [scheduleQuery.isFetching]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    const root = scrollContainerRef.current;
-    if (!root) return;
-
-    const handleScroll = () => {
-      if (!hasMore || scheduleQuery.isFetching) return;
-      const remaining = root.scrollHeight - root.scrollTop - root.clientHeight;
-      if (remaining <= 220) {
-        handleLoadMore();
-      }
-    };
-
-    root.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-
-    return () => {
-      root.removeEventListener("scroll", handleScroll);
-    };
-  }, [enabled, handleLoadMore, hasMore, scheduleQuery.isFetching]);
 
   const { loadMoreRef } = useInfiniteScrollTrigger<HTMLDivElement>({
     enabled,
