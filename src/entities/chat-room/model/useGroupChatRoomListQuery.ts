@@ -11,6 +11,7 @@ interface UseGroupChatRoomListQueryOptions {
   page?: number;
   size?: number;
   enabled?: boolean;
+  refetchOnMount?: boolean | "always";
   staleTime?: number;
   gcTime?: number;
 }
@@ -20,6 +21,7 @@ export function useGroupChatRoomListQuery({
   page = 1,
   size = 10,
   enabled = true,
+  refetchOnMount,
   staleTime,
   gcTime,
 }: UseGroupChatRoomListQueryOptions = {}) {
@@ -28,6 +30,7 @@ export function useGroupChatRoomListQuery({
     queryFn: ({ signal }) => fetchChatRoomList({ type, page, size, signal }),
     select: (dto) => toChatRoomListModel(dto),
     enabled,
+    refetchOnMount,
     staleTime,
     gcTime,
   });

@@ -40,6 +40,7 @@ export interface ChatRoomProfileImageDto {
 }
 
 export interface ChatRoomOwnerDto {
+  participantId?: number;
   userId: number;
   nickname: string;
   cameraEnabled: boolean;

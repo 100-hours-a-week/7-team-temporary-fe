@@ -2,10 +2,18 @@
  * API 엔드포인트 레지스트리
  *
  * ## 환경 변수
+ * - NEXT_PUBLIC_API_TASK_BASE_URL        : task 서비스 base URL (기본값: /api/task)
  * - NEXT_PUBLIC_API_CHAT_BASE_URL        : chat 서비스 base URL (기본값: /api/chat)
  */
 
+const configuredTaskApiBaseUrl = process.env.NEXT_PUBLIC_API_TASK_BASE_URL?.trim();
 const configuredChatApiBaseUrl = process.env.NEXT_PUBLIC_API_CHAT_BASE_URL?.trim();
+
+const TASK_API_BASE_URL = (
+  configuredTaskApiBaseUrl && configuredTaskApiBaseUrl.length > 0
+    ? configuredTaskApiBaseUrl
+    : "/api/task"
+).replace(/\/$/, "");
 
 const CHAT_API_BASE_URL = (
   configuredChatApiBaseUrl && configuredChatApiBaseUrl.length > 0
@@ -13,101 +21,102 @@ const CHAT_API_BASE_URL = (
     : "/api/chat"
 ).replace(/\/$/, "");
 
+const taskPath = (endpoint: string): string => `${TASK_API_BASE_URL}${endpoint}`;
 const chatPath = (endpoint: string): string => `${CHAT_API_BASE_URL}${endpoint}`;
 
 export const Endpoint = {
   // ─────────────────────────────────────────────────────────────────────────
-  // TASK SERVICE  (chatPath 전용)
+  // TASK SERVICE  (taskPath 전용)
   // 소유: 인증·사용자·일정·알림 도메인
   // ─────────────────────────────────────────────────────────────────────────
 
   TOKEN: {
-    BASE: chatPath("/token"),
-    REFRESH: chatPath("/token"),
+    BASE: taskPath("/token"),
+    REFRESH: taskPath("/token"),
   },
 
   USER: {
-    BASE: chatPath("/users"),
-    IMAGE: chatPath("/users/image"),
+    BASE: taskPath("/users"),
+    IMAGE: taskPath("/users/image"),
     CHECK: {
-      NICKNAME: (nickname: string) => chatPath(`/users?nickname=${encodeURIComponent(nickname)}`),
-      EMAIL: (email: string) => chatPath(`/users/email?email=${encodeURIComponent(email)}`),
+      NICKNAME: (nickname: string) => taskPath(`/users?nickname=${encodeURIComponent(nickname)}`),
+      EMAIL: (email: string) => taskPath(`/users/email?email=${encodeURIComponent(email)}`),
     },
-    NICKNAME: chatPath("/users/nickname"),
-    PASSWORD: chatPath("/users/password"),
+    NICKNAME: taskPath("/users/nickname"),
+    PASSWORD: taskPath("/users/password"),
   },
 
   IMAGES: {
-    PRESIGNED_URL: chatPath("/images"),
-    VIEW: (imageKey: string) => chatPath(`/images/${imageKey}`),
+    PRESIGNED_URL: taskPath("/images"),
+    VIEW: (imageKey: string) => taskPath(`/images/${imageKey}`),
   },
 
   TERMS: {
-    LIST: chatPath("/terms"),
+    LIST: taskPath("/terms"),
   },
 
   TERMS_SIGN: {
-    LIST: chatPath("/terms-sign"),
-    UPDATE: (termsId: number) => chatPath(`/terms-sign/${termsId}`),
+    LIST: taskPath("/terms-sign"),
+    UPDATE: (termsId: number) => taskPath(`/terms-sign/${termsId}`),
   },
 
   DAY_PLAN: {
-    SCHEDULE: chatPath("/day-plan/schedule"),
-    PERIOD_SCHEDULES: chatPath("/day-plan/period/schedules"),
-    SCHEDULE_BY_ID: (dayPlanId: number) => chatPath(`/day-plan/${dayPlanId}/schedule`),
-    REFLECTION: (dayPlanId: number) => chatPath(`/day-plan/${dayPlanId}/reflection`),
+    SCHEDULE: taskPath("/day-plan/schedule"),
+    PERIOD_SCHEDULES: taskPath("/day-plan/period/schedules"),
+    SCHEDULE_BY_ID: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/schedule`),
+    REFLECTION: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/reflection`),
     AI_ARRANGEMENT: (dayPlanId: number) =>
-      chatPath(`/day-plan/${dayPlanId}/schedules/ai-arrangement`),
-    SCHEDULES_BY_ID: (dayPlanId: number) => chatPath(`/day-plan/${dayPlanId}/schedules`),
+      taskPath(`/day-plan/${dayPlanId}/schedules/ai-arrangement`),
+    SCHEDULES_BY_ID: (dayPlanId: number) => taskPath(`/day-plan/${dayPlanId}/schedules`),
   },
 
   SCHEDULE: {
-    BASE: chatPath("/schedule"),
-    BY_ID: (scheduleId: number) => chatPath(`/schedule/${scheduleId}`),
-    STATUS: (scheduleId: number) => chatPath(`/schedule/${scheduleId}/status`),
-    CHILDREN: chatPath("/schedule/children"),
+    BASE: taskPath("/schedule"),
+    BY_ID: (scheduleId: number) => taskPath(`/schedule/${scheduleId}`),
+    STATUS: (scheduleId: number) => taskPath(`/schedule/${scheduleId}/status`),
+    CHILDREN: taskPath("/schedule/children"),
   },
 
   FCM: {
-    TOKENS: chatPath("/fcm-tokens"),
+    TOKENS: taskPath("/fcm-tokens"),
   },
 
   NOTIFICATIONS: {
-    LIST: chatPath("/notifications"),
+    LIST: taskPath("/notifications"),
   },
 
   ISSUE: {
-    BASE: chatPath("/issue"),
+    BASE: taskPath("/issue"),
   },
 
   RETRO: {
     // 인증 필요 (프록시 경유)
-    BASE: chatPath("/reflections"),
-    UPDATE: (reflectionId: number) => chatPath(`/reflections/${reflectionId}`),
-    UPDATE_VISIBILITY: (reflectionId: number) => chatPath(`/reflections/${reflectionId}`),
-    DELETE: (reflectionId: number) => chatPath(`/reflections/${reflectionId}`),
-    LIKE: (reflectionId: number) => chatPath(`/reflections/${reflectionId}/like`),
+    BASE: taskPath("/reflections"),
+    UPDATE: (reflectionId: number) => taskPath(`/reflections/${reflectionId}`),
+    UPDATE_VISIBILITY: (reflectionId: number) => taskPath(`/reflections/${reflectionId}`),
+    DELETE: (reflectionId: number) => taskPath(`/reflections/${reflectionId}`),
+    LIKE: (reflectionId: number) => taskPath(`/reflections/${reflectionId}/like`),
     // 비인증 공개 (백엔드 직접)
-    PUBLIC_LIST: chatPath("/reflections"),
-    BY_ID: (reflectionId: number) => chatPath(`/reflections/${reflectionId}`),
+    PUBLIC_LIST: taskPath("/reflections"),
+    BY_ID: (reflectionId: number) => taskPath(`/reflections/${reflectionId}`),
   },
 
   REPORTS: {
-    LIST: chatPath("/reports"),
-    MESSAGE: (reportId: number) => chatPath(`/reports/${reportId}/message`),
-    MESSAGES: (reportId: number) => chatPath(`/reports/${reportId}/messages`),
+    LIST: taskPath("/reports"),
+    MESSAGE: (reportId: number) => taskPath(`/reports/${reportId}/message`),
+    MESSAGES: (reportId: number) => taskPath(`/reports/${reportId}/messages`),
   },
 
   FRIENDS: {
-    LIST: chatPath("/friends"),
-    DELETE: (friendUserId: number) => chatPath(`/friends/${friendUserId}`),
+    LIST: taskPath("/friends"),
+    DELETE: (friendUserId: number) => taskPath(`/friends/${friendUserId}`),
   },
 
   FRIEND_REQUESTS: {
-    LIST: chatPath("/friend-requests"),
-    CREATE: (targetUserId: number) => chatPath(`/friend-requests/${targetUserId}`),
-    UPDATE: (requestId: number) => chatPath(`/friend-requests/${requestId}`),
-    DELETE: (requestId: number) => chatPath(`/friend-requests/${requestId}`),
+    LIST: taskPath("/friend-requests"),
+    CREATE: (targetUserId: number) => taskPath(`/friend-requests/${targetUserId}`),
+    UPDATE: (requestId: number) => taskPath(`/friend-requests/${requestId}`),
+    DELETE: (requestId: number) => taskPath(`/friend-requests/${requestId}`),
   },
 
   // ─────────────────────────────────────────────────────────────────────────
