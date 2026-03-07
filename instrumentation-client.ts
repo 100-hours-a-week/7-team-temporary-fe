@@ -2,30 +2,41 @@
 // The added config here will be used whenever a users loads a page in their browser.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
-import * as Sentry from "@sentry/nextjs";
+type SentryModule = typeof import("@sentry/nextjs");
 
-Sentry.init({
-  dsn: "https://22003de6335a4b8ca1270fe5fd03c0bb@o4510866997379072.ingest.us.sentry.io/4510866998820864",
+const sentryDsn =
+  "https://22003de6335a4b8ca1270fe5fd03c0bb@o4510866997379072.ingest.us.sentry.io/4510866998820864";
 
-  // Add optional integrations for additional features
-  integrations: [Sentry.replayIntegration()],
+let sentryPromise: Promise<SentryModule> | null = null;
 
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
+function loadSentry() {
+  if (!sentryPromise) {
+    sentryPromise = import("@sentry/nextjs");
+  }
+  return sentryPromise;
+}
 
-  // Define how likely Replay events are sampled.
-  // This sets the sample rate to be 10%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
-  replaysSessionSampleRate: 0.1, //0.1
+function initSentry() {
+  void loadSentry().then((Sentry) => {
+    Sentry.init({
+      dsn: sentryDsn,
+      tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1,
+      enableLogs: false,
+      sendDefaultPii: true,
+    });
+  });
+}
 
-  // Define how likely Replay events are sampled when an error occurs.
-  replaysOnErrorSampleRate: 1.0, //1.0
+if (typeof window !== "undefined") {
+  // 초기 렌더 이후로 Sentry 초기화를 미뤄 메인 스레드 블로킹을 줄인다.
+  window.setTimeout(initSentry, 1500);
+}
 
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
-});
-
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+export function onRouterTransitionStart(...args: unknown[]) {
+  void loadSentry().then((Sentry) => {
+    const capture = Sentry.captureRouterTransitionStart as
+      | ((...params: unknown[]) => void)
+      | undefined;
+    capture?.(...args);
+  });
+}
