@@ -10,25 +10,21 @@ export async function requestFcmToken(options: RequestFcmTokenOptions = {}) {
 
   if (Notification.permission !== "granted") {
     if (!promptPermission) {
-      console.log("[FCM] permission not granted");
       return null;
     }
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
-      console.log("[FCM] permission denied");
       return null;
     }
   }
 
   const messaging = await getFirebaseMessaging();
   if (!messaging) {
-    console.log("[FCM] messaging not supported");
     return null;
   }
 
   const registration = await navigator.serviceWorker.getRegistration();
   if (!registration) {
-    console.log("[FCM] service worker not registered");
     return null;
   }
   if (!registration.active) {
@@ -37,7 +33,6 @@ export async function requestFcmToken(options: RequestFcmTokenOptions = {}) {
 
   const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
   if (!vapidKey) {
-    console.log("[FCM] missing NEXT_PUBLIC_FIREBASE_VAPID_KEY");
     return null;
   }
 
@@ -47,10 +42,8 @@ export async function requestFcmToken(options: RequestFcmTokenOptions = {}) {
   });
 
   if (!token) {
-    console.log("[FCM] token not issued");
     return null;
   }
 
-  console.log("[FCM] token issued:", token);
   return token;
 }

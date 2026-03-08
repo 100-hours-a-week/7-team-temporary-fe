@@ -142,25 +142,10 @@ export function PlannerEditStackPage() {
   }, [setHeaderContent]);
 
   useEffect(() => {
-    if (!dayPlanId) return;
-    if (scheduleQuery.isFetching) {
-      console.log("[PlannerEditStackPage] 일정 조회 요청", {
-        dayPlanId,
-        page: 1,
-        size: 10,
-      });
-    }
-  }, [dayPlanId, scheduleQuery.isFetching]);
-
-  useEffect(() => {
     if (scheduleQuery.isError) {
       console.error("[PlannerEditStackPage] 일정 조회 실패", scheduleQuery.error);
-      return;
     }
-    if (scheduleQuery.data) {
-      console.log("[PlannerEditStackPage] 일정 조회 응답", scheduleQuery.data);
-    }
-  }, [scheduleQuery.data, scheduleQuery.error, scheduleQuery.isError]);
+  }, [scheduleQuery.error, scheduleQuery.isError]);
 
   const handleOpenTaskBasket = () => {
     push(<TaskBasketStackPage />);
