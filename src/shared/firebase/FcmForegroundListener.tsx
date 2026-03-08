@@ -33,7 +33,6 @@ export function FcmForegroundListener() {
       if (!messaging || cancelled) return;
 
       unsubscribe = onMessage(messaging, (payload) => {
-        console.log("[FCM] foreground payload", payload);
         showToast(buildToastMessage(payload), "info");
       });
     };

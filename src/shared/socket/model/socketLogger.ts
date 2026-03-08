@@ -1,17 +1,12 @@
 import { isChatSocketLogEnabled } from "./socketEnv";
 
-export function chatSocketLog(message: string, payload?: unknown) {
+export function chatSocketLog(_message: string, _payload?: unknown) {
   if (!isChatSocketLogEnabled()) return;
-  if (typeof payload === "undefined") {
-    console.log(message);
-    return;
-  }
-  console.log(message, payload);
 }
 
 export function resolveStompDebugLogger() {
   if (!isChatSocketLogEnabled()) return () => undefined;
-  return (message: string) => console.log("[chat-socket:stomp]", message);
+  return () => undefined;
 }
 
 export function chatSocketWarn(message: string, payload?: unknown) {
