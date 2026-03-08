@@ -1,11 +1,9 @@
-import styled from "@emotion/styled";
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
-import { css, keyframes } from "@emotion/react";
 
 import { cn } from "@/shared/lib";
-
 import { Icon } from "@/shared/ui/icon";
+
 import type { TaskItemModel } from "../model/taskModels";
 
 interface HomeTaskItemProps {
@@ -46,20 +44,26 @@ export function HomeTaskItem({
   }, [task.isCompleted]);
 
   return (
-    <Card
-      className={cn("text-ink-900", className)}
+    <article
+      className={cn(
+        "text-ink-900 relative z-[1] flex items-start gap-3",
+        variant === "list" ? "border-none bg-transparent pt-[10px] pb-[5px] pl-[5px]" : "bg-white",
+        variant === "card" && task.isFixedTime && "border-[#FF6D6D]",
+        variant === "card" && task.isCompleted && "text-gray-400",
+        className,
+      )}
       style={style}
-      $isCompleted={task.isCompleted}
-      $isFixedTime={task.isFixedTime}
-      $variant={variant}
     >
-      <Row>
-        <CompleteButton
+      <div className="flex w-full items-start gap-3">
+        <button
           type="button"
           aria-pressed={task.isCompleted}
           aria-label={task.isCompleted ? "완료됨" : "완료"}
           onClick={() => onToggleComplete(task.taskId)}
-          $animate={animateComplete}
+          className={cn(
+            "relative z-[1] shrink-0 cursor-pointer rounded-lg border-none bg-transparent p-0 text-xs font-semibold text-white",
+            animateComplete && "home-task-complete-pop-animate",
+          )}
         >
           <Icon
             name={task.isCompleted ? "todo_check" : "todo_unchecked"}
@@ -70,24 +74,39 @@ export function HomeTaskItem({
             )}
             aria-hidden
           />
-        </CompleteButton>
-        <Content>
-          <TitleRow>
-            <Title
-              $isCompleted={task.isCompleted}
-              $variant={variant}
-              $animateComplete={animateComplete}
+        </button>
+        <div className="flex min-w-0 flex-col gap-[7px] leading-4">
+          <div className="flex items-center gap-2">
+            <div
+              className={cn(
+                "relative text-base font-semibold no-underline",
+                task.isCompleted
+                  ? "home-task-title-completed text-gray-400"
+                  : variant === "list"
+                    ? "text-[#541e0f]"
+                    : "",
+                task.isCompleted && animateComplete && "home-task-title-strike-animate",
+              )}
             >
               {task.title}
-            </Title>
-            {task.isUrgent ? <UrgentBadge>중요</UrgentBadge> : null}
-          </TitleRow>
-          <MetaRow $variant={variant}>
-            <MetaValue>{timeValue}</MetaValue>
-          </MetaRow>
-        </Content>
-      </Row>
-    </Card>
+            </div>
+            {task.isUrgent ? (
+              <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-600">
+                중요
+              </span>
+            ) : null}
+          </div>
+          <div
+            className={cn(
+              "flex items-center gap-2 text-[13px]",
+              variant === "list" ? "text-[#b8aca4]" : "opacity-70",
+            )}
+          >
+            <span className="font-medium">{timeValue}</span>
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -102,147 +121,3 @@ function getTimeValue(task: TaskItemModel) {
 
   return EMPTY_TIME_TEXT;
 }
-
-const Card = styled.article<{
-  $isCompleted: boolean;
-  $isFixedTime: boolean;
-  $variant: "card" | "list";
-}>`
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  position: relative;
-  z-index: 1;
-  ${({ $variant }) =>
-    $variant === "list"
-      ? `
-    padding: 10px 0 5px 5px;
-    border-radius: 0;
-    border: none;
-    background: transparent;
-  `
-      : `
-    background: #ffffff;
-  `}
-  ${({ $isFixedTime, $variant }) =>
-    $variant === "card" && $isFixedTime ? "border-color: #FF6D6D;" : ""}
-  ${({ $isCompleted, $variant }) => ($variant === "card" && $isCompleted ? "color: #9ca3af;" : "")}
-`;
-
-const Row = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  width: 100%;
-`;
-
-const Content = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  line-height: 16px;
-  min-width: 0;
-`;
-
-const TitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const strikeIn = keyframes`
-  from {
-    transform: translateY(-50%) scaleX(0);
-  }
-  to {
-    transform: translateY(-50%) scaleX(1);
-  }
-`;
-
-const Title = styled.div<{
-  $isCompleted: boolean;
-  $variant: "card" | "list";
-  $animateComplete: boolean;
-}>`
-  font-size: 16px;
-  font-weight: 600;
-  color: ${({ $isCompleted, $variant }) =>
-    $isCompleted ? "#9ca3af" : $variant === "list" ? "#541e0f" : "inherit"};
-  position: relative;
-  text-decoration: none;
-  ${({ $isCompleted, $animateComplete }) =>
-    $isCompleted
-      ? css`
-          &::after {
-            content: "";
-            position: absolute;
-            left: 0;
-            right: 0;
-            top: 50%;
-            height: 1px;
-            background: currentColor;
-            transform: translateY(-50%) scaleX(1);
-            transform-origin: left center;
-            ${$animateComplete
-              ? css`
-                  animation: ${strikeIn} 240ms ease-out;
-                `
-              : ""}
-          }
-        `
-      : ""}
-`;
-
-const UrgentBadge = styled.span`
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: #fee2e2;
-  color: #dc2626;
-  font-size: 12px;
-  font-weight: 600;
-`;
-
-const MetaRow = styled.div<{ $variant: "card" | "list" }>`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: ${({ $variant }) => ($variant === "list" ? "#b8aca4" : "inherit")};
-  opacity: ${({ $variant }) => ($variant === "list" ? 1 : 0.7)};
-`;
-
-const MetaValue = styled.span`
-  font-weight: 500;
-`;
-
-const completePop = keyframes`
-  0% {
-    transform: scale(0.9);
-  }
-  45% {
-    transform: scale(1.08);
-  }
-  100% {
-    transform: scale(1);
-  }
-`;
-
-const CompleteButton = styled.button<{ $animate: boolean }>`
-  border: none;
-  padding: 0;
-  border-radius: 8px;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  background: transparent;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-  ${({ $animate }) =>
-    $animate
-      ? css`
-          animation: ${completePop} 260ms ease-out;
-        `
-      : ""}
-`;
