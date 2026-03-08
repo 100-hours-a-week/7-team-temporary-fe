@@ -17,7 +17,7 @@ import {
 } from "@/shared/form/ui";
 import { apiFetch, Endpoint } from "@/shared/api";
 import { useToast } from "@/shared/ui/toast";
-import { SplitText } from "@/shared/ui";
+import SplitText from "@/shared/ui/split-text";
 import { OnboardingQuestionLayout } from "@/widgets/auth";
 
 type EmailCheckStatus = "idle" | "loading" | "success" | "error";

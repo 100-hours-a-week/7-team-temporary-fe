@@ -1,4 +1,4 @@
-import { SplitText } from "@/shared/ui";
+import SplitText from "@/shared/ui/split-text";
 import { AnimatedStar } from "./AnimatedStar";
 
 export function StartStep() {
