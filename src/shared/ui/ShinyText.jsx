@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, useMotionValue, useAnimationFrame, useTransform } from "motion/react";
-import "./ShinyText.css";
 
 const ShinyText = ({
   text,
@@ -106,7 +105,7 @@ const ShinyText = ({
 
   return (
     <motion.span
-      className={`shiny-text ${className}`}
+      className={`inline-block ${className}`}
       style={{ ...gradientStyle, backgroundPosition }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
