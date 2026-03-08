@@ -3,9 +3,15 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 
-import { AppHeader, ReportSheet } from "@/widgets/app-header";
+import { AppHeader } from "@/widgets/app-header";
+
+const ReportSheet = dynamic(
+  () => import("@/widgets/app-header/ui/ReportSheet").then((m) => m.ReportSheet),
+  { ssr: false },
+);
 import { BottomNav, TabRoot, TabScope, useTab } from "@/widgets/tab-stack";
 import { StackPageRoot, StackPageScope, useStackPage } from "@/widgets/stack";
+import { HomePage } from "@/pages/home";
 
 interface TabPageProps {
   enabled?: boolean;
@@ -20,12 +26,6 @@ function TabPageFallback() {
   );
 }
 
-const HomePage = dynamic<TabPageProps>(
-  () => import("@/pages/home/HomePage").then((module) => module.HomePage),
-  {
-    loading: TabPageFallback,
-  },
-);
 const RetroPage = dynamic<TabPageProps>(
   () => import("@/pages/retro/RetroPage").then((module) => module.RetroPage),
   {
