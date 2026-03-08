@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/shared/lib";
 import { StackPageRoot, StackPageScope } from "@/widgets/stack";
+import "../../src/widgets/stack/ui/StackPageAnimations.css";
 
 interface AuthLayoutProps {
   children: ReactNode;

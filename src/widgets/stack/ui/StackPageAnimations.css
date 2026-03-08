@@ -1,0 +1,41 @@
+.stack-page-overlay {
+  animation: stack-page-slide-in 300ms ease-out;
+  animation-fill-mode: both;
+  will-change: transform;
+}
+
+.stack-page-overlay-exit {
+  animation: stack-page-slide-out 300ms ease-out;
+  animation-fill-mode: forwards;
+  pointer-events: none;
+}
+
+.stack-page-base {
+  transform: translateX(-40%);
+  transition: transform 240ms ease-out;
+}
+
+.stack-page-base-exit {
+  transform: translateX(0);
+  transition: transform 300ms ease-out;
+}
+
+@keyframes stack-page-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes stack-page-slide-out {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
