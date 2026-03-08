@@ -1,4 +1,5 @@
 import { useHomePlanStore, useDayPlanReflectionStatusQuery } from "@/entities/day-plan";
+import { useAuthStore } from "@/entities/user";
 import { useStackPage } from "@/widgets/stack";
 import { HomePlanner } from "@/widgets/home-planner";
 import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
@@ -8,6 +9,7 @@ interface HomePageProps {
 }
 
 export function HomePage({ enabled = true }: HomePageProps) {
+  const isAuthChecking = useAuthStore((state) => state.isAuthChecking);
   const { push } = useStackPage();
   const homeDate = useHomePlanStore((state) => state.date);
   const dayPlanId = useHomePlanStore((state) => state.dayPlanId);
@@ -43,7 +45,7 @@ export function HomePage({ enabled = true }: HomePageProps) {
   return (
     <div className="relative h-full pb-20">
       <HomePlanner
-        enabled={enabled}
+        enabled={enabled && !isAuthChecking}
         onWeeklyReportClick={handleOpenWeeklyReport}
       />
       <FloatingActionDock className="flex flex-col items-end gap-3">

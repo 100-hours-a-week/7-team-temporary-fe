@@ -43,14 +43,6 @@ export async function apiFetch<TResponse, TBody = unknown>(
     mergedHeaders.set("Authorization", bearerToken);
   }
 
-  if (authRequired) {
-    console.log("[apiFetch] authRequired request", {
-      url,
-      hasAccessToken: Boolean(accessToken),
-      accessTokenPreview: accessToken ? `${accessToken.slice(0, 8)}...` : null,
-    });
-  }
-
   const res = await fetch(url, {
     method,
     headers: mergedHeaders,
@@ -58,8 +50,6 @@ export async function apiFetch<TResponse, TBody = unknown>(
     signal,
     credentials: resolvedCredentials,
   });
-
-  console.log("[apiFetch] response received", res, { url, status: res.status });
 
   if (res.status === 204) {
     return undefined as TResponse;
@@ -74,7 +64,6 @@ export async function apiFetch<TResponse, TBody = unknown>(
       console.warn("[apiFetch] failed to parse JSON response", { url, status: res.status, error });
     }
   }
-  console.log(json);
 
   // HTTP 실패
   if (!res.ok) {

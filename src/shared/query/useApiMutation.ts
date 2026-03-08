@@ -68,7 +68,6 @@ export function useApiMutation<TForm, TDto, TResult = void>({
       }
     },
     onSuccess: (data) => {
-      console.log(data);
       invalidateKeys.forEach((key) => {
         queryClient.invalidateQueries({ queryKey: key });
       });

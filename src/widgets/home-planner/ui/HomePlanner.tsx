@@ -32,11 +32,6 @@ export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlanner
         });
         (window as any).__MOLIP_PROFILE_ENTRIES__ = currentEntries;
       }
-
-      if (process.env.NODE_ENV !== "development") return;
-      console.log(
-        `[Profiler:${id}] phase=${phase} actual=${actualDuration.toFixed(2)}ms base=${baseDuration.toFixed(2)}ms start=${startTime.toFixed(2)} commit=${commitTime.toFixed(2)}`,
-      );
     },
     [],
   );

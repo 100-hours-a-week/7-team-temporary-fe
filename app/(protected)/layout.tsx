@@ -4,9 +4,8 @@ import { useEffect } from "react";
 import type { ReactNode } from "react";
 
 import { useAuthStore } from "@/entities/user";
-import { FcmForegroundListener } from "@/shared/firebase/FcmForegroundListener";
-import { registerFcmToken } from "@/shared/firebase/registerFcmToken";
 import { chatStompSession } from "@/shared/socket";
+import { useToast } from "@/shared/ui/toast";
 
 interface ProtectedLayoutProps {
   children: ReactNode;
@@ -14,6 +13,7 @@ interface ProtectedLayoutProps {
 
 export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
   const accessToken = useAuthStore((state) => state.accessToken);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!accessToken) {
@@ -45,6 +45,8 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     let cancelled = false;
     const run = async () => {
       if (cancelled) return;
+      const { registerFcmToken } = await import("@/shared/firebase/registerFcmToken");
+      if (cancelled) return;
       await registerFcmToken({ promptPermission: false });
     };
 
@@ -55,10 +57,33 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     };
   }, [accessToken]);
 
-  return (
-    <>
-      <FcmForegroundListener />
-      {children}
-    </>
-  );
+  useEffect(() => {
+    let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
+
+    const run = async () => {
+      const [{ getFirebaseMessaging }, { onMessage }] = await Promise.all([
+        import("@/shared/firebase/firebase"),
+        import("firebase/messaging"),
+      ]);
+      const messaging = await getFirebaseMessaging();
+      if (!messaging || cancelled) return;
+
+      unsubscribe = onMessage(messaging, (payload) => {
+        const title = payload.data?.title ?? payload.notification?.title ?? "MOLIP";
+        const body =
+          payload.data?.content ?? payload.data?.body ?? payload.notification?.body ?? "";
+        showToast(body ? `${title} - ${body}` : title, "info");
+      });
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+      if (unsubscribe) unsubscribe();
+    };
+  }, [showToast]);
+
+  return <>{children}</>;
 }

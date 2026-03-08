@@ -11,21 +11,16 @@ export const PASSWORD_ERRORS = {
 
 export const getPasswordError = (value: string) => {
   if (!value) return PASSWORD_ERRORS.REQUIRED;
-  const length = value.length;
   if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(value)) {
-    console.log("[password] contains korean", { length });
     return PASSWORD_ERRORS.CONTAINS_KOREAN;
   }
   if (value.includes(" ")) {
-    console.log("[password] contains space", { length });
     return PASSWORD_ERRORS.CONTAINS_SPACE;
   }
-  if (length < 8 || length > 20) {
-    console.log("[password] invalid length", { length });
+  if (value.length < 8 || value.length > 20) {
     return PASSWORD_ERRORS.INVALID_LENGTH;
   }
   if (!PASSWORD_ALLOWED_CHAR_REGEX.test(value)) {
-    console.log("[password] invalid chars", { length });
     return PASSWORD_ERRORS.ALLOWED_CHARS;
   }
   const hasUppercase = /[A-Z]/.test(value);
@@ -33,12 +28,6 @@ export const getPasswordError = (value: string) => {
   const hasNumber = /[0-9]/.test(value);
   const hasSpecial = /[^A-Za-z0-9]/.test(value);
   if (!hasUppercase || !hasLowercase || !hasNumber || !hasSpecial) {
-    console.log("[password] missing required char types", {
-      hasUppercase,
-      hasLowercase,
-      hasNumber,
-      hasSpecial,
-    });
     return PASSWORD_ERRORS.CONTAINS_UPPERCASE;
   }
 

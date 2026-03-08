@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext } from "react";
 
 import { FormProvider } from "react-hook-form";
 
@@ -34,13 +34,6 @@ export function SignUpFormContainer({ children, onSuccess }: SignUpFormContainer
 
   useSignUpErrorEffect(mutation, form);
   useMutationErrorEffect(mutation);
-
-  useEffect(() => {
-    const subscription = form.watch((value, info) => {
-      console.log("[SignUpForm] change", { name: info.name, type: info.type, value });
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
 
   return (
     <SignUpFormContext.Provider value={form}>
