@@ -13,5 +13,4 @@ export * from "./search";
 export * from "./task-split";
 export * from "./dialogs/ConfirmDialog";
 export { DateSwapText } from "./DateSwapText";
-export { default as SplitText } from "./SplitText";
 export { default as ShinyText } from "./ShinyText";

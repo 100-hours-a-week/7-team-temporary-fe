@@ -8,7 +8,8 @@ import { Endpoint } from "@/shared/api";
 import { useApiQuery } from "@/shared/query";
 
 import type { SignUpFormModel } from "@/features/auth";
-import { Icon, SplitText } from "@/shared/ui";
+import { Icon } from "@/shared/ui";
+import SplitText from "@/shared/ui/split-text";
 import { OnboardingQuestionLayout } from "@/widgets/auth";
 
 const TERMS = [
