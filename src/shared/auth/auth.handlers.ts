@@ -6,6 +6,7 @@
  * 그래서 configureAuthHandlers로 실제 구현(entities/user)을 주입하고,
  * shared 코드는 getAccessToken/clearAuth 같은 인터페이스만 사용한다.
  */
+import { clearTokenFromSession, saveTokenToSession } from "./token.storage";
 export type AuthHandlers = {
   getAccessToken?: () => string | undefined;
   setAuthenticated?: (token: string) => void;
@@ -38,6 +39,7 @@ export function getAccessToken() {
  * 보통 refresh 이후 entity/user 스토어 갱신에 사용된다.
  */
 export function setAuthenticated(token: string) {
+  saveTokenToSession(token);
   handlers.setAuthenticated?.(token);
 }
 
@@ -53,5 +55,6 @@ export function setAuthUserId(userId: number) {
  * 로그아웃 또는 401 처리 시 user auth 상태 무효화에 사용된다.
  */
 export function clearAuth() {
+  clearTokenFromSession();
   handlers.clearAuth?.();
 }
