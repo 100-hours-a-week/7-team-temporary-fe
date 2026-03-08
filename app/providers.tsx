@@ -48,6 +48,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     const bootstrapAuth = async () => {
       try {
+        if (AuthService.restoreFromSession()) return;
         await AuthService.refresh();
       } catch (error) {
         if (!(error instanceof ApiError && error.httpStatus === 401)) {

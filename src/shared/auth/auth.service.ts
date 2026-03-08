@@ -1,5 +1,6 @@
 import { ApiError, apiFetch, Endpoint } from "@/shared/api";
 import { clearAuth, setAuthenticated } from "./auth.handlers";
+import { getStoredFreshToken } from "./token.storage";
 
 let refreshPromise: Promise<string> | null = null;
 
@@ -55,6 +56,13 @@ export const AuthService = {
         throw retryError;
       }
     }
+  },
+
+  restoreFromSession(): boolean {
+    const token = getStoredFreshToken();
+    if (!token) return false;
+    setAuthenticated(token);
+    return true;
   },
 
   async logout() {
