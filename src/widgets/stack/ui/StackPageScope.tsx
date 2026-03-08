@@ -12,6 +12,7 @@ import {
 } from "../model/constants";
 import { StackPageEntryContext, useStackPage } from "../model/stackPageContext";
 import { StackHeader } from "./StackHeader";
+import "./StackPageAnimations.css";
 
 interface StackPageScopeProps {
   children: ReactNode;

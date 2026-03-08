@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AppHeader, ReportSheet } from "@/widgets/app-header";
 import { BottomNav, TabRoot, TabScope, useTab } from "@/widgets/tab-stack";
 import { StackPageRoot, StackPageScope, useStackPage } from "@/widgets/stack";
+import "./AppShellRoute.css";
 
 interface TabPageProps {
   enabled?: boolean;
