@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
@@ -56,6 +57,7 @@
     "@babel/preset-typescript": "^7.28.5",
     "@commitlint/cli": "^20.3.1",
     "@commitlint/config-conventional": "^20.3.1",
+    "@next/bundle-analyzer": "^15.5.11",
     "@playwright/test": "^1.58.1",
     "@storybook/addon-a11y": "^10.2.1",
     "@storybook/addon-docs": "^10.2.1",
