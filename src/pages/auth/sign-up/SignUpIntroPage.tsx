@@ -26,7 +26,7 @@ export function SignUpIntroPage() {
 
   return (
     <SignUpFormContainer
-      onSuccess={(data) => {
+      onSuccess={(data, form) => {
         setSuppressPublicRedirect(true);
         if (typeof data.accessToken === "string" && data.accessToken.length > 0) {
           setAuthenticated(data.accessToken);
@@ -34,7 +34,14 @@ export function SignUpIntroPage() {
             console.warn("[FCM] token register failed after sign up", error);
           });
         }
-        push(<SignUpSuccessPage />);
+        push(
+          <SignUpSuccessPage
+            autoLoginCredential={{
+              email: form.email,
+              password: form.password,
+            }}
+          />,
+        );
       }}
     >
       <SignUpIntroContent />
