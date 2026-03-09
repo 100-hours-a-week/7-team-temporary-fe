@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/entities/user";
+import { useUserPreferencesStore } from "@/entities/user";
+import { useHomePlanStore } from "@/entities/day-plan";
+import { useAiArrangeNoticeStore } from "@/features/home";
 import { chatStompSession } from "@/shared/socket";
 import { useToast } from "@/shared/ui/toast";
 
@@ -14,6 +18,22 @@ interface ProtectedLayoutProps {
 export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
+  const prevAccessTokenRef = useRef<string | undefined>(accessToken);
+
+  useEffect(() => {
+    const prevAccessToken = prevAccessTokenRef.current;
+    if (prevAccessToken && !accessToken) {
+      queryClient.clear();
+      useHomePlanStore.getState().clearHomePlan();
+      useAiArrangeNoticeStore.getState().clearExcludedTitles();
+      useUserPreferencesStore.getState().setSchedulePreferences({
+        dayEndTime: null,
+        focusTimeZone: null,
+      });
+    }
+    prevAccessTokenRef.current = accessToken;
+  }, [accessToken, queryClient]);
 
   useEffect(() => {
     if (!accessToken) {
