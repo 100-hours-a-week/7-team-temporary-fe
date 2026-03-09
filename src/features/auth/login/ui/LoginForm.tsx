@@ -14,6 +14,7 @@ interface LoginFormProps {
   errorMessage: string | null;
   onSubmit: (event?: BaseSyntheticEvent) => void;
   onGoToSignUp?: () => void;
+  onPrepareSignUp?: () => void;
 }
 
 export function LoginForm({
@@ -23,6 +24,7 @@ export function LoginForm({
   errorMessage,
   onSubmit,
   onGoToSignUp,
+  onPrepareSignUp,
 }: LoginFormProps) {
   const emailError = errors.email?.message?.toString();
   const passwordError = errors.password?.message?.toString();
@@ -61,7 +63,10 @@ export function LoginForm({
         </p>
       )}
       <LoginButton isLoading={isSubmitting} />
-      <GoToSignUpButton onClick={onGoToSignUp} />
+      <GoToSignUpButton
+        onClick={onGoToSignUp}
+        onPrepare={onPrepareSignUp}
+      />
       <Link
         className="text-center text-sm text-gray-600 underline"
         href="/retro/public"
