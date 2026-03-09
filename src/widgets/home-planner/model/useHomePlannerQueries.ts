@@ -1,4 +1,7 @@
-import { useCurrentScheduleQuery, useDayPlanScheduleQuery } from "@/entities/day-plan-schedule";
+import {
+  useCurrentScheduleQuery,
+  useDayPlanScheduleQuery,
+} from "@/entities/day-plan-schedule-core";
 import { useDayPlanPeriodSchedulesQuery } from "@/entities/day-plan-presence";
 
 interface UseHomePlannerQueriesParams {

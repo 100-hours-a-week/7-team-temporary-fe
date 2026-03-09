@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
-import type { DayPlanScheduleListModel } from "@/entities/day-plan-schedule";
-import { toTaskItemModelFromHomeTask, type TaskItemModel } from "@/entities/day-plan-schedule";
+import {
+  toTaskItemModelFromHomeTask,
+  type DayPlanScheduleListModel,
+  type TaskItemModel,
+} from "@/entities/day-plan-schedule-core";
 
 interface UseMergedTasksParams {
   data?: DayPlanScheduleListModel;
