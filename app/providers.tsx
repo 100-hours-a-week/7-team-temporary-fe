@@ -2,16 +2,13 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ToastProvider } from "@/shared/ui/toast";
 import { ApiError } from "@/shared/api";
 import { AuthRouteWatcher } from "@/features/auth";
 import { AuthService, configureAuthHandlers } from "@/shared/auth";
 import { useAuthStore } from "@/entities/user";
 import { registerServiceWorker } from "@/shared/pwa/registerServiceWorker";
-import { useAiArrangeNoticeStore } from "@/features/home";
-import { useHomePlanStore } from "@/entities/day-plan";
-import { useUserPreferencesStore } from "@/entities/user";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -35,9 +32,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const accessToken = useAuthStore((state) => state.accessToken);
   const setAuthChecking = useAuthStore((state) => state.setAuthChecking);
-  const prevAccessTokenRef = useRef<string | undefined>(accessToken);
 
   useEffect(() => {
     registerServiceWorker();
@@ -67,20 +62,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [setAuthChecking]);
-
-  useEffect(() => {
-    const prevAccessToken = prevAccessTokenRef.current;
-    if (prevAccessToken && !accessToken) {
-      queryClient.clear();
-      useHomePlanStore.getState().clearHomePlan();
-      useAiArrangeNoticeStore.getState().clearExcludedTitles();
-      useUserPreferencesStore.getState().setSchedulePreferences({
-        dayEndTime: null,
-        focusTimeZone: null,
-      });
-    }
-    prevAccessTokenRef.current = accessToken;
-  }, [accessToken, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
