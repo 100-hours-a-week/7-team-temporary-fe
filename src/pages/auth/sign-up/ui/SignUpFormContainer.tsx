@@ -6,7 +6,7 @@ import { createContext, useContext } from "react";
 
 import { FormProvider } from "react-hook-form";
 
-import type { SignUpResult } from "@/features/auth";
+import type { SignUpFormModel, SignUpResult } from "@/features/auth";
 import { useSignUpForm, useSignUpMutation } from "@/features/auth";
 import { useMutationErrorEffect } from "@/shared/query";
 import { useSignUpErrorEffect } from "./useSignUpErrorEffect";
@@ -19,7 +19,7 @@ const SignUpFormContext = createContext<SignUpFormContextValue | null>(null);
 
 interface SignUpFormContainerProps {
   children: ReactNode;
-  onSuccess?: (data: SignUpResult) => void;
+  onSuccess?: (data: SignUpResult, form: SignUpFormModel) => void;
 }
 
 export function SignUpFormContainer({ children, onSuccess }: SignUpFormContainerProps) {
