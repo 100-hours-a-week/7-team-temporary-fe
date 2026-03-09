@@ -1,4 +1,4 @@
-import { WEEKDAY_LABELS } from "@/features/home";
+import { WEEKDAY_LABELS } from "@/features/home-core";
 
 export function formatDateToYmd(date: Date) {
   const year = date.getFullYear();
