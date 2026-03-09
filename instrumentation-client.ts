@@ -11,7 +11,8 @@ let sentryPromise: Promise<SentryModule> | null = null;
 
 function loadSentry() {
   if (!sentryPromise) {
-    sentryPromise = import("@sentry/nextjs");
+    // webpackPrefetch: false → Next.js가 자동으로 prefetch link를 추가하지 않음
+    sentryPromise = import(/* webpackPrefetch: false */ "@sentry/nextjs");
   }
   return sentryPromise;
 }
@@ -28,8 +29,13 @@ function initSentry() {
 }
 
 if (typeof window !== "undefined") {
-  // 초기 렌더 이후로 Sentry 초기화를 미뤄 메인 스레드 블로킹을 줄인다.
-  window.setTimeout(initSentry, 1500);
+  // requestIdleCallback: CPU가 한가할 때 실행 → LCP/FID에 영향 없음
+  // timeout: 5000ms → idle이 안 와도 5초 후엔 강제 실행
+  if (typeof requestIdleCallback !== "undefined") {
+    requestIdleCallback(() => initSentry(), { timeout: 5000 });
+  } else {
+    window.setTimeout(initSentry, 2000);
+  }
 }
 
 export function onRouterTransitionStart(...args: unknown[]) {
