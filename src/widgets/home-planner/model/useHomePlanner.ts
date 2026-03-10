@@ -4,7 +4,7 @@ import {
   dayPlanScheduleQueryKeys,
   toTaskItemModelFromHomeTask,
   type TaskItemModel,
-} from "@/entities/day-plan-schedule";
+} from "@/entities/day-plan-schedule-core";
 import { useHomePlanStore } from "@/entities/day-plan";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { formatDateToYmd } from "./date";
@@ -13,7 +13,7 @@ import { useHomePlannerQueries } from "./useHomePlannerQueries";
 import { useMergedTasks } from "./useMergedTasks";
 import { toHomeWeekPlanPresenceVM } from "./planPresenceViewModel";
 import { usePlannerStatus } from "./usePlannerStatus";
-import { useUpdateScheduleStatusMutation } from "@/features/home";
+import { useUpdateScheduleStatusMutation } from "@/features/schedule";
 
 const PAGE_SIZE = 10;
 

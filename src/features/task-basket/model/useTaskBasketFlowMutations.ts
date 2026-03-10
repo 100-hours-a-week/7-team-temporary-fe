@@ -1,10 +1,7 @@
 "use client";
 
-import {
-  useAiArrangeScheduleMutation,
-  useDeleteScheduleMutation,
-  useScheduleChildrenMutation,
-} from "../../model/useScheduleMutations";
+import { useAiArrangeScheduleMutation } from "@/features/ai-arrange";
+import { useDeleteScheduleMutation, useScheduleChildrenMutation } from "@/features/schedule";
 import type { InvalidateScheduleKeys } from "./useTaskBasketScheduleListQuery";
 
 interface UseTaskBasketFlowMutationsParams {

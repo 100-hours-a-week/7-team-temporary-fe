@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { TaskItemModel } from "@/entities/day-plan-schedule";
+import type { TaskItemModel } from "@/entities/day-plan-schedule-core";
 import { formatScheduleLabel } from "./date";
 
 interface PlannerStatusMessage {

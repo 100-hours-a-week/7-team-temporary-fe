@@ -1,4 +1,4 @@
-import { WEEKDAY_LABELS } from "@/features/home";
+import { WEEKDAY_LABELS } from "@/shared/lib";
 
 export function WeekdayLabels() {
   return (
