@@ -1,10 +1,11 @@
 import type { ChatMessageSenderType, ChatMessageType, ChatRoomType } from "../api";
 
-/** ChatRoomList UI에서 사용하는 뷰 모델 (REST + WebSocket 병합) */
+/** 그룹 채팅방(OPEN_CHAT) 목록 뷰 모델 (REST + WebSocket 병합) */
 export interface ChatRoomListItemVM {
   roomId: number;
-  type: ChatRoomType;
   title: string;
+  description: string;
+  maxParticipants: number;
   participantsCount: number;
   /** WebSocket 수신 전이면 undefined */
   lastMessage?: string;
