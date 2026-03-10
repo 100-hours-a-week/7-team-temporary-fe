@@ -2,9 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { camStudyRoomQueryKeys, useCamStudyRoomListQuery } from "@/entities/cam-study-room";
+import {
+  camStudyRoomQueryKeys,
+  getCamStudyStatus,
+  useCamStudyRoomListQuery,
+} from "@/entities/cam-study-room";
 import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room";
 import { usePaginatedAccumulator, useInfiniteScrollTrigger } from "@/shared/hooks";
+import { useToast } from "@/shared/ui/toast";
 import { useStackPage } from "@/widgets/stack";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -15,13 +20,25 @@ const CAM_STUDY_LIST_SIZE = 10;
 
 interface CamStudySectionProps {
   enabled: boolean;
-  onRoomClick: (roomId: number) => void;
+  onRoomClick: (room: CamStudyRoomListItemVM) => void;
   scrollRef: React.RefObject<HTMLElement | null>;
 }
 
 export function CamStudySection({ enabled, onRoomClick, scrollRef }: CamStudySectionProps) {
   const { depth } = useStackPage();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  const handleRoomClick = useCallback(
+    (room: CamStudyRoomListItemVM) => {
+      if (getCamStudyStatus(room).key === "FULL") {
+        showToast("정원이 가득 차 입장할 수 없습니다.", "error");
+        return;
+      }
+      onRoomClick(room);
+    },
+    [onRoomClick, showToast],
+  );
   const [currentPage, setCurrentPage] = useState(CAM_STUDY_LIST_PAGE);
   const previousStackDepthRef = useRef(depth);
 
@@ -101,7 +118,7 @@ export function CamStudySection({ enabled, onRoomClick, scrollRef }: CamStudySec
       {!isInitialLoading && !isError ? (
         <CamStudyRoomList
           items={rooms}
-          onRoomClick={onRoomClick}
+          onRoomClick={handleRoomClick}
         />
       ) : null}
 

@@ -5,7 +5,7 @@ import { CamStudyRoomListItem } from "./CamStudyRoomListItem";
 
 interface CamStudyRoomListProps {
   items: CamStudyRoomListItemVM[];
-  onRoomClick: (roomId: number) => void;
+  onRoomClick: (room: CamStudyRoomListItemVM) => void;
 }
 
 export function CamStudyRoomList({ items, onRoomClick }: CamStudyRoomListProps) {

@@ -9,6 +9,7 @@ import { Icon } from "@/shared/ui/icon";
 import { SearchBar } from "@/shared/ui/search";
 import { useStackPage } from "@/widgets/stack";
 import { useChatSearchStackHeader, useChatSearchStackPageModel } from "../model";
+import { CamStudyRoomStackPage } from "./CamStudyRoomStackPage";
 import { CreateChatRoomStackPage } from "./CreateChatRoomStackPage";
 import { ChatRoomStackPage } from "./ChatRoomStackPage";
 
@@ -18,8 +19,23 @@ export function ChatSearchStackPage() {
     push(<CreateChatRoomStackPage />);
   }, [push]);
   const handleOpenChatRoom = useCallback(
-    (roomId: number) => {
-      replace(<ChatRoomStackPage roomId={roomId} />);
+    (room: ChatRoomSearchItemVM) => {
+      if (room.type === "CAM_STUDY") {
+        replace(
+          <CamStudyRoomStackPage
+            roomId={room.roomId}
+            initialTitle={room.title}
+            initialSummary={{
+              activeCamParticipantsCount: room.participantsCount,
+              participantsCount: room.participantsCount,
+              maxParticipants: room.maxParticipants,
+            }}
+          />,
+        );
+        return;
+      }
+
+      replace(<ChatRoomStackPage roomId={room.roomId} />);
     },
     [replace],
   );
