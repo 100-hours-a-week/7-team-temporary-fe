@@ -1,11 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 
-import {
-  addDays,
-  DAYS_IN_WEEK,
-  getRepresentativeMonthIndex,
-  toStartOfWeek,
-} from "@/features/home-core";
+import { addDays, DAYS_IN_WEEK, getRepresentativeMonthIndex, toStartOfWeek } from "@/shared/lib";
 
 interface UseHomePlannerCalendarResult {
   today: Date;
