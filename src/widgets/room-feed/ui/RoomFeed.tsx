@@ -57,15 +57,13 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
         />
       )}
 
-      {isGroupChatSection && (
-        <FloatingActionDock>
-          <FloatingActionButton
-            icon="chat_single"
-            label="채팅방 찾기"
-            onClick={onChatSearchClick}
-          />
-        </FloatingActionDock>
-      )}
+      <FloatingActionDock>
+        <FloatingActionButton
+          icon="chat_single"
+          label="방 찾기"
+          onClick={onChatSearchClick}
+        />
+      </FloatingActionDock>
     </section>
   );
 }
