@@ -1,4 +1,6 @@
 import { ChatRoomStackPage } from "./ui/ChatRoomStackPage";
+import { CamStudyRoomStackPage } from "./ui/CamStudyRoomStackPage";
+import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room";
 import { ChatSearchStackPage } from "./ui/ChatSearchStackPage";
 import { RoomFeed } from "@/widgets/room-feed";
 import { useStackPage } from "@/widgets/stack";
@@ -18,10 +20,25 @@ export function RoomPage({ enabled = true }: RoomPageProps) {
     push(<ChatRoomStackPage roomId={id} />);
   };
 
+  const handleOpenCamStudyRoom = (room: CamStudyRoomListItemVM) => {
+    push(
+      <CamStudyRoomStackPage
+        roomId={room.roomId}
+        initialTitle={room.title}
+        initialSummary={{
+          activeCamParticipantsCount: room.participantsCount,
+          participantsCount: room.participantsCount,
+          maxParticipants: room.maxParticipants,
+        }}
+      />,
+    );
+  };
+
   return (
     <RoomFeed
       enabled={enabled}
       onChatRoomClick={handleOpenChatRoom}
+      onCamStudyRoomClick={handleOpenCamStudyRoom}
       onChatSearchClick={handleOpenChatSearch}
     />
   );
