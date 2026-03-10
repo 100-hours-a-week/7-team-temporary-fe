@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 
-import type { ChatRoomSummaryDto } from "@/entities/chat-room";
+import type { ChatRoomSearchItemVM, ChatRoomType } from "@/entities/chat-room";
 import { ConfirmDialog } from "@/shared/ui";
 import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 import { Icon } from "@/shared/ui/icon";
@@ -80,7 +80,7 @@ export function ChatSearchStackPage() {
       <FloatingActionDock offsetClassName="bottom-[30px]">
         <FloatingActionButton
           icon="plus"
-          label="채팅방 생성"
+          label="방 생성"
           onClick={handleOpenCreateChatRoom}
         />
       </FloatingActionDock>
@@ -124,11 +124,30 @@ export function ChatSearchStackPage() {
 }
 
 interface ChatSearchRoomItemProps {
-  room: ChatRoomSummaryDto;
-  onClick: (room: ChatRoomSummaryDto) => void;
+  room: ChatRoomSearchItemVM;
+  onClick: (room: ChatRoomSearchItemVM) => void;
 }
 
+const CHAT_ROOM_TYPE_BADGE: Record<
+  ChatRoomType,
+  {
+    label: string;
+    className: string;
+  }
+> = {
+  OPEN_CHAT: {
+    label: "오픈채팅방",
+    className: "bg-ink-300",
+  },
+  CAM_STUDY: {
+    label: "캠 스터디방",
+    className: "bg-ink-300",
+  },
+};
+
 function ChatSearchRoomItem({ room, onClick }: ChatSearchRoomItemProps) {
+  const roomTypeBadge = CHAT_ROOM_TYPE_BADGE[room.type] ?? CHAT_ROOM_TYPE_BADGE.OPEN_CHAT;
+
   return (
     <button
       type="button"
@@ -149,7 +168,14 @@ function ChatSearchRoomItem({ room, onClick }: ChatSearchRoomItemProps) {
         </span>
       </div>
 
-      <p className="mt-2 truncate text-[14px] text-neutral-500">{room.description}</p>
+      <div className="mt-2 flex items-end justify-between gap-3">
+        <p className="min-w-0 flex-1 truncate text-[14px] text-neutral-500">{room.description}</p>
+        <span
+          className={`inline-flex shrink-0 items-center rounded-full border border-white/20 px-2 py-0.5 text-[11px] font-medium text-white ${roomTypeBadge.className}`}
+        >
+          {roomTypeBadge.label}
+        </span>
+      </div>
     </button>
   );
 }
