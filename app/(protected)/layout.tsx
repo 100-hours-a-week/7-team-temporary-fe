@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/entities/user";
 import { useUserPreferencesStore } from "@/entities/user";
 import { useHomePlanStore } from "@/entities/day-plan";
-import { useAiArrangeNoticeStore } from "@/features/home";
+import { useAiArrangeNoticeStore } from "@/features/ai-arrange";
 import { chatStompSession } from "@/shared/socket";
 import { useToast } from "@/shared/ui/toast";
 

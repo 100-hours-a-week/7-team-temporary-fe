@@ -13,7 +13,7 @@ import { useHomePlannerQueries } from "./useHomePlannerQueries";
 import { useMergedTasks } from "./useMergedTasks";
 import { toHomeWeekPlanPresenceVM } from "./planPresenceViewModel";
 import { usePlannerStatus } from "./usePlannerStatus";
-import { useUpdateScheduleStatusMutation } from "@/features/home-core";
+import { useUpdateScheduleStatusMutation } from "@/features/schedule";
 
 const PAGE_SIZE = 10;
 

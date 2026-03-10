@@ -2,11 +2,8 @@
 
 import { useCallback } from "react";
 
-import type {
-  useAiArrangeScheduleMutation,
-  useDeleteScheduleMutation,
-  useScheduleChildrenMutation,
-} from "../../model/useScheduleMutations";
+import type { useAiArrangeScheduleMutation } from "@/features/ai-arrange";
+import type { useDeleteScheduleMutation, useScheduleChildrenMutation } from "@/features/schedule";
 import { ApiError } from "@/shared/api";
 import type { ToastType } from "@/shared/ui/toast";
 import {
