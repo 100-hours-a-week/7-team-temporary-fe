@@ -3,14 +3,13 @@ import type {
   ChatMessageType as ChatMessageContractType,
 } from "@/shared/model";
 
-export type ChatRoomType = "OPEN_CHAT" | "CAM_STUDY";
+export type ChatRoomType = "OPEN_CHAT";
 export type ChatMessageType = ChatMessageContractType;
 export type ChatMessageSenderType = ChatMessageSenderContractType;
 
-/** GET /chat-rooms?title=&page=&size= 응답 content 항목 (목록 임시 사용) */
+/** GET /chat-rooms/participants?type=OPEN_CHAT 응답 content 항목 */
 export interface ChatRoomSummaryDto {
   roomId: number;
-  type: ChatRoomType;
   title: string;
   description: string;
   maxParticipants: number;

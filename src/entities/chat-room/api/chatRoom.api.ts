@@ -5,12 +5,10 @@ import type {
   ChatRoomDetailDto,
   ChatMessageListResponseDto,
   ChatRoomListResponseDto,
-  ChatRoomType,
   ChatRoomOwnerStatusDto,
 } from "./types";
 
 interface FetchChatRoomListParams {
-  type: ChatRoomType;
   page?: number;
   size?: number;
   signal?: AbortSignal;
@@ -23,25 +21,16 @@ interface FetchChatRoomSearchListParams {
   signal?: AbortSignal;
 }
 
-function toChatRoomListSearchParams({
-  type,
-  page = 1,
-  size = 10,
-}: {
-  type: ChatRoomType;
-  page?: number;
-  size?: number;
-}) {
-  return new URLSearchParams({ type, page: String(page), size: String(size) });
-}
-
 export async function fetchChatRoomList({
-  type,
   page = 1,
   size = 10,
   signal,
 }: FetchChatRoomListParams): Promise<ChatRoomListResponseDto> {
-  const searchParams = toChatRoomListSearchParams({ type, page, size });
+  const searchParams = new URLSearchParams({
+    type: "OPEN_CHAT",
+    page: String(page),
+    size: String(size),
+  });
 
   return apiFetch<ChatRoomListResponseDto>(
     `${Endpoint.CHAT_ROOMS.PARTICIPANTS}?${searchParams.toString()}`,

@@ -18,8 +18,9 @@ function toChatRoomListItemVM(dto: ChatRoomSummaryDto): ChatRoomListItemVM {
 
   return {
     roomId: dto.roomId,
-    type: dto.type,
     title: dto.title,
+    description: dto.description,
+    maxParticipants: dto.maxParticipants,
     participantsCount: dto.participantsCount,
     lastMessage,
     lastMessageAt,
