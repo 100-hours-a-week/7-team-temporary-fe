@@ -29,6 +29,7 @@ export {
   useChatRoomOwnerStatusQuery,
   useChatRoomRealtime,
   useGroupChatRoomListQuery,
+  useChatRoomSearchListQuery,
 } from "./model";
 export type {
   ChatRoomDetailModel,
@@ -37,5 +38,7 @@ export type {
   ChatMessageListModel,
   ChatRoomListItemVM,
   ChatRoomListModel,
+  ChatRoomSearchItemVM,
+  ChatRoomSearchListModel,
 } from "./model";
 export * from "./ui";

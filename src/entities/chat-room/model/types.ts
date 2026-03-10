@@ -3,6 +3,7 @@ import type { ChatMessageSenderType, ChatMessageType, ChatRoomType } from "../ap
 /** 그룹 채팅방(OPEN_CHAT) 목록 뷰 모델 (REST + WebSocket 병합) */
 export interface ChatRoomListItemVM {
   roomId: number;
+  type: ChatRoomType;
   title: string;
   description: string;
   maxParticipants: number;
@@ -16,6 +17,23 @@ export interface ChatRoomListItemVM {
 
 export interface ChatRoomListModel {
   content: ChatRoomListItemVM[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface ChatRoomSearchItemVM {
+  roomId: number;
+  type: ChatRoomType;
+  title: string;
+  description: string;
+  maxParticipants: number;
+  participantsCount: number;
+}
+
+export interface ChatRoomSearchListModel {
+  content: ChatRoomSearchItemVM[];
   page: number;
   size: number;
   totalElements: number;
