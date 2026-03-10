@@ -9,7 +9,7 @@ export function CreateChatRoomStackPage() {
   const { replace, setHeaderContent, setHeaderRightContent } = useStackPage();
 
   useEffect(() => {
-    setHeaderContent(<span className="text-[18px] font-semibold text-black">채팅방 생성</span>);
+    setHeaderContent(<span className="text-[18px] font-semibold text-black">방 생성</span>);
     setHeaderRightContent(null);
     return () => {
       setHeaderContent(null);

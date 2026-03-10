@@ -1,13 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 
-import {
-  chatRoomQueryKeys,
-  fetchChatRoomSearchList,
-  type ChatRoomSummaryDto,
-} from "@/entities/chat-room";
+import { type ChatRoomSearchItemVM, useChatRoomSearchListQuery } from "@/entities/chat-room";
 import { useAuthStore } from "@/entities/user";
 import { useJoinChatRoomMutation } from "@/features/chat-room-join";
 import { useToast } from "@/shared/ui/toast";
@@ -27,7 +22,7 @@ interface UseChatSearchStackPageModelOptions {
 
 export function useChatSearchStackPageModel({ onJoinSuccess }: UseChatSearchStackPageModelOptions) {
   const [keyword, setKeyword] = useState("");
-  const [selectedRoom, setSelectedRoom] = useState<ChatRoomSummaryDto | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<ChatRoomSearchItemVM | null>(null);
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const accessToken = useAuthStore((state) => state.accessToken);
   const participantId = useMemo(
@@ -38,20 +33,15 @@ export function useChatSearchStackPageModel({ onJoinSuccess }: UseChatSearchStac
   const { showToast } = useToast();
 
   const normalizedKeyword = keyword.trim();
-  const searchListQuery = useQuery({
-    queryKey: chatRoomQueryKeys.search(normalizedKeyword, CHAT_SEARCH_PAGE, CHAT_SEARCH_SIZE),
-    queryFn: ({ signal }) =>
-      fetchChatRoomSearchList({
-        title: normalizedKeyword,
-        page: CHAT_SEARCH_PAGE,
-        size: CHAT_SEARCH_SIZE,
-        signal,
-      }),
+  const searchListQuery = useChatRoomSearchListQuery({
+    title: normalizedKeyword,
+    page: CHAT_SEARCH_PAGE,
+    size: CHAT_SEARCH_SIZE,
     refetchOnMount: "always",
   });
   const filteredRooms = searchListQuery.data?.content ?? [];
 
-  const handleOpenRoomDialog = useCallback((room: ChatRoomSummaryDto) => {
+  const handleOpenRoomDialog = useCallback((room: ChatRoomSearchItemVM) => {
     setSelectedRoom(room);
     setIsJoinDialogOpen(true);
   }, []);
