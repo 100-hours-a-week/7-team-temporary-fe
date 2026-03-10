@@ -17,7 +17,7 @@ import {
 } from "./chatSearch.utils";
 
 interface UseChatSearchStackPageModelOptions {
-  onJoinSuccess: (roomId: number) => void;
+  onJoinSuccess: (room: ChatRoomSearchItemVM) => void;
 }
 
 export function useChatSearchStackPageModel({ onJoinSuccess }: UseChatSearchStackPageModelOptions) {
@@ -69,7 +69,7 @@ export function useChatSearchStackPageModel({ onJoinSuccess }: UseChatSearchStac
         roomId: selectedRoom.roomId,
         participantId,
       });
-      onJoinSuccess(selectedRoom.roomId);
+      onJoinSuccess(selectedRoom);
       setIsJoinDialogOpen(false);
       setSelectedRoom(null);
     } catch (error) {
