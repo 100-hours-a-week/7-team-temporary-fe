@@ -1,25 +1,15 @@
 import { getCamStudyStatus } from "@/entities/cam-study-room";
 import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room";
 import { Icon } from "@/shared/ui/icon";
-import { useToast } from "@/shared/ui/toast";
 
 interface CamStudyRoomListItemProps {
   item: CamStudyRoomListItemVM;
-  onClick: (roomId: number) => void;
+  onClick: (room: CamStudyRoomListItemVM) => void;
 }
 
 export function CamStudyRoomListItem({ item, onClick }: CamStudyRoomListItemProps) {
-  const { showToast } = useToast();
   const status = getCamStudyStatus(item);
-  const isDisabled = status.key === "INACTIVE";
-
-  const handleClick = () => {
-    if (status.key === "FULL") {
-      showToast("정원이 가득 차 입장할 수 없습니다.", "error");
-      return;
-    }
-    onClick(item.roomId);
-  };
+  const isDisabled = status.key === "INACTIVE" || status.key === "FULL";
 
   return (
     <button
@@ -29,7 +19,7 @@ export function CamStudyRoomListItem({ item, onClick }: CamStudyRoomListItemProp
           ? "cursor-not-allowed border-neutral-200 bg-neutral-50"
           : "border-neutral-200 bg-white"
       }`}
-      onClick={handleClick}
+      onClick={() => onClick(item)}
       disabled={isDisabled}
     >
       <div className="flex items-center justify-between gap-3">

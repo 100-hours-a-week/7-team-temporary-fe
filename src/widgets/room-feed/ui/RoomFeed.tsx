@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 
+import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room";
 import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
 
@@ -23,14 +24,21 @@ const ROOM_TABS: ReadonlyArray<SectionTab<RoomSection>> = [
 interface RoomFeedProps {
   enabled?: boolean;
   onChatRoomClick?: (roomId: number) => void;
+  onCamStudyRoomClick?: (room: CamStudyRoomListItemVM) => void;
   onChatSearchClick?: () => void;
 }
 
-export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }: RoomFeedProps) {
+export function RoomFeed({
+  enabled = true,
+  onChatRoomClick,
+  onCamStudyRoomClick,
+  onChatSearchClick,
+}: RoomFeedProps) {
   const [activeSection, setActiveSection] = useState<RoomSection>(ROOM_SECTION.GROUP_CHAT);
   const scrollRef = useRef<HTMLElement>(null);
   const isGroupChatSection = activeSection === ROOM_SECTION.GROUP_CHAT;
   const handleRoomClick = onChatRoomClick ?? (() => undefined);
+  const handleCamStudyRoomClick = onCamStudyRoomClick ?? (() => undefined);
 
   return (
     <section
@@ -52,7 +60,7 @@ export function RoomFeed({ enabled = true, onChatRoomClick, onChatSearchClick }:
       ) : (
         <CamStudySection
           enabled={enabled}
-          onRoomClick={handleRoomClick}
+          onRoomClick={handleCamStudyRoomClick}
           scrollRef={scrollRef}
         />
       )}
