@@ -1,18 +1,18 @@
 "use client";
 
-import { useLayoutEffect, useMemo } from "react";
+import { useLayoutEffect } from "react";
 
-import { useChatRoomDetailQuery } from "@/entities/chat-room";
 import { useStackPage } from "@/widgets/stack";
+
+import { useCamStudyRoomStackPageModel } from "../model/useCamStudyRoomStackPageModel";
+import type { CamStudyRoomSummary } from "../model/camStudyRoom.types";
+import { CamStudyControlDock } from "./CamStudyControlDock";
+import { CamStudyParticipantGrid } from "./CamStudyParticipantGrid";
 
 interface CamStudyRoomStackPageProps {
   roomId: number;
   initialTitle?: string;
-  initialSummary?: {
-    activeCamParticipantsCount: number;
-    participantsCount: number;
-    maxParticipants: number;
-  };
+  initialSummary?: CamStudyRoomSummary;
 }
 
 export function CamStudyRoomStackPage({
@@ -21,36 +21,15 @@ export function CamStudyRoomStackPage({
   initialSummary,
 }: CamStudyRoomStackPageProps) {
   const { setHeaderContent, setHeaderRightContent } = useStackPage();
-  const chatRoomDetailQuery = useChatRoomDetailQuery({ roomId });
-
-  const roomTitle = useMemo(
-    () => chatRoomDetailQuery.data?.title?.trim() || initialTitle || "캠 스터디방",
-    [chatRoomDetailQuery.data?.title, initialTitle],
-  );
-
-  const summaryText = useMemo(() => {
-    const detail = chatRoomDetailQuery.data;
-    if (detail?.type === "CAM_STUDY") {
-      const seenUserIds = new Set<number>();
-      let activeCamParticipantsCount = 0;
-
-      const includeMember = (member: { userId: number; cameraEnabled: boolean }) => {
-        if (seenUserIds.has(member.userId)) return;
-        seenUserIds.add(member.userId);
-        if (member.cameraEnabled) {
-          activeCamParticipantsCount += 1;
-        }
-      };
-
-      includeMember(detail.owner);
-      detail.participants.forEach(includeMember);
-
-      return `${activeCamParticipantsCount}명 공부중 ${detail.participantsCount}/${detail.maxParticipants}`;
-    }
-
-    if (!initialSummary) return null;
-    return `${initialSummary.activeCamParticipantsCount}명 공부중 ${initialSummary.participantsCount}/${initialSummary.maxParticipants}`;
-  }, [chatRoomDetailQuery.data, initialSummary]);
+  const {
+    roomTitle,
+    summaryCounts,
+    participants,
+    isMyCameraEnabled,
+    isControlMenuOpen,
+    handleToggleControlMenu,
+    handleToggleMyCamera,
+  } = useCamStudyRoomStackPageModel({ roomId, initialTitle, initialSummary });
 
   useLayoutEffect(() => {
     setHeaderContent(<span className="text-[18px] font-semibold text-black">{roomTitle}</span>);
@@ -63,13 +42,19 @@ export function CamStudyRoomStackPage({
 
   return (
     <section className="scrollbar-hide h-full overflow-y-auto px-6 pt-4 pb-[90px]">
-      {summaryText ? (
-        <p className="text-[15px] font-semibold text-neutral-800">{summaryText}</p>
-      ) : null}
+      <p className="text-[15px] font-semibold text-neutral-800">
+        <span className="text-primary-500">{summaryCounts.activeCamParticipantsCount}명</span>{" "}
+        공부중 {summaryCounts.participantsCount}/{summaryCounts.maxParticipants}
+      </p>
 
-      <div className="mt-3 rounded-2xl border border-neutral-200 bg-white px-4 py-5 text-sm text-neutral-500">
-        캠 스터디방 전용 화면 구성 중입니다.
-      </div>
+      <CamStudyParticipantGrid participants={participants} />
+
+      <CamStudyControlDock
+        isCameraEnabled={isMyCameraEnabled}
+        isMenuOpen={isControlMenuOpen}
+        onToggleMenu={handleToggleControlMenu}
+        onToggleCamera={handleToggleMyCamera}
+      />
     </section>
   );
 }
