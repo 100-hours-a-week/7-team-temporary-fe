@@ -7,7 +7,7 @@ function toCamStudyRoomListItemVM(dto: CamStudyRoomSummaryDto): CamStudyRoomList
     roomId: dto.roomId,
     title: dto.title,
     description: dto.description,
-    serverActive: dto.serverActive,
+    serverActive: dto.serverActive ?? true,
     maxParticipants: dto.maxParticipants,
     participantsCount: dto.participantsCount,
   };

@@ -22,7 +22,12 @@ export function CreateChatRoomStackPage() {
     <CreateChatRoomForm
       onCreated={({ roomId, participantId }, type) => {
         if (type === "CAM_STUDY") {
-          replace(<CamStudyRoomStackPage roomId={roomId} />);
+          replace(
+            <CamStudyRoomStackPage
+              roomId={roomId}
+              initialParticipantId={participantId}
+            />,
+          );
           return;
         }
 

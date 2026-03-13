@@ -1,4 +1,5 @@
 export { getCamStudyStatus } from "./camStudyStatus";
+export { useLiveKitSession } from "./useLiveKitSession";
 export { toCamStudyRoomListModel } from "./camStudyRoomList.mapper";
 export { camStudyRoomQueryKeys } from "./queryKeys";
 export { useCamStudyRoomListQuery } from "./useCamStudyRoomListQuery";

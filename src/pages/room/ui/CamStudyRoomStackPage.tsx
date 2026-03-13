@@ -15,12 +15,14 @@ interface CamStudyRoomStackPageProps {
   roomId: number;
   initialTitle?: string;
   initialSummary?: CamStudyRoomSummary;
+  initialParticipantId?: number;
 }
 
 export function CamStudyRoomStackPage({
   roomId,
   initialTitle,
   initialSummary,
+  initialParticipantId,
 }: CamStudyRoomStackPageProps) {
   const { push, setHeaderContent, setHeaderRightContent } = useStackPage();
   const {
@@ -29,9 +31,16 @@ export function CamStudyRoomStackPage({
     participants,
     isMyCameraEnabled,
     isControlMenuOpen,
+    localVideoTrack,
+    remoteVideoTracks,
     handleToggleControlMenu,
     handleToggleMyCamera,
-  } = useCamStudyRoomStackPageModel({ roomId, initialTitle, initialSummary });
+  } = useCamStudyRoomStackPageModel({
+    roomId,
+    initialTitle,
+    initialSummary,
+    initialParticipantId,
+  });
 
   useLayoutEffect(() => {
     setHeaderContent(<span className="text-[18px] font-semibold text-black">{roomTitle}</span>);
@@ -57,7 +66,11 @@ export function CamStudyRoomStackPage({
         공부중 {summaryCounts.participantsCount}/{summaryCounts.maxParticipants}
       </p>
 
-      <CamStudyParticipantGrid participants={participants} />
+      <CamStudyParticipantGrid
+        participants={participants}
+        localVideoTrack={localVideoTrack}
+        remoteVideoTracks={remoteVideoTracks}
+      />
 
       <CamStudyControlDock
         isCameraEnabled={isMyCameraEnabled}
