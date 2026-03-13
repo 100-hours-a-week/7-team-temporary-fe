@@ -1,3 +1,6 @@
+import { useEffect, useRef } from "react";
+import type { LocalVideoTrack, RemoteVideoTrack } from "livekit-client";
+
 import { cn } from "@/shared/lib";
 import { Icon } from "@/shared/ui/icon";
 
@@ -5,9 +8,15 @@ import type { CamStudyParticipantVM } from "../model/camStudyRoom.types";
 
 interface CamStudyParticipantGridProps {
   participants: CamStudyParticipantVM[];
+  localVideoTrack: LocalVideoTrack | null;
+  remoteVideoTracks: Map<string, RemoteVideoTrack>;
 }
 
-export function CamStudyParticipantGrid({ participants }: CamStudyParticipantGridProps) {
+export function CamStudyParticipantGrid({
+  participants,
+  localVideoTrack,
+  remoteVideoTracks,
+}: CamStudyParticipantGridProps) {
   return (
     <ul className="mt-3 grid grid-cols-3 gap-3 pb-24 sm:grid-cols-4">
       {participants.map((participant) => (
@@ -15,14 +24,26 @@ export function CamStudyParticipantGrid({ participants }: CamStudyParticipantGri
           key={`${participant.role}-${participant.userId}`}
           className="overflow-hidden rounded-2xl"
         >
-          <ParticipantCell participant={participant} />
+          <ParticipantCell
+            participant={participant}
+            localVideoTrack={localVideoTrack}
+            remoteVideoTracks={remoteVideoTracks}
+          />
         </li>
       ))}
     </ul>
   );
 }
 
-function ParticipantCell({ participant }: { participant: CamStudyParticipantVM }) {
+function ParticipantCell({
+  participant,
+  localVideoTrack,
+  remoteVideoTracks,
+}: {
+  participant: CamStudyParticipantVM;
+  localVideoTrack: LocalVideoTrack | null;
+  remoteVideoTracks: Map<string, RemoteVideoTrack>;
+}) {
   if (!participant.cameraEnabled) {
     return (
       <div className="flex aspect-square flex-col items-center justify-center gap-2 px-2">
@@ -38,6 +59,10 @@ function ParticipantCell({ participant }: { participant: CamStudyParticipantVM }
     );
   }
 
+  const track = participant.isMe
+    ? localVideoTrack
+    : (remoteVideoTracks.get(String(participant.userId)) ?? null);
+
   return (
     <div
       className={cn(
@@ -46,7 +71,10 @@ function ParticipantCell({ participant }: { participant: CamStudyParticipantVM }
       )}
     >
       {participant.screenVisible ? (
-        <ActiveCamScreen participant={participant} />
+        <ActiveCamScreen
+          participant={participant}
+          track={track}
+        />
       ) : (
         <CamOnScreenOff participant={participant} />
       )}
@@ -54,10 +82,21 @@ function ParticipantCell({ participant }: { participant: CamStudyParticipantVM }
   );
 }
 
-function ActiveCamScreen({ participant }: { participant: CamStudyParticipantVM }) {
+function ActiveCamScreen({
+  participant,
+  track,
+}: {
+  participant: CamStudyParticipantVM;
+  track: LocalVideoTrack | RemoteVideoTrack | null;
+}) {
   return (
     <>
-      {participant.profileImageUrl ? (
+      {track ? (
+        <VideoTrackRenderer
+          track={track}
+          label={`${participant.nickname} 캠 화면`}
+        />
+      ) : participant.profileImageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={participant.profileImageUrl}
@@ -77,6 +116,36 @@ function ActiveCamScreen({ participant }: { participant: CamStudyParticipantVM }
         </span>
       </div>
     </>
+  );
+}
+
+function VideoTrackRenderer({
+  track,
+  label,
+}: {
+  track: LocalVideoTrack | RemoteVideoTrack;
+  label: string;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    track.attach(el);
+    return () => {
+      track.detach(el);
+    };
+  }, [track]);
+
+  return (
+    <video
+      ref={ref}
+      autoPlay
+      muted
+      playsInline
+      aria-label={label}
+      className="h-full w-full object-cover"
+    />
   );
 }
 
