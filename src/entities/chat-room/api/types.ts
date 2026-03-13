@@ -3,7 +3,7 @@ import type {
   ChatMessageType as ChatMessageContractType,
 } from "@/shared/model";
 
-export type ChatRoomType = "OPEN_CHAT" | "CAM_STUDY";
+export type ChatRoomType = "OPEN_CHAT" | "CAM_STUDY" | "DIRECT_CHAT";
 export type ChatMessageType = ChatMessageContractType;
 export type ChatMessageSenderType = ChatMessageSenderContractType;
 

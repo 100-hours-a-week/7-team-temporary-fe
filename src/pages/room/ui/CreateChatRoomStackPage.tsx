@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { CreateChatRoomForm } from "@/features/chat-room-create";
 import { useStackPage } from "@/widgets/stack";
+import { CamStudyRoomStackPage } from "./CamStudyRoomStackPage";
 import { ChatRoomStackPage } from "./ChatRoomStackPage";
 
 export function CreateChatRoomStackPage() {
@@ -19,14 +20,19 @@ export function CreateChatRoomStackPage() {
 
   return (
     <CreateChatRoomForm
-      onCreated={({ roomId, participantId }) =>
+      onCreated={({ roomId, participantId }, type) => {
+        if (type === "CAM_STUDY") {
+          replace(<CamStudyRoomStackPage roomId={roomId} />);
+          return;
+        }
+
         replace(
           <ChatRoomStackPage
             roomId={roomId}
             initialParticipantId={participantId}
           />,
-        )
-      }
+        );
+      }}
     />
   );
 }

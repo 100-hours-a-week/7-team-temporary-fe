@@ -159,6 +159,10 @@ const CHAT_ROOM_TYPE_BADGE: Record<
     label: "캠 스터디방",
     className: "bg-ink-300",
   },
+  DIRECT_CHAT: {
+    label: "1:1 채팅",
+    className: "bg-ink-300",
+  },
 };
 
 function ChatSearchRoomItem({ room, onClick }: ChatSearchRoomItemProps) {

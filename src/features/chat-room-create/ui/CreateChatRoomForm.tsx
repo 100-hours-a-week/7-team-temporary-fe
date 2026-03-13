@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { ApiError, COMMON_ERROR_CODE, CommonError } from "@/shared/api";
 import { cn } from "@/shared/lib";
 
 import { BaseInput, FormField } from "@/shared/form/ui";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
+import type { ChatRoomType } from "@/entities/chat-room";
 
 import {
   type CreateChatRoomResponseDto,
@@ -29,7 +30,7 @@ import {
 } from "./constants";
 
 interface CreateChatRoomFormProps {
-  onCreated?: (createdRoom: CreateChatRoomResponseDto) => void;
+  onCreated?: (createdRoom: CreateChatRoomResponseDto, type: ChatRoomType) => void;
 }
 
 function getCreateChatRoomErrorMessage(error: unknown) {
@@ -69,7 +70,7 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
         if (typeof createdRoom?.participantId !== "number") {
           throw new Error("생성된 참가자 식별자가 없습니다.");
         }
-        onCreated?.(createdRoom);
+        onCreated?.(createdRoom, normalizedValues.type);
       } catch (error) {
         showToast(getCreateChatRoomErrorMessage(error), "error");
       }
@@ -85,14 +86,16 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
     submitForm,
   } = useCreateChatRoomForm({ onValid: handleCreateChatRoom });
   const selectedType = watch("type");
-  const maxParticipants = watch("maxParticipants");
   const isCamStudyType = selectedType === "CAM_STUDY";
 
-  useEffect(() => {
-    if (!isCamStudyType) return;
-    if (maxParticipants === "10") return;
-    setValue("maxParticipants", "10", { shouldDirty: true, shouldValidate: true });
-  }, [isCamStudyType, maxParticipants, setValue]);
+  const handleSelectType = useCallback(
+    (type: CreateChatRoomFormModel["type"]) => {
+      setValue("type", type, { shouldDirty: true, shouldValidate: true });
+      if (type !== "CAM_STUDY") return;
+      setValue("maxParticipants", "10", { shouldDirty: true, shouldValidate: true });
+    },
+    [setValue],
+  );
 
   return (
     <>
@@ -117,18 +120,14 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
                   <button
                     key={option.type}
                     type="button"
+                    aria-pressed={isSelected}
                     className={cn(
                       "flex min-h-[84px] flex-col items-start justify-center rounded-xl border px-4 py-3 text-left transition-colors",
                       isSelected
                         ? "border-primary-500 bg-primary-50"
                         : "border-neutral-200 bg-white",
                     )}
-                    onClick={() =>
-                      setValue("type", option.type, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      })
-                    }
+                    onClick={() => handleSelectType(option.type)}
                   >
                     <span
                       className={cn(
