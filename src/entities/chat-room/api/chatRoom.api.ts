@@ -6,6 +6,11 @@ import type {
   ChatMessageListResponseDto,
   ChatRoomListResponseDto,
   ChatRoomOwnerStatusDto,
+  IssueWebRtcTokenRequestDto,
+  IssueWebRtcTokenResponseDto,
+  JoinChatRoomResponseDto,
+  SyncVideoSessionRequestDto,
+  UpdateParticipantCameraStatusRequestDto,
 } from "./types";
 
 interface FetchChatRoomListParams {
@@ -76,6 +81,81 @@ export async function fetchChatRoomDetail({
     signal,
     authRequired: true,
   });
+}
+
+export async function joinChatRoom({
+  roomId,
+  signal,
+}: {
+  roomId: number;
+  signal?: AbortSignal;
+}): Promise<JoinChatRoomResponseDto> {
+  return apiFetch<JoinChatRoomResponseDto>(Endpoint.CHAT_ROOMS.JOIN(roomId), {
+    method: "POST",
+    signal,
+    authRequired: true,
+  });
+}
+
+export async function issueChatRoomWebRtcToken({
+  roomId,
+  participantId,
+  signal,
+}: {
+  roomId: number;
+  participantId: number;
+  signal?: AbortSignal;
+}): Promise<IssueWebRtcTokenResponseDto> {
+  return apiFetch<IssueWebRtcTokenResponseDto, IssueWebRtcTokenRequestDto>(
+    Endpoint.CHAT_ROOMS.WEBRTC_TOKEN(roomId),
+    {
+      method: "POST",
+      body: { participantId },
+      signal,
+      authRequired: true,
+    },
+  );
+}
+
+export async function syncChatRoomVideoSession({
+  roomId,
+  participantId,
+  sessionId,
+  published,
+  signal,
+}: {
+  roomId: number;
+  participantId: number;
+  sessionId: string;
+  published: boolean;
+  signal?: AbortSignal;
+}): Promise<void> {
+  return apiFetch<void, SyncVideoSessionRequestDto>(Endpoint.CHAT_ROOMS.VIDEO_SESSIONS(roomId), {
+    method: "POST",
+    body: { participantId, sessionId, published },
+    signal,
+    authRequired: true,
+  });
+}
+
+export async function updateChatRoomParticipantCameraStatus({
+  participantId,
+  cameraEnabled,
+  signal,
+}: {
+  participantId: number;
+  cameraEnabled: boolean;
+  signal?: AbortSignal;
+}): Promise<void> {
+  return apiFetch<void, UpdateParticipantCameraStatusRequestDto>(
+    Endpoint.CHAT_ROOMS.UPDATE_CAMERA_STATUS(participantId),
+    {
+      method: "PATCH",
+      body: { cameraEnabled },
+      signal,
+      authRequired: true,
+    },
+  );
 }
 
 export async function fetchChatRoomMessages({

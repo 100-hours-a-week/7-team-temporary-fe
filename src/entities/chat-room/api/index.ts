@@ -4,9 +4,14 @@ export {
   fetchChatRoomMessages,
   fetchChatRoomOwnerStatus,
   fetchChatRoomSearchList,
+  issueChatRoomWebRtcToken,
+  syncChatRoomVideoSession,
+  updateChatRoomParticipantCameraStatus,
 } from "./chatRoom.api";
 export type {
   ChatRoomDetailDto,
+  IssueWebRtcTokenRequestDto,
+  IssueWebRtcTokenResponseDto,
   ChatRoomOwnerDto,
   ChatRoomParticipantDto,
   ChatRoomProfileImageDto,
@@ -19,4 +24,6 @@ export type {
   ChatRoomListResponseDto,
   ChatRoomType,
   ChatRoomOwnerStatusDto,
+  SyncVideoSessionRequestDto,
+  UpdateParticipantCameraStatusRequestDto,
 } from "./types";

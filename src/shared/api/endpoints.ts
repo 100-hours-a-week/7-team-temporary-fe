@@ -129,6 +129,10 @@ export const Endpoint = {
     DETAIL: (roomId: number) => chatPath(`/chat-rooms/${roomId}`),
     JOIN: (roomId: number) => chatPath(`/chat-rooms/${roomId}/participants`),
     JOIN_BY_FRIEND: (friendId: number) => chatPath(`/chat-rooms/participants/${friendId}`),
+    WEBRTC_TOKEN: (roomId: number) => chatPath(`/chat-rooms/${roomId}/webrtc/token`),
+    VIDEO_SESSIONS: (roomId: number) => chatPath(`/chat-rooms/${roomId}/video/sessions`),
+    UPDATE_CAMERA_STATUS: (participantId: number) =>
+      chatPath(`/chat-rooms/participants/${participantId}`),
     LEAVE: (roomId: number, participantId: number) =>
       chatPath(`/chat-rooms/${roomId}/participants/${participantId}`),
     SEND_MESSAGE: (roomId: number) => chatPath(`/chat-rooms/${roomId}/messages`),

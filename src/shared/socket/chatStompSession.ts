@@ -36,6 +36,15 @@ import type {
   SubscribeUserRequestPayload,
   UnreadChangedUserEventPayload,
   UnsubscribeRoomRequestPayload,
+  VideoCameraChangedPayload,
+  VideoCameraToggleAcceptedPayload,
+  VideoParticipantJoinedPayload,
+  VideoParticipantLeftPayload,
+  VideoPublishStartedPayload,
+  VideoPublishStoppedPayload,
+  VideoRoomDeletedPayload,
+  VideoSessionSyncedPayload,
+  VideoTokenIssuedPayload,
 } from "./model/handshake.types";
 import {
   resolveChatSocketDisconnectDestination,
@@ -98,6 +107,9 @@ type ReportStreamStartListener = (payload: ReportStreamStartPayload) => void;
 type ReportStreamChunkListener = (payload: ReportStreamChunkPayload) => void;
 type ReportStreamEndListener = (payload: ReportStreamEndPayload) => void;
 type SocketResyncRequiredListener = (payload: SocketResyncRequiredPayload) => void;
+type VideoSessionSyncedListener = (payload: VideoSessionSyncedPayload) => void;
+type VideoCameraToggleAcceptedListener = (payload: VideoCameraToggleAcceptedPayload) => void;
+type VideoTokenIssuedListener = (payload: VideoTokenIssuedPayload) => void;
 
 // ─── Room subscription types ──────────────────────────────────────────────────
 
@@ -107,6 +119,12 @@ export interface SubscribeToRoomParams {
   onMessageCreated?: (payload: MessageCreatedPayload) => void;
   onParticipantJoined?: (payload: ParticipantJoinedPayload) => void;
   onParticipantLeft?: (payload: ParticipantLeftPayload) => void;
+  onVideoCameraChanged?: (payload: VideoCameraChangedPayload) => void;
+  onVideoPublishStarted?: (payload: VideoPublishStartedPayload) => void;
+  onVideoPublishStopped?: (payload: VideoPublishStoppedPayload) => void;
+  onVideoParticipantJoined?: (payload: VideoParticipantJoinedPayload) => void;
+  onVideoParticipantLeft?: (payload: VideoParticipantLeftPayload) => void;
+  onVideoRoomDeleted?: (payload: VideoRoomDeletedPayload) => void;
 }
 
 interface ActiveRoomEntry {
@@ -115,6 +133,12 @@ interface ActiveRoomEntry {
   onMessageCreated?: (payload: MessageCreatedPayload) => void;
   onParticipantJoined?: (payload: ParticipantJoinedPayload) => void;
   onParticipantLeft?: (payload: ParticipantLeftPayload) => void;
+  onVideoCameraChanged?: (payload: VideoCameraChangedPayload) => void;
+  onVideoPublishStarted?: (payload: VideoPublishStartedPayload) => void;
+  onVideoPublishStopped?: (payload: VideoPublishStoppedPayload) => void;
+  onVideoParticipantJoined?: (payload: VideoParticipantJoinedPayload) => void;
+  onVideoParticipantLeft?: (payload: VideoParticipantLeftPayload) => void;
+  onVideoRoomDeleted?: (payload: VideoRoomDeletedPayload) => void;
 }
 
 interface LastSeenProgress {
@@ -412,6 +436,9 @@ class ChatStompSession {
   private reportStreamChunkListeners = new Set<ReportStreamChunkListener>();
   private reportStreamEndListeners = new Set<ReportStreamEndListener>();
   private socketResyncRequiredListeners = new Set<SocketResyncRequiredListener>();
+  private videoSessionSyncedListeners = new Set<VideoSessionSyncedListener>();
+  private videoCameraToggleAcceptedListeners = new Set<VideoCameraToggleAcceptedListener>();
+  private videoTokenIssuedListeners = new Set<VideoTokenIssuedListener>();
   private pendingMessagePayloads = new Map<string, MessageSendPayload>();
   private fallbackTriggeredMessageIds = new Set<string>();
   private scheduledRefreshReconnectTimer: number | null = null;
@@ -454,6 +481,27 @@ class ChatStompSession {
     this.messageSendFailedListeners.add(listener);
     return () => {
       this.messageSendFailedListeners.delete(listener);
+    };
+  }
+
+  onVideoSessionSynced(listener: VideoSessionSyncedListener) {
+    this.videoSessionSyncedListeners.add(listener);
+    return () => {
+      this.videoSessionSyncedListeners.delete(listener);
+    };
+  }
+
+  onVideoCameraToggleAccepted(listener: VideoCameraToggleAcceptedListener) {
+    this.videoCameraToggleAcceptedListeners.add(listener);
+    return () => {
+      this.videoCameraToggleAcceptedListeners.delete(listener);
+    };
+  }
+
+  onVideoTokenIssued(listener: VideoTokenIssuedListener) {
+    this.videoTokenIssuedListeners.add(listener);
+    return () => {
+      this.videoTokenIssuedListeners.delete(listener);
     };
   }
 
@@ -1485,6 +1533,41 @@ class ChatStompSession {
         return;
       }
 
+      if (event === "video.session.synced") {
+        chatSocketLog("[chat-socket] video.session.synced", payload);
+        this.emitListeners(
+          this.videoSessionSyncedListeners,
+          payload as VideoSessionSyncedPayload,
+          "videoSessionSynced",
+        );
+        return;
+      }
+
+      if (event === "video.camera.toggleAccepted") {
+        chatSocketLog("[chat-socket] video.camera.toggleAccepted", payload);
+        this.emitListeners(
+          this.videoCameraToggleAcceptedListeners,
+          payload as VideoCameraToggleAcceptedPayload,
+          "videoCameraToggleAccepted",
+        );
+        return;
+      }
+
+      if (event === "video.camera.toggleRejected") {
+        chatSocketLog("[chat-socket] video.camera.toggleRejected", payload);
+        return;
+      }
+
+      if (event === "video.token.issued") {
+        chatSocketLog("[chat-socket] video.token.issued", payload);
+        this.emitListeners(
+          this.videoTokenIssuedListeners,
+          payload as VideoTokenIssuedPayload,
+          "videoTokenIssued",
+        );
+        return;
+      }
+
       if (this.handleReportQueueEvent(event, payload)) {
         return;
       }
@@ -1675,6 +1758,42 @@ class ChatStompSession {
           });
         }
         chatSocketLog("[chat-socket] lastSeenUpdated", { roomId, payload });
+        return;
+      }
+
+      if (event === "video.camera.changed") {
+        chatSocketLog("[chat-socket] video.camera.changed", { roomId });
+        entry.onVideoCameraChanged?.(payload as VideoCameraChangedPayload);
+        return;
+      }
+
+      if (event === "video.publish.started") {
+        chatSocketLog("[chat-socket] video.publish.started", { roomId });
+        entry.onVideoPublishStarted?.(payload as VideoPublishStartedPayload);
+        return;
+      }
+
+      if (event === "video.publish.stopped") {
+        chatSocketLog("[chat-socket] video.publish.stopped", { roomId });
+        entry.onVideoPublishStopped?.(payload as VideoPublishStoppedPayload);
+        return;
+      }
+
+      if (event === "video.participant.joined") {
+        chatSocketLog("[chat-socket] video.participant.joined", { roomId });
+        entry.onVideoParticipantJoined?.(payload as VideoParticipantJoinedPayload);
+        return;
+      }
+
+      if (event === "video.participant.left") {
+        chatSocketLog("[chat-socket] video.participant.left", { roomId });
+        entry.onVideoParticipantLeft?.(payload as VideoParticipantLeftPayload);
+        return;
+      }
+
+      if (event === "video.room.deleted") {
+        chatSocketLog("[chat-socket] video.room.deleted", { roomId });
+        entry.onVideoRoomDeleted?.(payload as VideoRoomDeletedPayload);
         return;
       }
 

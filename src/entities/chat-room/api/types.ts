@@ -33,6 +33,38 @@ export interface ChatRoomOwnerStatusDto {
   isOwner: boolean;
 }
 
+/** POST /chat-rooms/{roomId}/participants 응답 */
+export interface JoinChatRoomResponseDto {
+  participantId: number;
+  cameraEnabled: boolean;
+}
+
+/** POST /chat-rooms/{roomId}/webrtc/token 요청 */
+export interface IssueWebRtcTokenRequestDto {
+  participantId: number;
+}
+
+/** POST /chat-rooms/{roomId}/webrtc/token 응답 */
+export interface IssueWebRtcTokenResponseDto {
+  roomId: number;
+  participantId: number;
+  webrtcRoomName: string;
+  accessToken: string;
+  expiresAt: string;
+}
+
+/** POST /chat-rooms/{roomId}/video/sessions 요청 */
+export interface SyncVideoSessionRequestDto {
+  participantId: number;
+  sessionId: string;
+  published: boolean;
+}
+
+/** PATCH /chat-rooms/participants/{participantId} 요청 */
+export interface UpdateParticipantCameraStatusRequestDto {
+  cameraEnabled: boolean;
+}
+
 export interface ChatRoomProfileImageDto {
   url: string;
   expiresAt?: string | null;
