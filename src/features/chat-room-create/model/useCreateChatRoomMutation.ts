@@ -14,7 +14,10 @@ export function useCreateChatRoomMutation() {
     CreateChatRoomRequestDto,
     CreateChatRoomResponseDto
   >({
-    url: Endpoint.CHAT_ROOMS.CREATE,
+    url: (form) => {
+      const searchParams = new URLSearchParams({ type: form.type });
+      return `${Endpoint.CHAT_ROOMS.CREATE}?${searchParams.toString()}`;
+    },
     method: "POST",
     dtoFn: toCreateChatRoomRequestDto,
     authRequired: true,

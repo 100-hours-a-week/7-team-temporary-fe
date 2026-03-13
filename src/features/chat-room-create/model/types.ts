@@ -1,14 +1,15 @@
 import type { ChatRoomType } from "@/entities/chat-room";
 
+export type CreatableChatRoomType = Extract<ChatRoomType, "OPEN_CHAT" | "CAM_STUDY">;
+
 export interface CreateChatRoomFormModel {
-  type: ChatRoomType;
+  type: CreatableChatRoomType;
   title: string;
   description: string;
   maxParticipants: string;
 }
 
 export interface CreateChatRoomRequestDto {
-  type: ChatRoomType;
   title: string;
   description: string;
   maxParticipants: number;
@@ -20,7 +21,7 @@ export interface CreateChatRoomResponseDto {
 }
 
 export interface CreateChatRoomTypeOptionVM {
-  type: ChatRoomType;
+  type: CreatableChatRoomType;
   label: string;
   description: string;
 }
