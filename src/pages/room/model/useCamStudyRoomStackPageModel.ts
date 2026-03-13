@@ -102,9 +102,10 @@ export function useCamStudyRoomStackPageModel({
 
       if (resolvedParticipantId === null) {
         const joinRes = await joinChatRoom({ roomId, signal: controller.signal });
-        resolvedParticipantId = joinRes.participantId;
+        const joinedParticipantId = joinRes.participantId;
+        resolvedParticipantId = joinedParticipantId;
         detailRes = await fetchChatRoomDetail({ roomId, signal: controller.signal });
-        setParticipants(mapDetailToVMs(detailRes, resolvedUserId, resolvedParticipantId));
+        setParticipants(mapDetailToVMs(detailRes, resolvedUserId, joinedParticipantId));
         setMaxParticipants(detailRes.maxParticipants);
       }
 

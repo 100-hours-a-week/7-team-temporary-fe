@@ -4,6 +4,7 @@ export {
   fetchChatRoomMessages,
   fetchChatRoomOwnerStatus,
   fetchChatRoomSearchList,
+  joinChatRoom,
   issueChatRoomWebRtcToken,
   syncChatRoomVideoSession,
   updateChatRoomParticipantCameraStatus,
@@ -24,6 +25,7 @@ export type {
   ChatRoomListResponseDto,
   ChatRoomType,
   ChatRoomOwnerStatusDto,
+  JoinChatRoomResponseDto,
   SyncVideoSessionRequestDto,
   UpdateParticipantCameraStatusRequestDto,
 } from "./types";
