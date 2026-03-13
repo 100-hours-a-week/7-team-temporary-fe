@@ -2,7 +2,7 @@ export interface CamStudyRoomSummaryDto {
   roomId: number;
   title: string;
   description: string;
-  serverActive: boolean;
+  serverActive?: boolean | null;
   maxParticipants: number;
   participantsCount: number;
 }

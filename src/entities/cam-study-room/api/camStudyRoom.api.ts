@@ -1,16 +1,27 @@
-import { getMockCamStudyRoomListResponse } from "./mock";
+import { apiFetch, Endpoint } from "@/shared/api";
 
 import type { CamStudyRoomListResponseDto } from "./types";
 
-// TODO: /chat-rooms/participants?type=CAM_STUDY 실제 API 연동 시 대체 예정
 export async function fetchCamStudyRoomList({
   page = 1,
   size = 10,
-  signal: _signal,
+  signal,
 }: {
   page?: number;
   size?: number;
   signal?: AbortSignal;
 }): Promise<CamStudyRoomListResponseDto> {
-  return getMockCamStudyRoomListResponse({ page, size });
+  const searchParams = new URLSearchParams({
+    type: "CAM_STUDY",
+    page: String(page),
+    size: String(size),
+  });
+
+  return apiFetch<CamStudyRoomListResponseDto>(
+    `${Endpoint.CHAT_ROOMS.PARTICIPANTS}?${searchParams.toString()}`,
+    {
+      signal,
+      authRequired: true,
+    },
+  );
 }
