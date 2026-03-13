@@ -96,19 +96,8 @@ function ActiveCamScreen({
           track={track}
           label={`${participant.nickname} 캠 화면`}
         />
-      ) : participant.profileImageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={participant.profileImageUrl}
-          alt={`${participant.nickname} 캠 화면`}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover"
-        />
       ) : (
-        <div className="flex h-full items-center justify-center bg-neutral-800 text-xs font-semibold text-white/80">
-          캠 화면
-        </div>
+        <div className="h-full w-full bg-neutral-900" />
       )}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2 pt-8 pb-2">
         <span className="block truncate text-xs font-medium text-white">

@@ -75,14 +75,18 @@ export function useLiveKitSession({
   }, [token, livekitUrl]);
 
   const publishCamera = useCallback(async () => {
-    const room = roomRef.current;
-    if (!room || !isConnected || participantId === null) return;
+    if (participantId === null) return;
 
+    // 카메라 캡처는 LiveKit 연결 여부와 무관하게 즉시 실행
     const track = await createLocalVideoTrack();
-    await room.localParticipant.publishTrack(track);
     localTrackRef.current = track;
     setLocalVideoTrack(track);
 
+    // LiveKit 연결된 경우에만 publish + 백엔드 통보
+    const room = roomRef.current;
+    if (!room || !isConnected) return;
+
+    await room.localParticipant.publishTrack(track);
     await Promise.all([
       updateChatRoomParticipantCameraStatus({ participantId, cameraEnabled: true }),
       syncChatRoomVideoSession({ roomId, participantId, sessionId: room.name, published: true }),
@@ -90,20 +94,23 @@ export function useLiveKitSession({
   }, [isConnected, participantId, roomId]);
 
   const unpublishCamera = useCallback(async () => {
-    const room = roomRef.current;
     const track = localTrackRef.current;
-    if (!room || !track || participantId === null) return;
+    if (!track || participantId === null) return;
 
-    await room.localParticipant.unpublishTrack(track);
+    // LiveKit publish 해제 (연결된 경우)
+    const room = roomRef.current;
+    if (room && isConnected) {
+      await room.localParticipant.unpublishTrack(track);
+      await Promise.all([
+        updateChatRoomParticipantCameraStatus({ participantId, cameraEnabled: false }),
+        syncChatRoomVideoSession({ roomId, participantId, sessionId: room.name, published: false }),
+      ]);
+    }
+
     track.stop();
     localTrackRef.current = null;
     setLocalVideoTrack(null);
-
-    await Promise.all([
-      updateChatRoomParticipantCameraStatus({ participantId, cameraEnabled: false }),
-      syncChatRoomVideoSession({ roomId, participantId, sessionId: room.name, published: false }),
-    ]);
-  }, [participantId, roomId]);
+  }, [isConnected, participantId, roomId]);
 
   return { localVideoTrack, remoteVideoTracks, isConnected, publishCamera, unpublishCamera };
 }
