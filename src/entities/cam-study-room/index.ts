@@ -6,6 +6,7 @@ export {
   toCamStudyRoomListModel,
   camStudyRoomQueryKeys,
   useCamStudyRoomListQuery,
+  useLiveKitSession,
 } from "./model";
 export type {
   CamStudyRoomListItemVM,
