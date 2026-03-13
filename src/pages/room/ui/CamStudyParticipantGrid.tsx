@@ -9,14 +9,10 @@ interface CamStudyParticipantGridProps {
 
 export function CamStudyParticipantGrid({ participants }: CamStudyParticipantGridProps) {
   return (
-    <ul
-      dir="rtl"
-      className="mt-3 grid grid-cols-3 gap-3 pb-24 sm:grid-cols-4"
-    >
+    <ul className="mt-3 grid grid-cols-3 gap-3 pb-24 sm:grid-cols-4">
       {participants.map((participant) => (
         <li
           key={`${participant.role}-${participant.userId}`}
-          dir="ltr"
           className="overflow-hidden rounded-2xl"
         >
           <ParticipantCell participant={participant} />

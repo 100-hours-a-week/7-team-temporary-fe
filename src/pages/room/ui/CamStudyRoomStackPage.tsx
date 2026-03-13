@@ -2,12 +2,14 @@
 
 import { useLayoutEffect } from "react";
 
+import { IconButton } from "@/shared/ui/button";
 import { useStackPage } from "@/widgets/stack";
 
 import { useCamStudyRoomStackPageModel } from "../model/useCamStudyRoomStackPageModel";
 import type { CamStudyRoomSummary } from "../model/camStudyRoom.types";
 import { CamStudyControlDock } from "./CamStudyControlDock";
 import { CamStudyParticipantGrid } from "./CamStudyParticipantGrid";
+import { EditGroupChatRoomStackPage } from "./EditGroupChatRoomStackPage";
 
 interface CamStudyRoomStackPageProps {
   roomId: number;
@@ -20,7 +22,7 @@ export function CamStudyRoomStackPage({
   initialTitle,
   initialSummary,
 }: CamStudyRoomStackPageProps) {
-  const { setHeaderContent, setHeaderRightContent } = useStackPage();
+  const { push, setHeaderContent, setHeaderRightContent } = useStackPage();
   const {
     roomTitle,
     summaryCounts,
@@ -33,12 +35,20 @@ export function CamStudyRoomStackPage({
 
   useLayoutEffect(() => {
     setHeaderContent(<span className="text-[18px] font-semibold text-black">{roomTitle}</span>);
-    setHeaderRightContent(null);
+    setHeaderRightContent(
+      <IconButton
+        icon="more"
+        label="캠 스터디방 설정"
+        onClick={() => push(<EditGroupChatRoomStackPage roomId={roomId} />)}
+        className="p-0"
+        iconClassName="h-7 w-7 text-ink-900 [&>path]:h-[18px] [&>path]:w-[18px]"
+      />,
+    );
     return () => {
       setHeaderContent(null);
       setHeaderRightContent(null);
     };
-  }, [roomTitle, setHeaderContent, setHeaderRightContent]);
+  }, [push, roomId, roomTitle, setHeaderContent, setHeaderRightContent]);
 
   return (
     <section className="scrollbar-hide h-full overflow-y-auto px-6 pt-4 pb-[90px]">
