@@ -197,10 +197,29 @@ export function useCamStudyRoomStackPageModel({
   }, []);
 
   const handleToggleMyCamera = useCallback(async () => {
-    if (isMyCameraEnabled) {
-      await unpublishCamera();
-    } else {
-      await publishCamera();
+    const nextEnabled = !isMyCameraEnabled;
+
+    // Optimistic update — STOMP event will confirm when it arrives
+    setParticipants((prev) =>
+      prev.map((p) =>
+        p.isMe ? { ...p, cameraEnabled: nextEnabled, screenVisible: nextEnabled } : p,
+      ),
+    );
+
+    try {
+      if (nextEnabled) {
+        await publishCamera();
+      } else {
+        await unpublishCamera();
+      }
+    } catch (err) {
+      // Revert on failure
+      console.error("[cam-study] camera toggle error", err);
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.isMe ? { ...p, cameraEnabled: !nextEnabled, screenVisible: !nextEnabled } : p,
+        ),
+      );
     }
   }, [isMyCameraEnabled, publishCamera, unpublishCamera]);
 
