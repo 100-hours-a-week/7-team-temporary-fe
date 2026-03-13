@@ -2,13 +2,20 @@
 
 import { useCallback } from "react";
 import { ApiError, COMMON_ERROR_CODE, CommonError } from "@/shared/api";
+import { cn } from "@/shared/lib";
 
 import { BaseInput, FormField } from "@/shared/form/ui";
 import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui/toast";
+import type { ChatRoomType } from "@/entities/chat-room";
 
-import type { CreateChatRoomResponseDto, CreateChatRoomFormModel } from "../model/types";
 import {
+  type CreateChatRoomResponseDto,
+  type CreateChatRoomFormModel,
+  CREATE_CHAT_ROOM_TYPE_OPTIONS,
+} from "../model/types";
+import {
+  createChatRoomTypeRules,
   createChatRoomDescriptionRules,
   createChatRoomGroupNameRules,
   createChatRoomMaxParticipantsRules,
@@ -23,7 +30,7 @@ import {
 } from "./constants";
 
 interface CreateChatRoomFormProps {
-  onCreated?: (createdRoom: CreateChatRoomResponseDto) => void;
+  onCreated?: (createdRoom: CreateChatRoomResponseDto, type: ChatRoomType) => void;
 }
 
 function getCreateChatRoomErrorMessage(error: unknown) {
@@ -54,14 +61,16 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
   const handleCreateChatRoom = useCallback(
     async (values: CreateChatRoomFormModel) => {
       try {
-        const createdRoom = await createChatRoomMutation.mutateAsync(values);
+        const normalizedValues =
+          values.type === "CAM_STUDY" ? { ...values, maxParticipants: "10" } : values;
+        const createdRoom = await createChatRoomMutation.mutateAsync(normalizedValues);
         if (typeof createdRoom?.roomId !== "number") {
           throw new Error("생성된 채팅방 식별자가 없습니다.");
         }
         if (typeof createdRoom?.participantId !== "number") {
           throw new Error("생성된 참가자 식별자가 없습니다.");
         }
-        onCreated?.(createdRoom);
+        onCreated?.(createdRoom, normalizedValues.type);
       } catch (error) {
         showToast(getCreateChatRoomErrorMessage(error), "error");
       }
@@ -70,10 +79,23 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
   );
   const {
     register,
+    setValue,
+    watch,
     formState: { errors },
     canSubmit,
     submitForm,
   } = useCreateChatRoomForm({ onValid: handleCreateChatRoom });
+  const selectedType = watch("type");
+  const isCamStudyType = selectedType === "CAM_STUDY";
+
+  const handleSelectType = useCallback(
+    (type: CreateChatRoomFormModel["type"]) => {
+      setValue("type", type, { shouldDirty: true, shouldValidate: true });
+      if (type !== "CAM_STUDY") return;
+      setValue("maxParticipants", "10", { shouldDirty: true, shouldValidate: true });
+    },
+    [setValue],
+  );
 
   return (
     <>
@@ -83,6 +105,45 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
           className="flex flex-col gap-4"
           onSubmit={submitForm}
         >
+          <FormField
+            label="방 유형"
+            error={errors.type?.message}
+          >
+            <input
+              type="hidden"
+              {...register("type", createChatRoomTypeRules)}
+            />
+            <div className="grid grid-cols-2 gap-2">
+              {CREATE_CHAT_ROOM_TYPE_OPTIONS.map((option) => {
+                const isSelected = selectedType === option.type;
+                return (
+                  <button
+                    key={option.type}
+                    type="button"
+                    aria-pressed={isSelected}
+                    className={cn(
+                      "flex min-h-[84px] flex-col items-start justify-center rounded-xl border px-4 py-3 text-left transition-colors",
+                      isSelected
+                        ? "border-primary-500 bg-primary-50"
+                        : "border-neutral-200 bg-white",
+                    )}
+                    onClick={() => handleSelectType(option.type)}
+                  >
+                    <span
+                      className={cn(
+                        "text-sm font-semibold",
+                        isSelected ? "text-primary-700" : "text-neutral-800",
+                      )}
+                    >
+                      {option.label}
+                    </span>
+                    <span className="mt-1 text-xs text-neutral-500">{option.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </FormField>
+
           <FormField
             label="그룹명"
             error={errors.title?.message}
@@ -112,6 +173,7 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
 
           <FormField
             label="그룹 인원"
+            helperText={isCamStudyType ? "캠 스터디방은 최대 10명으로 고정됩니다." : undefined}
             error={errors.maxParticipants?.message}
           >
             <BaseInput
@@ -120,6 +182,7 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
               placeholder="모집 인원을 입력해주세요."
               type="text"
               inputMode="numeric"
+              disabled={isCamStudyType}
               className={CHAT_ROOM_INPUT_TONE_CLASS_NAME}
             />
           </FormField>
@@ -132,7 +195,7 @@ export function CreateChatRoomForm({ onCreated }: CreateChatRoomFormProps) {
           form="create-chat-room-form"
           disabled={!canSubmit || createChatRoomMutation.isPending}
         >
-          {createChatRoomMutation.isPending ? "생성 중..." : "그룹 생성하기"}
+          {createChatRoomMutation.isPending ? "생성 중..." : "방 생성하기"}
         </PrimaryButton>
       </FixedActionBar>
     </>

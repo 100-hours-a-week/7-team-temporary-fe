@@ -3,14 +3,14 @@ import type {
   ChatMessageType as ChatMessageContractType,
 } from "@/shared/model";
 
-export type ChatRoomType = "OPEN_CHAT" | "CAM_STUDY";
+export type ChatRoomType = "OPEN_CHAT" | "CAM_STUDY" | "DIRECT_CHAT";
 export type ChatMessageType = ChatMessageContractType;
 export type ChatMessageSenderType = ChatMessageSenderContractType;
 
-/** GET /chat-rooms?title=&page=&size= 응답 content 항목 (목록 임시 사용) */
+/** GET /chat-rooms/participants?type=OPEN_CHAT 응답 content 항목 */
 export interface ChatRoomSummaryDto {
   roomId: number;
-  type: ChatRoomType;
+  type?: ChatRoomType | null;
   title: string;
   description: string;
   maxParticipants: number;
@@ -31,6 +31,38 @@ export interface ChatRoomListResponseDto {
 /** GET /chat-rooms/{roomId}/owner/{ownerId} 응답 */
 export interface ChatRoomOwnerStatusDto {
   isOwner: boolean;
+}
+
+/** POST /chat-rooms/{roomId}/participants 응답 */
+export interface JoinChatRoomResponseDto {
+  participantId: number;
+  cameraEnabled: boolean;
+}
+
+/** POST /chat-rooms/{roomId}/webrtc/token 요청 */
+export interface IssueWebRtcTokenRequestDto {
+  participantId: number;
+}
+
+/** POST /chat-rooms/{roomId}/webrtc/token 응답 */
+export interface IssueWebRtcTokenResponseDto {
+  roomId: number;
+  participantId: number;
+  webrtcRoomName: string;
+  accessToken: string;
+  expiresAt: string;
+}
+
+/** POST /chat-rooms/{roomId}/video/sessions 요청 */
+export interface SyncVideoSessionRequestDto {
+  participantId: number;
+  sessionId: string;
+  published: boolean;
+}
+
+/** PATCH /chat-rooms/participants/{participantId} 요청 */
+export interface UpdateParticipantCameraStatusRequestDto {
+  cameraEnabled: boolean;
 }
 
 export interface ChatRoomProfileImageDto {

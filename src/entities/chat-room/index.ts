@@ -4,9 +4,15 @@ export {
   fetchChatRoomMessages,
   fetchChatRoomOwnerStatus,
   fetchChatRoomSearchList,
+  joinChatRoom,
+  issueChatRoomWebRtcToken,
+  syncChatRoomVideoSession,
+  updateChatRoomParticipantCameraStatus,
 } from "./api";
 export type {
   ChatRoomDetailDto,
+  IssueWebRtcTokenRequestDto,
+  IssueWebRtcTokenResponseDto,
   ChatRoomOwnerDto,
   ChatRoomParticipantDto,
   ChatRoomProfileImageDto,
@@ -18,6 +24,9 @@ export type {
   ChatRoomListResponseDto,
   ChatRoomType,
   ChatRoomOwnerStatusDto,
+  JoinChatRoomResponseDto,
+  SyncVideoSessionRequestDto,
+  UpdateParticipantCameraStatusRequestDto,
 } from "./api";
 
 export {
@@ -29,6 +38,7 @@ export {
   useChatRoomOwnerStatusQuery,
   useChatRoomRealtime,
   useGroupChatRoomListQuery,
+  useChatRoomSearchListQuery,
 } from "./model";
 export type {
   ChatRoomDetailModel,
@@ -37,5 +47,7 @@ export type {
   ChatMessageListModel,
   ChatRoomListItemVM,
   ChatRoomListModel,
+  ChatRoomSearchItemVM,
+  ChatRoomSearchListModel,
 } from "./model";
 export * from "./ui";
