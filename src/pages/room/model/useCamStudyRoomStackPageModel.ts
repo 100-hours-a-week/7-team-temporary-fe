@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchChatRoomDetail, issueChatRoomWebRtcToken, joinChatRoom } from "@/entities/chat-room";
 import type { ChatRoomDetailDto } from "@/entities/chat-room";
@@ -18,45 +18,6 @@ function resolveMyParticipantId(detail: ChatRoomDetailDto, myUserId: number): nu
     detail.participants.find((participant) => participant.userId === myUserId)?.participantId ??
     null
   );
-}
-
-function mapDetailToVMs(
-  detail: ChatRoomDetailDto,
-  myUserId: number,
-  myParticipantId: number,
-): CamStudyParticipantVM[] {
-  const seenUserIds = new Set<number>();
-
-  const entries = [
-    {
-      participantId: detail.owner.participantId ?? null,
-      userId: detail.owner.userId,
-      nickname: detail.owner.nickname,
-      cameraEnabled: detail.owner.cameraEnabled,
-      profileImage: detail.owner.profileImage,
-      joinedAt: "",
-      isOwner: true,
-    },
-    ...detail.participants.map((p) => ({ ...p, isOwner: false })),
-  ];
-
-  return entries
-    .filter(({ userId }) => {
-      if (seenUserIds.has(userId)) return false;
-      seenUserIds.add(userId);
-      return true;
-    })
-    .map((p) => ({
-      userId: p.userId,
-      participantId: p.participantId ?? null,
-      nickname: p.nickname,
-      cameraEnabled: p.cameraEnabled,
-      screenVisible: p.cameraEnabled,
-      isMe: p.userId === myUserId || p.participantId === myParticipantId,
-      profileImageUrl: p.profileImage?.url ?? null,
-      joinedAt: p.joinedAt,
-      role: p.isOwner ? ("OWNER" as const) : ("PARTICIPANT" as const),
-    }));
 }
 
 interface UseCamStudyRoomStackPageModelParams {
@@ -81,6 +42,13 @@ export function useCamStudyRoomStackPageModel({
   const [maxParticipants, setMaxParticipants] = useState(initialSummary?.maxParticipants ?? 0);
   const [isControlMenuOpen, setIsControlMenuOpen] = useState(false);
 
+  // video.session.synced에서 role 결정 시 사용
+  const ownerUserIdRef = useRef<number | null>(null);
+  const myUserIdRef = useRef(myUserId);
+  useEffect(() => {
+    myUserIdRef.current = myUserId;
+  });
+
   // Step 1: fetch detail → ensure my participantId(필요 시 join) → get token
   useEffect(() => {
     const currentUserId = myUserId;
@@ -94,24 +62,43 @@ export function useCamStudyRoomStackPageModel({
       setParticipants([]);
 
       let detailRes = await fetchChatRoomDetail({ roomId, signal: controller.signal });
+      ownerUserIdRef.current = detailRes.owner.userId;
       let resolvedParticipantId =
         typeof initialParticipantId === "number" && initialParticipantId > 0
           ? initialParticipantId
           : resolveMyParticipantId(detailRes, resolvedUserId);
-      setParticipants(mapDetailToVMs(detailRes, resolvedUserId, resolvedParticipantId ?? -1));
       setMaxParticipants(detailRes.maxParticipants);
 
       if (resolvedParticipantId === null) {
         const joinRes = await joinChatRoom({ roomId, signal: controller.signal });
-        const joinedParticipantId = joinRes.participantId;
-        resolvedParticipantId = joinedParticipantId;
+        resolvedParticipantId = joinRes.participantId;
         detailRes = await fetchChatRoomDetail({ roomId, signal: controller.signal });
-        setParticipants(mapDetailToVMs(detailRes, resolvedUserId, joinedParticipantId));
         setMaxParticipants(detailRes.maxParticipants);
       }
 
       if (resolvedParticipantId === null) {
         throw new Error("참가자 식별자를 확인할 수 없습니다.");
+      }
+
+      // video.session.synced 도착 전까지 나 자신만 먼저 표시
+      const isOwner = detailRes.owner.userId === resolvedUserId;
+      const myEntry = isOwner
+        ? detailRes.owner
+        : detailRes.participants.find((p) => p.userId === resolvedUserId);
+      if (myEntry) {
+        setParticipants([
+          {
+            userId: resolvedUserId,
+            participantId: resolvedParticipantId,
+            nickname: myEntry.nickname,
+            cameraEnabled: myEntry.cameraEnabled,
+            screenVisible: myEntry.cameraEnabled,
+            isMe: true,
+            profileImageUrl: null,
+            joinedAt: "joinedAt" in myEntry ? (myEntry.joinedAt as string) : "",
+            role: isOwner ? ("OWNER" as const) : ("PARTICIPANT" as const),
+          },
+        ]);
       }
 
       setParticipantId(resolvedParticipantId);
@@ -138,7 +125,23 @@ export function useCamStudyRoomStackPageModel({
   useEffect(() => {
     if (participantId === null) return;
 
-    return chatStompSession.subscribeToRoom({
+    // video.session.synced: POST /video/sessions ACK
+    // → 해당 participantId의 published 상태 반영, 본인이면 isMe 확정
+    const unsubscribeSessionSynced = chatStompSession.onVideoSessionSynced((payload) => {
+      setParticipants((prev) =>
+        prev.map((p) => {
+          if (p.participantId !== payload.participantId) return p;
+          return {
+            ...p,
+            cameraEnabled: payload.published,
+            screenVisible: payload.published,
+            isMe: p.isMe || payload.participantId === participantId,
+          };
+        }),
+      );
+    });
+
+    const unsubscribeRoom = chatStompSession.subscribeToRoom({
       roomId,
       participantId,
       onVideoCameraChanged: ({ userId, cameraEnabled }) => {
@@ -165,10 +168,11 @@ export function useCamStudyRoomStackPageModel({
               nickname,
               cameraEnabled,
               screenVisible: cameraEnabled,
-              isMe: false,
+              isMe: userId === myUserIdRef.current || joinedParticipantId === participantId,
               profileImageUrl: null,
               joinedAt,
-              role: "PARTICIPANT" as const,
+              role:
+                userId === ownerUserIdRef.current ? ("OWNER" as const) : ("PARTICIPANT" as const),
             },
           ];
         });
@@ -177,9 +181,20 @@ export function useCamStudyRoomStackPageModel({
         setParticipants((prev) => prev.filter((p) => p.userId !== userId));
       },
     });
+
+    return () => {
+      unsubscribeSessionSynced();
+      unsubscribeRoom();
+    };
   }, [roomId, participantId]);
 
-  const { localVideoTrack, remoteVideoTracks, publishCamera, unpublishCamera } = useLiveKitSession({
+  const {
+    localVideoTrack,
+    remoteVideoTracks,
+    isConnected: isLivekitConnected,
+    publishCamera,
+    unpublishCamera,
+  } = useLiveKitSession({
     livekitUrl: LIVEKIT_URL,
     token: livekitToken,
     roomId,
@@ -236,6 +251,7 @@ export function useCamStudyRoomStackPageModel({
     summaryCounts,
     participants,
     isMyCameraEnabled,
+    isLivekitConnected,
     isControlMenuOpen,
     localVideoTrack,
     remoteVideoTracks,
