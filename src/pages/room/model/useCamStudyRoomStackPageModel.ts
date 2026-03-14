@@ -48,6 +48,7 @@ function mapDetailToVMs(
     })
     .map((p) => ({
       userId: p.userId,
+      participantId: p.participantId ?? null,
       nickname: p.nickname,
       cameraEnabled: p.cameraEnabled,
       screenVisible: p.cameraEnabled,
@@ -147,13 +148,20 @@ export function useCamStudyRoomStackPageModel({
           ),
         );
       },
-      onVideoParticipantJoined: ({ userId, nickname, cameraEnabled, joinedAt }) => {
+      onVideoParticipantJoined: ({
+        userId,
+        participantId: joinedParticipantId,
+        nickname,
+        cameraEnabled,
+        joinedAt,
+      }) => {
         setParticipants((prev) => {
           if (prev.some((p) => p.userId === userId)) return prev;
           return [
             ...prev,
             {
               userId,
+              participantId: joinedParticipantId,
               nickname,
               cameraEnabled,
               screenVisible: cameraEnabled,

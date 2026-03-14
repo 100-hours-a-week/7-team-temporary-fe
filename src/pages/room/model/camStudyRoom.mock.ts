@@ -44,6 +44,7 @@ export function createMockParticipants(
     const isMe = index === participantsCount - 1;
     return {
       userId,
+      participantId: null,
       nickname: index === 0 ? "방장" : `참여자 ${index}`,
       cameraEnabled,
       screenVisible,
