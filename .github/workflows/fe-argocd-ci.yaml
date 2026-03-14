@@ -1,0 +1,145 @@
+name: BigBang-FE-ArgoCD-CI
+
+on:
+  push:
+    branches:
+      - 'feature/argoCD'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fe-argocd-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-push:
+    name: Build & Push Image (feature/argoCD)
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: 52.78.146.67:5000
+      REPOSITORY: molip-fe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack (pnpm)
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.1 --activate
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+
+      - name: Resolve image metadata
+        run: |
+          set -euo pipefail
+          SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-7)"
+          BRANCH_SLUG="$(echo "${GITHUB_REF_NAME}" | tr '/:' '--' | tr -cd '[:alnum:]._-')"
+
+          echo "SHORT_SHA=${SHORT_SHA}" >> "$GITHUB_ENV"
+          echo "BRANCH_SLUG=${BRANCH_SLUG}" >> "$GITHUB_ENV"
+          echo "LOCAL_IMAGE=molip-fe:${SHORT_SHA}" >> "$GITHUB_ENV"
+          echo "IMAGE_URI=${REGISTRY}/${REPOSITORY}:${SHORT_SHA}" >> "$GITHUB_ENV"
+          echo "BRANCH_LATEST_URI=${REGISTRY}/${REPOSITORY}:${BRANCH_SLUG}-latest" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL_STAGING }}" >> "$GITHUB_ENV"
+
+      - name: Configure Docker daemon for private registry
+        run: |
+          set -euo pipefail
+          echo '{"insecure-registries":["52.78.146.67:5000"]}' | sudo tee /etc/docker/daemon.json >/dev/null
+          sudo systemctl restart docker
+          docker info >/dev/null
+
+      - name: Build Docker image
+        env:
+          NEXT_PUBLIC_API_TASK_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_TASK_BASE_URL }}
+          NEXT_PUBLIC_API_CHAT_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_CHAT_BASE_URL }}
+          NEXT_PUBLIC_ENABLE_SW: ${{ secrets.NEXT_PUBLIC_ENABLE_SW }}
+          NEXT_PUBLIC_ENABLE_MIDDLEWARE: ${{ secrets.NEXT_PUBLIC_ENABLE_MIDDLEWARE }}
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_VAPID_KEY }}
+          NEXT_PUBLIC_CHAT_SOCKET_CONNECT_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_CONNECT_DEST }}
+          NEXT_PUBLIC_CHAT_SOCKET_CONNECTED_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_CONNECTED_DEST }}
+          NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_USER_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_USER_DEST }}
+          NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBED_USER_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBED_USER_DEST }}
+          NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST }}
+          NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS }}
+          NEXT_PUBLIC_CHAT_SOCKET_PONG_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_PONG_DEST }}
+          NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_ROOM_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_ROOM_DEST }}
+          NEXT_PUBLIC_CHAT_SOCKET_UNSUBSCRIBE_ROOM_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_UNSUBSCRIBE_ROOM_DEST }}
+          NEXT_PUBLIC_CHAT_SOCKET_MESSAGE_SEND_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_MESSAGE_SEND_DEST }}
+          NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST }}
+          NEXT_PUBLIC_CHAT_SOCKET_DEBUG: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_DEBUG }}
+          NEXT_PUBLIC_CHAT_STOMP_BROKER_URL: ${{ secrets.NEXT_PUBLIC_CHAT_STOMP_BROKER_URL }}
+          API_PROXY_TASK_TARGET: ${{ secrets.API_PROXY_TASK_TARGET }}
+          API_PROXY_CHAT_TARGET: ${{ secrets.API_PROXY_CHAT_TARGET }}
+          API_PROXY_TARGET: ${{ secrets.API_PROXY_TARGET }}
+        run: |
+          set -euo pipefail
+          DOCKER_BUILDKIT=1 docker build \
+            --build-arg NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL}" \
+            --build-arg NEXT_PUBLIC_API_TASK_BASE_URL="${NEXT_PUBLIC_API_TASK_BASE_URL}" \
+            --build-arg NEXT_PUBLIC_API_CHAT_BASE_URL="${NEXT_PUBLIC_API_CHAT_BASE_URL}" \
+            --build-arg NEXT_PUBLIC_ENABLE_SW="${NEXT_PUBLIC_ENABLE_SW}" \
+            --build-arg NEXT_PUBLIC_ENABLE_MIDDLEWARE="${NEXT_PUBLIC_ENABLE_MIDDLEWARE}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY="${NEXT_PUBLIC_FIREBASE_API_KEY}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="${NEXT_PUBLIC_FIREBASE_PROJECT_ID}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID="${NEXT_PUBLIC_FIREBASE_APP_ID}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="${NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}" \
+            --build-arg NEXT_PUBLIC_FIREBASE_VAPID_KEY="${NEXT_PUBLIC_FIREBASE_VAPID_KEY}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_CONNECT_DEST="${NEXT_PUBLIC_CHAT_SOCKET_CONNECT_DEST}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_CONNECTED_DEST="${NEXT_PUBLIC_CHAT_SOCKET_CONNECTED_DEST}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_USER_DEST="${NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_USER_DEST}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBED_USER_DEST="${NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBED_USER_DEST}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST="${NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS="${NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_PONG_DEST="${NEXT_PUBLIC_CHAT_SOCKET_PONG_DEST}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_ROOM_DEST="${NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_ROOM_DEST}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_UNSUBSCRIBE_ROOM_DEST="${NEXT_PUBLIC_CHAT_SOCKET_UNSUBSCRIBE_ROOM_DEST}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_MESSAGE_SEND_DEST="${NEXT_PUBLIC_CHAT_SOCKET_MESSAGE_SEND_DEST}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST="${NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST}" \
+            --build-arg NEXT_PUBLIC_CHAT_SOCKET_DEBUG="${NEXT_PUBLIC_CHAT_SOCKET_DEBUG}" \
+            --build-arg NEXT_PUBLIC_CHAT_STOMP_BROKER_URL="${NEXT_PUBLIC_CHAT_STOMP_BROKER_URL}" \
+            --build-arg API_PROXY_TASK_TARGET="${API_PROXY_TASK_TARGET}" \
+            --build-arg API_PROXY_CHAT_TARGET="${API_PROXY_CHAT_TARGET}" \
+            --build-arg API_PROXY_TARGET="${API_PROXY_TARGET}" \
+            -t "${LOCAL_IMAGE}" .
+
+      - name: Push image to private registry
+        run: |
+          set -euo pipefail
+          docker tag "${LOCAL_IMAGE}" "${IMAGE_URI}"
+          docker tag "${LOCAL_IMAGE}" "${BRANCH_LATEST_URI}"
+
+          docker push "${IMAGE_URI}"
+          docker push "${BRANCH_LATEST_URI}"
+
+      - name: Cleanup local docker artifacts
+        if: always()
+        run: |
+          set +e
+          if [ -n "${LOCAL_IMAGE:-}" ]; then
+            docker image rm "${LOCAL_IMAGE}" >/dev/null 2>&1 || true
+          fi
+          docker image rm "${IMAGE_URI:-}" >/dev/null 2>&1 || true
+          docker image rm "${BRANCH_LATEST_URI:-}" >/dev/null 2>&1 || true
+          docker builder prune -af --filter "until=24h" >/dev/null 2>&1 || true
