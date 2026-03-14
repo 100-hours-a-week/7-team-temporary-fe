@@ -61,7 +61,7 @@ function ParticipantCell({
 
   const track = participant.isMe
     ? localVideoTrack
-    : (remoteVideoTracks.get(String(participant.userId)) ?? null);
+    : (remoteVideoTracks.get(String(participant.participantId ?? participant.userId)) ?? null);
 
   return (
     <div
