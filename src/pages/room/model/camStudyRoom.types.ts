@@ -1,5 +1,6 @@
 export interface CamStudyParticipantVM {
   userId: number;
+  participantId: number | null;
   nickname: string;
   cameraEnabled: boolean;
   screenVisible: boolean;

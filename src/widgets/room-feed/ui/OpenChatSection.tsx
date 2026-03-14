@@ -46,7 +46,6 @@ export function OpenChatSection({ enabled, onRoomClick, scrollRef }: OpenChatSec
     isInitialLoading,
     isFetching,
     isError,
-    reset,
   } = usePaginatedAccumulator<ChatRoomListItemVM>({
     data: roomListQuery.data,
     isLoading: roomListQuery.isLoading,
@@ -62,8 +61,6 @@ export function OpenChatSection({ enabled, onRoomClick, scrollRef }: OpenChatSec
   // 섹션 마운트 시 스크롤 초기화
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });
-    setCurrentPage(CHAT_ROOM_LIST_PAGE);
-    reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
