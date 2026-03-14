@@ -1767,6 +1767,16 @@ class ChatStompSession {
         return;
       }
 
+      if (event === "video.session.synced") {
+        chatSocketLog("[chat-socket] video.session.synced", { roomId });
+        this.emitListeners(
+          this.videoSessionSyncedListeners,
+          payload as VideoSessionSyncedPayload,
+          "videoSessionSynced",
+        );
+        return;
+      }
+
       if (event === "video.publish.started") {
         chatSocketLog("[chat-socket] video.publish.started", { roomId });
         entry.onVideoPublishStarted?.(payload as VideoPublishStartedPayload);

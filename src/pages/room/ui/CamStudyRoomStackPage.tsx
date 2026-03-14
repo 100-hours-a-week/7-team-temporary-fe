@@ -30,6 +30,7 @@ export function CamStudyRoomStackPage({
     summaryCounts,
     participants,
     isMyCameraEnabled,
+    isLivekitConnected,
     isControlMenuOpen,
     localVideoTrack,
     remoteVideoTracks,
@@ -74,6 +75,7 @@ export function CamStudyRoomStackPage({
 
       <CamStudyControlDock
         isCameraEnabled={isMyCameraEnabled}
+        isCameraDisabled={!isLivekitConnected}
         isMenuOpen={isControlMenuOpen}
         onToggleMenu={handleToggleControlMenu}
         onToggleCamera={handleToggleMyCamera}

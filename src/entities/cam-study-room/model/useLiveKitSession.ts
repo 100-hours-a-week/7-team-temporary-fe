@@ -28,8 +28,24 @@ export function useLiveKitSession({
   );
   const [isConnected, setIsConnected] = useState(false);
 
+  const syncVideoSession = useCallback(
+    async (published: boolean) => {
+      if (participantId === null) return;
+      const room = roomRef.current;
+      if (!room || !room.name) return;
+
+      await syncChatRoomVideoSession({
+        roomId,
+        participantId,
+        sessionId: room.name,
+        published,
+      });
+    },
+    [participantId, roomId],
+  );
+
   useEffect(() => {
-    if (!token || !livekitUrl) return;
+    if (!token || !livekitUrl || participantId === null) return;
 
     let active = true;
     const room = new Room();
@@ -54,9 +70,11 @@ export function useLiveKitSession({
 
     room
       .connect(livekitUrl, token)
-      .then(() => {
+      .then(async () => {
         if (!active) return;
         setIsConnected(true);
+        // 입장 직후 세션 스냅샷 대상에 포함되도록 비디오 세션을 등록한다.
+        await syncVideoSession(false);
       })
       .catch((err) => {
         if (active) console.error("[livekit] connect error", err);
@@ -64,6 +82,9 @@ export function useLiveKitSession({
 
     return () => {
       active = false;
+      void syncVideoSession(false).catch((err) => {
+        console.warn("[livekit] session sync on cleanup failed", err);
+      });
       localTrackRef.current?.stop();
       localTrackRef.current = null;
       setLocalVideoTrack(null);
@@ -72,7 +93,7 @@ export function useLiveKitSession({
       room.disconnect();
       roomRef.current = null;
     };
-  }, [token, livekitUrl]);
+  }, [livekitUrl, participantId, syncVideoSession, token]);
 
   const publishCamera = useCallback(async () => {
     if (participantId === null) return;
@@ -89,9 +110,9 @@ export function useLiveKitSession({
     await room.localParticipant.publishTrack(track);
     await Promise.all([
       updateChatRoomParticipantCameraStatus({ participantId, cameraEnabled: true }),
-      syncChatRoomVideoSession({ roomId, participantId, sessionId: room.name, published: true }),
+      syncVideoSession(true),
     ]);
-  }, [isConnected, participantId, roomId]);
+  }, [isConnected, participantId, syncVideoSession]);
 
   const unpublishCamera = useCallback(async () => {
     const track = localTrackRef.current;
@@ -103,14 +124,14 @@ export function useLiveKitSession({
       await room.localParticipant.unpublishTrack(track);
       await Promise.all([
         updateChatRoomParticipantCameraStatus({ participantId, cameraEnabled: false }),
-        syncChatRoomVideoSession({ roomId, participantId, sessionId: room.name, published: false }),
+        syncVideoSession(false),
       ]);
     }
 
     track.stop();
     localTrackRef.current = null;
     setLocalVideoTrack(null);
-  }, [isConnected, participantId, roomId]);
+  }, [isConnected, participantId, syncVideoSession]);
 
   return { localVideoTrack, remoteVideoTracks, isConnected, publishCamera, unpublishCamera };
 }

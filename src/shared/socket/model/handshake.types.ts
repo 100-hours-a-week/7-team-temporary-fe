@@ -231,19 +231,13 @@ export interface VideoRoomDeletedPayload {
 
 // ─── Video: User queue (/user/queue/room) ─────────────────────────────────────
 
-export interface VideoParticipantSnapshot {
-  userId: number;
-  participantId: number;
-  nickname: string;
-  cameraEnabled: boolean;
-  screenVisible: boolean;
-}
-
 export interface VideoSessionSyncedPayload {
-  eventId: string;
+  eventId?: string;
+  roomId: number;
+  participantId: number;
   sessionId: string;
   published: boolean;
-  participants: VideoParticipantSnapshot[];
+  at?: string;
 }
 
 export interface VideoCameraToggleAcceptedPayload {
