@@ -55,7 +55,6 @@ export function CamStudySection({ enabled, onRoomClick, scrollRef }: CamStudySec
     isInitialLoading,
     isFetching,
     isError,
-    reset,
   } = usePaginatedAccumulator<CamStudyRoomListItemVM>({
     data: roomListQuery.data,
     isLoading: roomListQuery.isLoading,
@@ -71,8 +70,6 @@ export function CamStudySection({ enabled, onRoomClick, scrollRef }: CamStudySec
   // 섹션 마운트 시 스크롤 초기화
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0 });
-    setCurrentPage(CAM_STUDY_LIST_PAGE);
-    reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
