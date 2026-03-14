@@ -3,6 +3,7 @@ import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
 
 interface CamStudyControlDockProps {
   isCameraEnabled: boolean;
+  isCameraDisabled?: boolean;
   isMenuOpen: boolean;
   onToggleMenu: () => void;
   onToggleCamera: () => void;
@@ -10,6 +11,7 @@ interface CamStudyControlDockProps {
 
 export function CamStudyControlDock({
   isCameraEnabled,
+  isCameraDisabled = false,
   isMenuOpen,
   onToggleMenu,
   onToggleCamera,
@@ -27,7 +29,8 @@ export function CamStudyControlDock({
           <button
             type="button"
             onClick={onToggleCamera}
-            className="bg-ink-900 hover:bg-primary-500 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-colors"
+            disabled={isCameraDisabled}
+            className="bg-ink-900 hover:bg-primary-500 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition-colors disabled:opacity-40"
             aria-label={isCameraEnabled ? "캠 끄기" : "캠 켜기"}
           >
             <CamControlIcon isOff={isCameraEnabled} />
