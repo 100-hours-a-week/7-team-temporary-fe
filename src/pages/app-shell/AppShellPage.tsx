@@ -163,7 +163,7 @@ export function AppShellPage() {
         className="h-dvh"
         pageClassName="py-0"
       >
-        <TabRoot initialTab="home">
+        <TabRoot>
           <AppShellContent onReportClick={handleReportClick} />
         </TabRoot>
         <ReportSheet

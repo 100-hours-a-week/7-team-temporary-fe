@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 import type { AppTab } from "./types";
 
@@ -11,21 +12,32 @@ interface TabContextValue {
 
 const TabContext = createContext<TabContextValue | null>(null);
 
+function pathnameToTab(pathname: string | null): AppTab {
+  if (!pathname) return "home";
+  if (pathname.startsWith("/retro")) return "retro";
+  if (pathname.startsWith("/room")) return "room";
+  if (pathname.startsWith("/profile")) return "profile";
+  return "home";
+}
+
 interface TabProviderProps {
-  initialTab?: AppTab;
   children: ReactNode;
 }
 
-export function TabProvider({ initialTab = "home", children }: TabProviderProps) {
-  const [activeTab, setActiveTab] = useState<AppTab>(initialTab);
+export function TabProvider({ children }: TabProviderProps) {
+  const pathname = usePathname();
+  const router = useRouter();
 
-  const value = useMemo(
-    () => ({
-      activeTab,
-      setActiveTab,
-    }),
-    [activeTab],
+  const activeTab = pathnameToTab(pathname);
+
+  const setActiveTab = useCallback(
+    (tab: AppTab) => {
+      router.push(`/${tab}`);
+    },
+    [router],
   );
+
+  const value = useMemo(() => ({ activeTab, setActiveTab }), [activeTab, setActiveTab]);
 
   return <TabContext.Provider value={value}>{children}</TabContext.Provider>;
 }
