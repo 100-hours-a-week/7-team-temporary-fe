@@ -12,7 +12,8 @@ interface TabContextValue {
 
 const TabContext = createContext<TabContextValue | null>(null);
 
-function pathnameToTab(pathname: string): AppTab {
+function pathnameToTab(pathname: string | null): AppTab {
+  if (!pathname) return "home";
   if (pathname.startsWith("/retro")) return "retro";
   if (pathname.startsWith("/room")) return "room";
   if (pathname.startsWith("/profile")) return "profile";
