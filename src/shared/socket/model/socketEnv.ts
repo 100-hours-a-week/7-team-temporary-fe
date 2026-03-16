@@ -20,6 +20,15 @@ const USER_QUEUE_ROOM_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST?.trim() ?? "/user/queue/room";
 const USER_QUEUE_REPORT_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_REPORT_DEST?.trim() ?? "/user/queue/report";
+const VIDEO_PARTICIPANT_ONLINE_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_VIDEO_PARTICIPANT_ONLINE_DEST?.trim() ??
+  "/pub/room/video/online";
+const VIDEO_PARTICIPANT_HEARTBEAT_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_VIDEO_PARTICIPANT_HEARTBEAT_DEST?.trim() ??
+  "/pub/room/video/heartbeat";
+const VIDEO_PARTICIPANT_OFFLINE_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_VIDEO_PARTICIPANT_OFFLINE_DEST?.trim() ??
+  "/pub/room/video/offline";
 const RECONNECT_DELAY_MS = Number(process.env.NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS ?? 5000);
 const CHAT_SOCKET_LOG_ENABLED = false;
 
@@ -37,6 +46,9 @@ export interface ChatSocketStartConfig {
   lastSeenUpdateDestination: string;
   userQueueRoomDestination: string;
   userQueueReportDestination: string;
+  videoParticipantOnlineDestination: string;
+  videoParticipantHeartbeatDestination: string;
+  videoParticipantOfflineDestination: string;
   reconnectDelayMs: number;
 }
 
@@ -100,6 +112,9 @@ export function resolveChatSocketStartConfig(): ChatSocketStartConfig | null {
     lastSeenUpdateDestination: LAST_SEEN_UPDATE_DESTINATION,
     userQueueRoomDestination: USER_QUEUE_ROOM_DESTINATION,
     userQueueReportDestination: USER_QUEUE_REPORT_DESTINATION,
+    videoParticipantOnlineDestination: VIDEO_PARTICIPANT_ONLINE_DESTINATION,
+    videoParticipantHeartbeatDestination: VIDEO_PARTICIPANT_HEARTBEAT_DESTINATION,
+    videoParticipantOfflineDestination: VIDEO_PARTICIPANT_OFFLINE_DESTINATION,
     reconnectDelayMs: Number.isFinite(RECONNECT_DELAY_MS) ? RECONNECT_DELAY_MS : 5000,
   };
 }

@@ -41,6 +41,9 @@ import type {
   VideoParticipantJoinedPayload,
   VideoParticipantLeftPayload,
   VideoPublishStartedPayload,
+  VideoParticipantHeartbeatPayload,
+  VideoParticipantOfflinePayload,
+  VideoParticipantOnlinePayload,
   VideoPublishStoppedPayload,
   VideoRoomDeletedPayload,
   VideoSessionSyncedPayload,
@@ -593,6 +596,47 @@ class ChatStompSession {
     }
 
     return () => this.teardownRoomSubscription(roomId);
+  }
+
+  // ─── Video participant online ──────────────────────────────────────────────────
+
+  sendVideoParticipantOnline(payload: VideoParticipantOnlinePayload) {
+    if (!this.client?.connected || !this.config) {
+      chatSocketWarn("[chat-socket] sendVideoParticipantOnline: 소켓 미연결 상태");
+      return;
+    }
+    this.publishWithReceipt({
+      client: this.client,
+      destination: this.config.videoParticipantOnlineDestination,
+      body: JSON.stringify(payload),
+      eventName: "video.participant.online",
+      payloadForLog: { roomId: payload.roomId, participantId: payload.participantId },
+    });
+  }
+
+  sendVideoParticipantHeartbeat(payload: VideoParticipantHeartbeatPayload) {
+    if (!this.client?.connected || !this.config) return;
+    this.publishWithReceipt({
+      client: this.client,
+      destination: this.config.videoParticipantHeartbeatDestination,
+      body: JSON.stringify(payload),
+      eventName: "video.participant.heartbeat",
+      payloadForLog: { roomId: payload.roomId, participantId: payload.participantId },
+    });
+  }
+
+  sendVideoParticipantOffline(payload: VideoParticipantOfflinePayload) {
+    if (!this.client?.connected || !this.config) {
+      chatSocketWarn("[chat-socket] sendVideoParticipantOffline: 소켓 미연결 상태");
+      return;
+    }
+    this.publishWithReceipt({
+      client: this.client,
+      destination: this.config.videoParticipantOfflineDestination,
+      body: JSON.stringify(payload),
+      eventName: "video.participant.offline",
+      payloadForLog: { roomId: payload.roomId, participantId: payload.participantId },
+    });
   }
 
   // ─── Message send ─────────────────────────────────────────────────────────────
