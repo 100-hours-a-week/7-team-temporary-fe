@@ -3,10 +3,12 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { createUuid } from "@/shared/lib";
+
 import { STACK_PAGE_EXIT_MS } from "./constants";
 import type { StackEntry, StackPageContextValue } from "./stackPageContext";
 
-const createStackKey = () => crypto.randomUUID();
+const createStackKey = () => createUuid();
 
 export function useStackPageState(): StackPageContextValue {
   const [stack, setStack] = useState<StackEntry[]>([]);
