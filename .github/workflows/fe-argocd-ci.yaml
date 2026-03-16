@@ -1,9 +1,11 @@
 name: BigBang-FE-ArgoCD-CI
 
 on:
-  push:
+  pull_request:
     branches:
-      - 'feature/argoCD'
+      - main
+    types:
+      - closed
   workflow_dispatch:
 
 permissions:
@@ -15,8 +17,9 @@ concurrency:
 
 jobs:
   docker-push:
-    name: Build & Push Image (feature/argoCD)
+    name: Build & Push Image (merged to main)
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository)
     env:
       REGISTRY: 52.78.146.67:5000
       REPOSITORY: molip-fe
@@ -24,6 +27,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -43,15 +48,14 @@ jobs:
       - name: Resolve image metadata
         run: |
           set -euo pipefail
-          SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-7)"
-          BRANCH_SLUG="$(echo "${GITHUB_REF_NAME}" | tr '/:' '--' | tr -cd '[:alnum:]._-')"
+          SOURCE_SHA="${{ github.event.pull_request.merge_commit_sha || github.sha }}"
+          SHORT_SHA="$(echo "${SOURCE_SHA}" | cut -c1-7)"
 
           echo "SHORT_SHA=${SHORT_SHA}" >> "$GITHUB_ENV"
-          echo "BRANCH_SLUG=${BRANCH_SLUG}" >> "$GITHUB_ENV"
           echo "LOCAL_IMAGE=molip-fe:${SHORT_SHA}" >> "$GITHUB_ENV"
           echo "IMAGE_URI=${REGISTRY}/${REPOSITORY}:${SHORT_SHA}" >> "$GITHUB_ENV"
-          echo "BRANCH_LATEST_URI=${REGISTRY}/${REPOSITORY}:${BRANCH_SLUG}-latest" >> "$GITHUB_ENV"
-          echo "NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL_STAGING }}" >> "$GITHUB_ENV"
+          echo "BRANCH_LATEST_URI=${REGISTRY}/${REPOSITORY}:main-latest" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL_PRODUCTION }}" >> "$GITHUB_ENV"
 
       - name: Configure Docker daemon for private registry
         run: |

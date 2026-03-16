@@ -10,7 +10,6 @@ on:
       - opened
       - synchronize
       - reopened
-      - closed
 
 permissions:
   contents: read
@@ -21,184 +20,42 @@ concurrency:
 
 jobs:
   fe:
-    name: Frontend CI (Next.js + Docker)
+    name: Frontend CI (Next.js)
     runs-on: ubuntu-latest
-    if: ${{ !(github.event.action == 'closed' && github.event.pull_request.merged == true && github.base_ref == 'develop') }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node.js
-        if: github.event.action != 'closed'
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Enable Corepack (pnpm)
-        if: github.event.action != 'closed'
         run: |
           corepack enable
           corepack prepare pnpm@9.15.1 --activate
 
       - name: Install dependencies
-        if: github.event.action != 'closed'
         run: |
           set -euo pipefail
           pnpm install --frozen-lockfile
 
       - name: Lint (PR)
-        if: github.event.action != 'closed'
         run: pnpm run lint
 
       - name: Build (Next.js)
-        if: github.event.action != 'closed'
         run: pnpm run build
 
-      - name: Resolve build metadata
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event.action }}" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ] && [ -n "${{ github.event.pull_request.merge_commit_sha }}" ]; then
-            SOURCE_SHA="${{ github.event.pull_request.merge_commit_sha }}"
-          else
-            SOURCE_SHA="${GITHUB_SHA}"
-          fi
-          SHORT_SHA="$(echo "${SOURCE_SHA}" | cut -c1-7)"
-
-          TARGET_BRANCH="${{ github.base_ref }}"
-
-          TARGET_SLUG="$(echo "${TARGET_BRANCH}" | tr '/:' '--' | tr -cd '[:alnum:]._-')"
-          [ -n "${TARGET_SLUG}" ] || TARGET_SLUG="detached"
-
-          echo "SHORT_SHA=${SHORT_SHA}" >> "$GITHUB_ENV"
-          echo "TARGET_BRANCH=${TARGET_BRANCH}" >> "$GITHUB_ENV"
-          echo "TARGET_SLUG=${TARGET_SLUG}" >> "$GITHUB_ENV"
-          echo "LOCAL_IMAGE=molip-fe:${SHORT_SHA}" >> "$GITHUB_ENV"
-
-      - name: Select API base url by target branch
-        run: |
-          set -euo pipefail
-          if [ "${TARGET_BRANCH}" = "main" ]; then
-            echo "NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL_PRODUCTION }}" >> "$GITHUB_ENV"
-          else
-            echo "NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL_STAGING }}" >> "$GITHUB_ENV"
-          fi
-
-      - name: Build Docker image
-        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/'))
-        env:
-          NEXT_PUBLIC_API_TASK_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_TASK_BASE_URL }}
-          NEXT_PUBLIC_API_CHAT_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_CHAT_BASE_URL }}
-          NEXT_PUBLIC_ENABLE_SW: ${{ secrets.NEXT_PUBLIC_ENABLE_SW }}
-          NEXT_PUBLIC_ENABLE_MIDDLEWARE: ${{ secrets.NEXT_PUBLIC_ENABLE_MIDDLEWARE }}
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
-          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
-          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
-          NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_VAPID_KEY }}
-          NEXT_PUBLIC_CHAT_SOCKET_CONNECT_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_CONNECT_DEST }}
-          NEXT_PUBLIC_CHAT_SOCKET_CONNECTED_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_CONNECTED_DEST }}
-          NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_USER_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_USER_DEST }}
-          NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBED_USER_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBED_USER_DEST }}
-          NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST }}
-          NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS }}
-          NEXT_PUBLIC_CHAT_SOCKET_PONG_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_PONG_DEST }}
-          NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_ROOM_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_ROOM_DEST }}
-          NEXT_PUBLIC_CHAT_SOCKET_UNSUBSCRIBE_ROOM_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_UNSUBSCRIBE_ROOM_DEST }}
-          NEXT_PUBLIC_CHAT_SOCKET_MESSAGE_SEND_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_MESSAGE_SEND_DEST }}
-          NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST }}
-          NEXT_PUBLIC_CHAT_SOCKET_DEBUG: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_DEBUG }}
-          NEXT_PUBLIC_CHAT_STOMP_BROKER_URL: ${{ secrets.NEXT_PUBLIC_CHAT_STOMP_BROKER_URL }}
-          API_PROXY_TASK_TARGET: ${{ secrets.API_PROXY_TASK_TARGET }}
-          API_PROXY_CHAT_TARGET: ${{ secrets.API_PROXY_CHAT_TARGET }}
-          API_PROXY_TARGET: ${{ secrets.API_PROXY_TARGET }}
-        run: |
-          set -euo pipefail
-          DOCKER_BUILDKIT=1 docker build \
-            --build-arg NEXT_PUBLIC_API_BASE_URL="${NEXT_PUBLIC_API_BASE_URL}" \
-            --build-arg NEXT_PUBLIC_API_TASK_BASE_URL="${NEXT_PUBLIC_API_TASK_BASE_URL}" \
-            --build-arg NEXT_PUBLIC_API_CHAT_BASE_URL="${NEXT_PUBLIC_API_CHAT_BASE_URL}" \
-            --build-arg NEXT_PUBLIC_ENABLE_SW="${NEXT_PUBLIC_ENABLE_SW}" \
-            --build-arg NEXT_PUBLIC_ENABLE_MIDDLEWARE="${NEXT_PUBLIC_ENABLE_MIDDLEWARE}" \
-            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY="${NEXT_PUBLIC_FIREBASE_API_KEY}" \
-            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="${NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}" \
-            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID="${NEXT_PUBLIC_FIREBASE_PROJECT_ID}" \
-            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}" \
-            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}" \
-            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID="${NEXT_PUBLIC_FIREBASE_APP_ID}" \
-            --build-arg NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID="${NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}" \
-            --build-arg NEXT_PUBLIC_FIREBASE_VAPID_KEY="${NEXT_PUBLIC_FIREBASE_VAPID_KEY}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_CONNECT_DEST="${NEXT_PUBLIC_CHAT_SOCKET_CONNECT_DEST}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_CONNECTED_DEST="${NEXT_PUBLIC_CHAT_SOCKET_CONNECTED_DEST}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_USER_DEST="${NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_USER_DEST}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBED_USER_DEST="${NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBED_USER_DEST}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST="${NEXT_PUBLIC_CHAT_SOCKET_DISCONNECT_DEST}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS="${NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_PONG_DEST="${NEXT_PUBLIC_CHAT_SOCKET_PONG_DEST}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_ROOM_DEST="${NEXT_PUBLIC_CHAT_SOCKET_SUBSCRIBE_ROOM_DEST}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_UNSUBSCRIBE_ROOM_DEST="${NEXT_PUBLIC_CHAT_SOCKET_UNSUBSCRIBE_ROOM_DEST}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_MESSAGE_SEND_DEST="${NEXT_PUBLIC_CHAT_SOCKET_MESSAGE_SEND_DEST}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST="${NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST}" \
-            --build-arg NEXT_PUBLIC_CHAT_SOCKET_DEBUG="${NEXT_PUBLIC_CHAT_SOCKET_DEBUG}" \
-            --build-arg NEXT_PUBLIC_CHAT_STOMP_BROKER_URL="${NEXT_PUBLIC_CHAT_STOMP_BROKER_URL}" \
-            --build-arg API_PROXY_TASK_TARGET="${API_PROXY_TASK_TARGET}" \
-            --build-arg API_PROXY_CHAT_TARGET="${API_PROXY_CHAT_TARGET}" \
-            --build-arg API_PROXY_TARGET="${API_PROXY_TARGET}" \
-            -t "${LOCAL_IMAGE}" .
-
-      - name: Configure AWS credentials
-        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')) && github.event.pull_request.head.repo.full_name == github.repository
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Push image to ECR
-        if: github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')) && github.event.pull_request.head.repo.full_name == github.repository
-        env:
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          ECR_REPO: ${{ secrets.ECR_REPO }}
-        run: |
-          set -euo pipefail
-
-          REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-          IMAGE_URI="${REGISTRY}/${ECR_REPO}:${SHORT_SHA}"
-          BRANCH_LATEST_URI="${REGISTRY}/${ECR_REPO}:${TARGET_SLUG}-latest"
-
-          aws ecr describe-repositories --repository-names "${ECR_REPO}" --region "${AWS_REGION}" >/dev/null 2>&1 || \
-            aws ecr create-repository --repository-name "${ECR_REPO}" --region "${AWS_REGION}" >/dev/null
-
-          aws ecr get-login-password --region "${AWS_REGION}" | \
-            docker login --username AWS --password-stdin "${REGISTRY}"
-
-          docker tag "${LOCAL_IMAGE}" "${IMAGE_URI}"
-          docker tag "${LOCAL_IMAGE}" "${BRANCH_LATEST_URI}"
-
-          docker push "${IMAGE_URI}"
-          docker push "${BRANCH_LATEST_URI}"
-
-          echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
-
       - name: Notify success (develop PR)
-        if: success() && github.event.action != 'closed' && github.base_ref == 'develop'
+        if: success() && github.base_ref == 'develop'
         run: |
           set -euo pipefail
+          SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-7)"
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d "{\"content\":\"✅ FE CI 성공 (develop PR)\\nRepo: ${{ github.repository }}\\nPR: #${{ github.event.pull_request.number }} (${{ github.head_ref }} -> ${{ github.base_ref }})\\nCommit: ${SHORT_SHA}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
-
-      - name: Notify success (merged PR to release/main + ECR)
-        if: success() && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/'))
-        run: |
-          set -euo pipefail
-          curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"content\":\"✅ FE CI + ECR 업로드 성공\\nRepo: ${{ github.repository }}\\nPR: #${{ github.event.pull_request.number }} (${{ github.head_ref }} -> ${{ github.base_ref }})\\nCommit: ${SHORT_SHA}\\nImage: ${IMAGE_URI}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
 
       - name: Notify failure
         if: failure()
@@ -210,12 +67,3 @@ jobs:
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d "{\"content\":\"🚨 FE CI 실패\\nRepo: ${{ github.repository }}\\n${CONTEXT}\\nCommit: ${SHORT_SHA}\\nRun: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
-
-      - name: Cleanup local docker artifacts
-        if: always()
-        run: |
-          set +e
-          if [ -n "${LOCAL_IMAGE:-}" ]; then
-            docker image rm "${LOCAL_IMAGE}" >/dev/null 2>&1 || true
-          fi
-          docker builder prune -af --filter "until=24h" >/dev/null 2>&1 || true
