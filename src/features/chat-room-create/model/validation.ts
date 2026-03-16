@@ -4,6 +4,10 @@ import type { CreateChatRoomFormModel } from "./types";
 
 export const CREATE_CHAT_ROOM_GROUP_NAME_MAX_LENGTH = 25;
 
+export const CREATE_CHAT_ROOM_TYPE_ERRORS = {
+  REQUIRED: "방 유형을 선택해주세요.",
+} as const;
+
 export const CREATE_CHAT_ROOM_GROUP_NAME_ERRORS = {
   REQUIRED: "그룹 명을 입력해주세요.",
   MAX_LENGTH: "그룹 명은 최대 25자까지 입력할 수 있습니다.",
@@ -36,6 +40,10 @@ const REQUIRED_CHAR_CATEGORY_REGEX = /[A-Za-z가-힣]|[^0-9A-Za-z가-힣\s]/;
 function trimString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
+
+export const createChatRoomTypeRules: RegisterOptions<CreateChatRoomFormModel, "type"> = {
+  required: CREATE_CHAT_ROOM_TYPE_ERRORS.REQUIRED,
+};
 
 export function getCreateChatRoomGroupNameError(value: string): string | undefined {
   const trimmed = value.trim();

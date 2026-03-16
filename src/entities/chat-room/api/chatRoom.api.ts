@@ -5,12 +5,15 @@ import type {
   ChatRoomDetailDto,
   ChatMessageListResponseDto,
   ChatRoomListResponseDto,
-  ChatRoomType,
   ChatRoomOwnerStatusDto,
+  IssueWebRtcTokenRequestDto,
+  IssueWebRtcTokenResponseDto,
+  JoinChatRoomResponseDto,
+  SyncVideoSessionRequestDto,
+  UpdateParticipantCameraStatusRequestDto,
 } from "./types";
 
 interface FetchChatRoomListParams {
-  type: ChatRoomType;
   page?: number;
   size?: number;
   signal?: AbortSignal;
@@ -23,25 +26,16 @@ interface FetchChatRoomSearchListParams {
   signal?: AbortSignal;
 }
 
-function toChatRoomListSearchParams({
-  type,
-  page = 1,
-  size = 10,
-}: {
-  type: ChatRoomType;
-  page?: number;
-  size?: number;
-}) {
-  return new URLSearchParams({ type, page: String(page), size: String(size) });
-}
-
 export async function fetchChatRoomList({
-  type,
   page = 1,
   size = 10,
   signal,
 }: FetchChatRoomListParams): Promise<ChatRoomListResponseDto> {
-  const searchParams = toChatRoomListSearchParams({ type, page, size });
+  const searchParams = new URLSearchParams({
+    type: "OPEN_CHAT",
+    page: String(page),
+    size: String(size),
+  });
 
   return apiFetch<ChatRoomListResponseDto>(
     `${Endpoint.CHAT_ROOMS.PARTICIPANTS}?${searchParams.toString()}`,
@@ -87,6 +81,81 @@ export async function fetchChatRoomDetail({
     signal,
     authRequired: true,
   });
+}
+
+export async function joinChatRoom({
+  roomId,
+  signal,
+}: {
+  roomId: number;
+  signal?: AbortSignal;
+}): Promise<JoinChatRoomResponseDto> {
+  return apiFetch<JoinChatRoomResponseDto>(Endpoint.CHAT_ROOMS.JOIN(roomId), {
+    method: "POST",
+    signal,
+    authRequired: true,
+  });
+}
+
+export async function issueChatRoomWebRtcToken({
+  roomId,
+  participantId,
+  signal,
+}: {
+  roomId: number;
+  participantId: number;
+  signal?: AbortSignal;
+}): Promise<IssueWebRtcTokenResponseDto> {
+  return apiFetch<IssueWebRtcTokenResponseDto, IssueWebRtcTokenRequestDto>(
+    Endpoint.CHAT_ROOMS.WEBRTC_TOKEN(roomId),
+    {
+      method: "POST",
+      body: { participantId },
+      signal,
+      authRequired: true,
+    },
+  );
+}
+
+export async function syncChatRoomVideoSession({
+  roomId,
+  participantId,
+  sessionId,
+  published,
+  signal,
+}: {
+  roomId: number;
+  participantId: number;
+  sessionId: string;
+  published: boolean;
+  signal?: AbortSignal;
+}): Promise<void> {
+  return apiFetch<void, SyncVideoSessionRequestDto>(Endpoint.CHAT_ROOMS.VIDEO_SESSIONS(roomId), {
+    method: "POST",
+    body: { participantId, sessionId, published },
+    signal,
+    authRequired: true,
+  });
+}
+
+export async function updateChatRoomParticipantCameraStatus({
+  participantId,
+  cameraEnabled,
+  signal,
+}: {
+  participantId: number;
+  cameraEnabled: boolean;
+  signal?: AbortSignal;
+}): Promise<void> {
+  return apiFetch<void, UpdateParticipantCameraStatusRequestDto>(
+    Endpoint.CHAT_ROOMS.UPDATE_CAMERA_STATUS(participantId),
+    {
+      method: "PATCH",
+      body: { cameraEnabled },
+      signal,
+      authRequired: true,
+    },
+  );
 }
 
 export async function fetchChatRoomMessages({

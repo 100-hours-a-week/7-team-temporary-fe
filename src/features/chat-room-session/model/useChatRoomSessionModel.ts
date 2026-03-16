@@ -14,6 +14,7 @@ import {
 import type { ChatRoomListModel } from "@/entities/chat-room";
 import { useAuthStore } from "@/entities/user";
 import { requestPresignedUrl, uploadToPresignedUrl } from "@/shared/api";
+import { createUuid } from "@/shared/lib";
 import { chatStompSession } from "@/shared/socket";
 import { useToast } from "@/shared/ui/toast";
 
@@ -25,10 +26,7 @@ const CHAT_ROOM_STACK_INTERACTIVE_DELAY_MS = 220;
 type PendingMessagePayload = Pick<ChatMessageItemVM, "messageType" | "content" | "imageUrls">;
 
 function createIdempotencyKey() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return createUuid();
 }
 
 function toRoomFeedPreviewFromPendingMessage(message: ChatMessageItemVM): string {

@@ -1,7 +1,5 @@
 import { queryKeyFactory } from "@/shared/query";
 
-import type { ChatRoomType } from "../api";
-
 const baseKeys = queryKeyFactory("chat-room");
 
 export const chatRoomQueryKeys = {
@@ -9,7 +7,7 @@ export const chatRoomQueryKeys = {
   searchAll: () => baseKeys.by("search"),
   search: (title: string, page: number, size: number) => baseKeys.by("search", title, page, size),
   listAll: () => baseKeys.by("list"),
-  list: (type: ChatRoomType, page: number, size: number) => baseKeys.by("list", type, page, size),
+  list: (page: number, size: number) => baseKeys.by("list", page, size),
   detail: (roomId: number) => baseKeys.by("detail", roomId),
   ownerStatus: (roomId: number, ownerId: number) => baseKeys.by("owner-status", roomId, ownerId),
   messagesInfinite: (roomId: number, size: number, myUserId?: number | null) =>

@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 import type { AuthState } from "@/entities/user";
 import { useAuthStore } from "@/entities";
 import { useMutationErrorEffect } from "@/shared/query";
@@ -12,10 +10,10 @@ import { LoginForm } from "./LoginForm";
 
 interface LoginFormContainerProps {
   onGoToSignUp?: () => void;
+  onPrepareSignUp?: () => void;
 }
 
-export function LoginFormContainer({ onGoToSignUp }: LoginFormContainerProps) {
-  const router = useRouter();
+export function LoginFormContainer({ onGoToSignUp, onPrepareSignUp }: LoginFormContainerProps) {
   const setAuthenticated = useAuthStore((state: AuthState) => state.setAuthenticated);
   const { form, register, errors, isSubmitting, handleSubmit } = useLoginForm();
   const mutation = useLoginMutation({
@@ -37,6 +35,7 @@ export function LoginFormContainer({ onGoToSignUp }: LoginFormContainerProps) {
       errorMessage={null}
       onSubmit={onSubmit}
       onGoToSignUp={onGoToSignUp}
+      onPrepareSignUp={onPrepareSignUp}
     />
   );
 }

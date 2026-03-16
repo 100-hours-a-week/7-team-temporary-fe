@@ -9,7 +9,7 @@ interface UseApiMutationProps<TForm, TDto, TResult = void> {
   dtoFn?: (form: TForm) => TDto;
   authRequired?: boolean;
   refreshOnUnauthorized?: boolean;
-  onSuccess?: (data: TResult) => void;
+  onSuccess?: (data: TResult, form: TForm) => void;
   onError?: (error: unknown) => void;
   invalidateKeys?: Array<readonly unknown[]>;
   errorMapper?: (error: unknown) => Error;
@@ -67,12 +67,11 @@ export function useApiMutation<TForm, TDto, TResult = void>({
         throw error;
       }
     },
-    onSuccess: (data) => {
-      console.log(data);
+    onSuccess: (data, variables) => {
       invalidateKeys.forEach((key) => {
         queryClient.invalidateQueries({ queryKey: key });
       });
-      onSuccess?.(data);
+      onSuccess?.(data, variables);
     },
   });
 }

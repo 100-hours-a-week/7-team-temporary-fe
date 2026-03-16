@@ -2,15 +2,13 @@ import type {
   ChatMessageDto,
   ChatMessageListResponseDto,
   ChatRoomSummaryDto,
-  ChatRoomListResponseDto,
-  ChatRoomType,
   ChatRoomOwnerStatusDto,
 } from "./types";
 
 const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   {
     roomId: 10,
-    type: "OPEN_CHAT",
+
     title: "삼전 적정가는 18만이다.",
     description: "삼전이 18만원이 적정가인가에 대한 토론방",
     maxParticipants: 10,
@@ -18,7 +16,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 11,
-    type: "OPEN_CHAT",
+
     title: "삼전 18만 근거 자료 공유",
     description: "자료 공유방",
     maxParticipants: 50,
@@ -26,7 +24,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 12,
-    type: "OPEN_CHAT",
+
     title: "100시간 프로젝트 일정 조율",
     description: "팀 일정을 조율하는 방",
     maxParticipants: 20,
@@ -34,7 +32,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 13,
-    type: "OPEN_CHAT",
+
     title: "프론트엔드 코드리뷰 모임",
     description: "코드리뷰 규칙과 사례를 공유하는 방",
     maxParticipants: 30,
@@ -42,7 +40,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 14,
-    type: "OPEN_CHAT",
+
     title: "백엔드 API 계약 협의",
     description: "API 스펙 변경사항을 협의하는 방",
     maxParticipants: 25,
@@ -50,7 +48,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 15,
-    type: "OPEN_CHAT",
+
     title: "면접 스터디 질문 아카이브",
     description: "면접 질문과 답변을 정리하는 방",
     maxParticipants: 40,
@@ -58,7 +56,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 16,
-    type: "OPEN_CHAT",
+
     title: "데이터 분석 입문 스터디",
     description: "SQL과 지표 해석을 연습하는 방",
     maxParticipants: 18,
@@ -66,7 +64,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 17,
-    type: "OPEN_CHAT",
+
     title: "취업 포트폴리오 피드백",
     description: "포트폴리오 상호 피드백 채팅방",
     maxParticipants: 20,
@@ -74,7 +72,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 18,
-    type: "OPEN_CHAT",
+
     title: "알고리즘 문제 풀이 데일리",
     description: "매일 1문제 풀이 인증 방",
     maxParticipants: 50,
@@ -82,7 +80,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 19,
-    type: "OPEN_CHAT",
+
     title: "디자인 시스템 구축 논의",
     description: "토큰/컴포넌트 구조를 논의하는 방",
     maxParticipants: 16,
@@ -90,7 +88,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 22,
-    type: "OPEN_CHAT",
+
     title: "커리어 멘토링 Q&A",
     description: "주니어 커리어 고민 상담 방",
     maxParticipants: 35,
@@ -98,7 +96,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 23,
-    type: "OPEN_CHAT",
+
     title: "이력서 첨삭 클리닉",
     description: "이력서/자소서 첨삭 공유 방",
     maxParticipants: 24,
@@ -106,7 +104,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 24,
-    type: "OPEN_CHAT",
+
     title: "모의 코딩테스트 실전반",
     description: "실전 코테 시간 맞춰 푸는 방",
     maxParticipants: 60,
@@ -114,7 +112,7 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
   {
     roomId: 25,
-    type: "OPEN_CHAT",
+
     title: "CS 스터디 핵심 개념",
     description: "운영체제/네트워크 핵심 정리 방",
     maxParticipants: 45,
@@ -122,29 +120,11 @@ const OPEN_CHAT_MOCK_ITEMS: ChatRoomSummaryDto[] = [
   },
 ];
 
-const CAM_STUDY_MOCK_ITEMS: ChatRoomSummaryDto[] = [
-  {
-    roomId: 20,
-    type: "CAM_STUDY",
-    title: "오전 캠 스터디",
-    description: "오전 9시~12시 집중 스터디",
-    maxParticipants: 6,
-    participantsCount: 4,
-  },
-  {
-    roomId: 21,
-    type: "CAM_STUDY",
-    title: "저녁 캠 스터디",
-    description: "저녁 8시~11시 집중 스터디",
-    maxParticipants: 6,
-    participantsCount: 3,
-  },
-];
-
 // ─── Mock Realtime State (WebSocket 미연결 시 UI 확인용) ─────────────────────
 
 /** true로 켜두면 mapper가 아래 상태를 병합해 lastMessage/unreadCount를 렌더링한다 */
-export const CHAT_ROOM_REALTIME_MOCK_ENABLED = true;
+export const CHAT_ROOM_REALTIME_MOCK_ENABLED =
+  process.env.NEXT_PUBLIC_CHAT_ROOM_REALTIME_MOCK === "true";
 
 export interface MockRealtimeEntry {
   lastMessage: string;
@@ -235,7 +215,8 @@ export const MOCK_REALTIME_STATE: Record<number, MockRealtimeEntry> = {
   },
 };
 
-export const CHAT_ROOM_WEBSOCKET_MOCK_ENABLED = true;
+export const CHAT_ROOM_WEBSOCKET_MOCK_ENABLED =
+  process.env.NEXT_PUBLIC_CHAT_ROOM_WEBSOCKET_MOCK === "true";
 export const CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED =
   process.env.NEXT_PUBLIC_CHAT_ROOM_MESSAGE_LIST_MOCK === "true";
 
@@ -486,33 +467,5 @@ export function getMockChatRoomMessageListResponse({
     nextCursor,
     size: safeSize,
     hasNext,
-  };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface GetMockChatRoomListOptions {
-  type: ChatRoomType;
-  page?: number;
-  size?: number;
-}
-
-export function getMockChatRoomListResponse({
-  type,
-  page = 1,
-  size = 10,
-}: GetMockChatRoomListOptions): ChatRoomListResponseDto {
-  const allItems = type === "OPEN_CHAT" ? OPEN_CHAT_MOCK_ITEMS : CAM_STUDY_MOCK_ITEMS;
-  const safePage = Math.max(page, 1);
-  const safeSize = Math.max(size, 1);
-  const offset = (safePage - 1) * safeSize;
-  const pagedItems = allItems.slice(offset, offset + safeSize);
-
-  return {
-    content: pagedItems,
-    page: safePage,
-    size: safeSize,
-    totalElements: allItems.length,
-    totalPages: Math.ceil(allItems.length / safeSize),
   };
 }

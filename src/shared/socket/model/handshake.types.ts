@@ -180,6 +180,78 @@ export interface ReportStreamEndPayload {
   content?: string | null;
 }
 
+// ─── Video: Room broadcast (/sub/room/{roomId}) ───────────────────────────────
+
+export interface VideoParticipantJoinedPayload {
+  eventId: string;
+  roomId: number;
+  participantId: number;
+  userId: number;
+  nickname: string;
+  joinedAt: string;
+  cameraEnabled: boolean;
+}
+
+export interface VideoParticipantLeftPayload {
+  eventId: string;
+  roomId: number;
+  participantId: number;
+  userId: number;
+  leftAt: string;
+}
+
+export interface VideoCameraChangedPayload {
+  eventId: string;
+  roomId: number;
+  participantId: number;
+  userId: number;
+  cameraEnabled: boolean;
+}
+
+export interface VideoPublishStartedPayload {
+  eventId: string;
+  roomId: number;
+  participantId: number;
+  userId: number;
+  sessionId: string;
+}
+
+export interface VideoPublishStoppedPayload {
+  eventId: string;
+  roomId: number;
+  participantId: number;
+  userId: number;
+  sessionId: string;
+}
+
+export interface VideoRoomDeletedPayload {
+  eventId: string;
+  roomId: number;
+}
+
+// ─── Video: User queue (/user/queue/room) ─────────────────────────────────────
+
+export interface VideoSessionSyncedPayload {
+  eventId?: string;
+  roomId: number;
+  participantId: number;
+  sessionId: string;
+  published: boolean;
+  at?: string;
+}
+
+export interface VideoCameraToggleAcceptedPayload {
+  eventId: string;
+  participantId: number;
+  cameraEnabled: boolean;
+}
+
+export interface VideoTokenIssuedPayload {
+  eventId: string;
+  accessToken: string;
+  expiresAt: string;
+}
+
 // ─── Room broadcast: Server → Client (/sub/room/{roomId}) ────────────────────
 
 export interface MessageCreatedPayload {

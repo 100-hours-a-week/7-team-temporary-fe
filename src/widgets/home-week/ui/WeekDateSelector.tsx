@@ -1,7 +1,7 @@
 import { cn } from "@/shared/lib";
 import { DateSwapText } from "@/shared/ui";
 import { useHomePlanStore } from "@/entities/day-plan";
-import { isSameDate } from "@/features/home";
+import { isSameDate } from "@/shared/lib";
 
 interface WeekDateSelectorProps {
   weekDays: Date[];

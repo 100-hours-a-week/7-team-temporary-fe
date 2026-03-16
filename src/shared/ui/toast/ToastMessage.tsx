@@ -1,6 +1,8 @@
 "use client";
 
-import AnimatedContent from "@/shared/ui/AnimatedContent";
+import dynamic from "next/dynamic";
+
+const AnimatedContent = dynamic(() => import("@/shared/ui/AnimatedContent"), { ssr: false });
 import { Icon } from "@/shared/ui";
 import type { Toast } from "./types";
 

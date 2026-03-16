@@ -9,10 +9,11 @@ interface ChatRoomListProps {
 }
 
 export function ChatRoomList({ items, onChatRoomClick }: ChatRoomListProps) {
+  const emptyMessage = "아직 들어간 채팅방이 없어요\n새로운 채팅방을 만들어볼까요?";
   if (items.length === 0) {
     return (
       <EmptyStateCard
-        message={"아직 들어간 채팅방이 없어요\n새로운 채팅방을 만들어볼까요?"}
+        message={emptyMessage}
         className="mt-4"
       />
     );

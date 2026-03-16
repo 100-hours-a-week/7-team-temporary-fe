@@ -6,7 +6,7 @@ import type { CSSProperties, ProfilerOnRenderCallback } from "react";
 import { SectionCard, ShinyText } from "@/shared/ui";
 import { SectionActionButton } from "@/shared/ui/button";
 import { Icon } from "@/shared/ui/icon";
-import { HomeTaskItem } from "@/entities/day-plan-schedule";
+import { HomeTaskItem } from "@/entities/day-plan-schedule-core";
 import { useHomePlanner } from "../model/useHomePlanner";
 import { HomeWeekSelector } from "@/widgets/home-week";
 
@@ -15,12 +15,29 @@ interface HomePlannerProps {
   onWeeklyReportClick?: () => void;
 }
 
+interface MolipProfileEntry {
+  id: string;
+  phase: "mount" | "update" | "nested-update";
+  actualDuration: number;
+  baseDuration: number;
+  startTime: number;
+  commitTime: number;
+}
+
+type MolipProfileWindow = Window & {
+  __MOLIP_PROFILE_CAPTURE__?: boolean;
+  __MOLIP_PROFILE_ENTRIES__?: MolipProfileEntry[];
+};
+
 export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlannerProps) {
   const handlePlannerProfileRender = useCallback<ProfilerOnRenderCallback>(
     (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
-      if (typeof window !== "undefined" && (window as any).__MOLIP_PROFILE_CAPTURE__) {
-        const currentEntries = Array.isArray((window as any).__MOLIP_PROFILE_ENTRIES__)
-          ? (window as any).__MOLIP_PROFILE_ENTRIES__
+      if (typeof window !== "undefined") {
+        const profileWindow = window as MolipProfileWindow;
+        if (!profileWindow.__MOLIP_PROFILE_CAPTURE__) return;
+
+        const currentEntries = Array.isArray(profileWindow.__MOLIP_PROFILE_ENTRIES__)
+          ? profileWindow.__MOLIP_PROFILE_ENTRIES__
           : [];
         currentEntries.push({
           id,
@@ -30,13 +47,8 @@ export function HomePlanner({ enabled = true, onWeeklyReportClick }: HomePlanner
           startTime,
           commitTime,
         });
-        (window as any).__MOLIP_PROFILE_ENTRIES__ = currentEntries;
+        profileWindow.__MOLIP_PROFILE_ENTRIES__ = currentEntries;
       }
-
-      if (process.env.NODE_ENV !== "development") return;
-      console.log(
-        `[Profiler:${id}] phase=${phase} actual=${actualDuration.toFixed(2)}ms base=${baseDuration.toFixed(2)}ms start=${startTime.toFixed(2)} commit=${commitTime.toFixed(2)}`,
-      );
     },
     [],
   );

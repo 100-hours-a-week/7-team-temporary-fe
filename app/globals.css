@@ -65,96 +65,98 @@
   scrollbar-width: none;
 }
 
-.date-swap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  font-variant-numeric: tabular-nums;
-}
-
-.date-swap__prev,
-.date-swap__next {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  will-change: transform, opacity;
-  line-height: 1;
-}
-
-.date-swap__prev {
-  opacity: 1;
-  transform: translateY(0);
-  animation: date-swap-out 420ms ease forwards;
-  animation-fill-mode: both;
-}
-
-.date-swap__next {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.date-swap__next--anim {
-  opacity: 0;
-  transform: translateY(60%);
-  animation: date-swap-in 420ms ease forwards;
-  animation-fill-mode: both;
-}
-
-@keyframes date-swap-in {
-  from {
-    opacity: 0;
-    transform: translateY(60%);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes date-swap-out {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateY(-60%);
-  }
-}
-
-.task-card-enter {
-  animation: task-card-enter 320ms ease-out both;
-}
-
-@keyframes task-card-enter {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .task-card-enter {
-    animation: none;
-  }
-}
-
 .text-black,
 .text-neutral-900 {
   color: var(--color-ink-900) !important;
 }
+
+.shiny-text {
+  display: inline-block;
+}
+
+@keyframes home-task-strike-in {
+  from {
+    transform: translateY(-50%) scaleX(0);
+  }
+  to {
+    transform: translateY(-50%) scaleX(1);
+  }
+}
+
+@keyframes home-task-complete-pop {
+  0% {
+    transform: scale(0.9);
+  }
+  45% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.home-task-title-completed::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: currentColor;
+  transform: translateY(-50%) scaleX(1);
+  transform-origin: left center;
+}
+
+.home-task-title-strike-animate::after {
+  animation: home-task-strike-in 240ms ease-out;
+}
+
+.home-task-complete-pop-animate {
+  animation: home-task-complete-pop 260ms ease-out;
+}
+}
+
+/* Stack page animations (moved from StackPageAnimations.css to avoid separate render-blocking CSS file) */
+.stack-page-overlay {
+  animation: stack-page-slide-in 300ms ease-out;
+  animation-fill-mode: both;
+  will-change: transform;
+}
+
+.stack-page-overlay-exit {
+  animation: stack-page-slide-out 300ms ease-out;
+  animation-fill-mode: forwards;
+  pointer-events: none;
+}
+
+.stack-page-base {
+  transform: translateX(-40%);
+  transition: transform 240ms ease-out;
+}
+
+.stack-page-base-exit {
+  transform: translateX(0);
+  transition: transform 300ms ease-out;
+}
+
+@keyframes stack-page-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes stack-page-slide-out {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
 }
 
 html {
@@ -182,115 +184,6 @@ body {
   align-items: center;
   text-align: left;
   font-family: "Liberation Mono", monospace;
-}
-
-@keyframes stack-page-slide-in {
-  from {
-    transform: translateX(100%);
-  }
-
-  to {
-    transform: translateX(0);
-  }
-}
-
-.animate-float-rotate {
-  animation: float-rotate 3.2s ease-in-out infinite;
-  transform-origin: center;
-}
-
-.animate-pop-in {
-  animation: pop-in 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  animation-delay: 180ms;
-}
-
-.word-reveal {
-  opacity: 0;
-  transform: translateY(12px);
-  animation: word-reveal 420ms ease-out both;
-}
-
-@keyframes float-rotate {
-  0% {
-    transform: translateY(0) rotate(0deg) scale(1);
-  }
-
-  50% {
-    transform: translateY(-12px) rotate(10deg) scale(1.08);
-  }
-
-  100% {
-    transform: translateY(0) rotate(0deg) scale(1);
-  }
-}
-
-@keyframes pop-in {
-  0% {
-    transform: scale(0);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes word-reveal {
-  0% {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-float-rotate {
-    animation: none;
-  }
-
-  .animate-pop-in {
-    animation: none;
-  }
-
-  .word-reveal {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.stack-page-overlay {
-  animation: stack-page-slide-in 300ms ease-out;
-  animation-fill-mode: both;
-  will-change: transform;
-}
-
-@keyframes stack-page-slide-out {
-  from {
-    transform: translateX(0);
-  }
-
-  to {
-    transform: translateX(100%);
-  }
-}
-
-.stack-page-overlay-exit {
-  animation: stack-page-slide-out 300ms ease-out;
-  animation-fill-mode: forwards;
-  pointer-events: none;
-}
-.stack-page-base {
-  transform: translateX(-40%);
-  transition: transform 240ms ease-out;
-}
-
-.stack-page-base-exit {
-  transform: translateX(0);
-  transition: transform 300ms ease-out;
 }
 
 main {

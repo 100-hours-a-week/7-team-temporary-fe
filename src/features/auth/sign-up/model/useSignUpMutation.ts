@@ -4,13 +4,15 @@ import type { SignUpFormModel, SignUpRequestDto, SignUpResult } from "./types";
 import { toSignUpRequestDto } from "./dto";
 import { mapAuthError } from "../../api/error.mapper";
 
-export function useSignUpMutation(options: { onSuccess?: (data: SignUpResult) => void } = {}) {
+export function useSignUpMutation(
+  options: { onSuccess?: (data: SignUpResult, form: SignUpFormModel) => void } = {},
+) {
   return useApiMutation<SignUpFormModel, SignUpRequestDto, SignUpResult>({
     url: Endpoint.USER.BASE,
     method: "POST",
     dtoFn: toSignUpRequestDto,
     credentials: "include",
-    onSuccess: (data) => options.onSuccess?.(data),
+    onSuccess: (data, form) => options.onSuccess?.(data, form),
     errorMapper: (error) => {
       if (error instanceof ApiError) {
         return mapAuthError(error);

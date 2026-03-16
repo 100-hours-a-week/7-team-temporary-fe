@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormContext } from "react-hook-form";
-import { SplitText } from "@/shared/ui";
+import SplitText from "@/shared/ui/split-text";
 
 import type { SignUpFormModel } from "@/features/auth";
 import { FocusTimeZoneSelect, FormField } from "@/shared/form/ui";

@@ -1,16 +1,50 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
-import { AppHeader, ReportSheet } from "@/widgets/app-header";
+import { AppHeader } from "@/widgets/app-header";
+
+const ReportSheet = dynamic(
+  () => import("@/widgets/app-header/ui/ReportSheet").then((m) => m.ReportSheet),
+  { ssr: false },
+);
 import { BottomNav, TabRoot, TabScope, useTab } from "@/widgets/tab-stack";
 import { StackPageRoot, StackPageScope, useStackPage } from "@/widgets/stack";
-import { FriendStackPage } from "@/pages/friend";
+import "./AppShellRoute.css";
 import { HomePage } from "@/pages/home";
-import { ProfilePage } from "@/pages/profile";
-import { NotificationStackPage } from "@/pages/notification";
-import { RetroPage } from "@/pages/retro";
-import { RoomPage } from "@/pages/room";
+
+interface TabPageProps {
+  enabled?: boolean;
+}
+
+function TabPageFallback() {
+  return (
+    <div
+      className="h-full w-full"
+      aria-hidden
+    />
+  );
+}
+
+const RetroPage = dynamic<TabPageProps>(
+  () => import("@/pages/retro/RetroPage").then((module) => module.RetroPage),
+  {
+    loading: TabPageFallback,
+  },
+);
+const RoomPage = dynamic<TabPageProps>(
+  () => import("@/pages/room/RoomPage").then((module) => module.RoomPage),
+  {
+    loading: TabPageFallback,
+  },
+);
+const ProfilePage = dynamic<TabPageProps>(
+  () => import("@/pages/profile/ProfilePage").then((module) => module.ProfilePage),
+  {
+    loading: TabPageFallback,
+  },
+);
 
 interface AppShellHeaderProps {
   onReportClick?: () => void;
@@ -25,9 +59,11 @@ function AppShellHeader({ onReportClick }: AppShellHeaderProps) {
   const { push } = useStackPage();
 
   const handleNotificationClick = async () => {
+    const { NotificationStackPage } = await import("@/pages/notification");
     push(<NotificationStackPage />);
   };
   const handleFriendClick = async () => {
+    const { FriendStackPage } = await import("@/pages/friend");
     push(<FriendStackPage />);
   };
 
@@ -127,7 +163,7 @@ export function AppShellPage() {
         className="h-dvh"
         pageClassName="py-0"
       >
-        <TabRoot initialTab="home">
+        <TabRoot>
           <AppShellContent onReportClick={handleReportClick} />
         </TabRoot>
         <ReportSheet
