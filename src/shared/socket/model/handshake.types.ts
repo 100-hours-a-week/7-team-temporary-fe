@@ -180,6 +180,27 @@ export interface ReportStreamEndPayload {
   content?: string | null;
 }
 
+// ─── Video: Client → Server ───────────────────────────────────────────────────
+
+export interface VideoParticipantOnlinePayload {
+  roomId: number;
+  participantId: number;
+  sessionId: string;
+  cameraEnabled: boolean;
+}
+
+export interface VideoParticipantHeartbeatPayload {
+  roomId: number;
+  participantId: number;
+  sessionId: string;
+}
+
+export interface VideoParticipantOfflinePayload {
+  roomId: number;
+  participantId: number;
+  sessionId: string;
+}
+
 // ─── Video: Room broadcast (/sub/room/{roomId}) ───────────────────────────────
 
 export interface VideoParticipantJoinedPayload {

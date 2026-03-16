@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+
+const VIDEO_HEARTBEAT_INTERVAL_MS = 15_000;
 import { createLocalVideoTrack, Room, RoomEvent, Track } from "livekit-client";
 import type { LocalVideoTrack, RemoteVideoTrack } from "livekit-client";
 
@@ -6,6 +8,7 @@ import {
   syncChatRoomVideoSession,
   updateChatRoomParticipantCameraStatus,
 } from "@/entities/chat-room";
+import { chatStompSession } from "@/shared/socket";
 
 interface UseLiveKitSessionParams {
   livekitUrl: string;
@@ -48,6 +51,7 @@ export function useLiveKitSession({
     if (!token || !livekitUrl || participantId === null) return;
 
     let active = true;
+    let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
     const room = new Room();
     roomRef.current = room;
 
@@ -75,6 +79,18 @@ export function useLiveKitSession({
         setIsConnected(true);
         // 입장 직후 세션 스냅샷 대상에 포함되도록 비디오 세션을 등록한다.
         await syncVideoSession(false);
+        // Redis presence 등록 및 room 브로드캐스트 요청
+        chatStompSession.sendVideoParticipantOnline({
+          roomId,
+          participantId,
+          sessionId: room.name,
+          cameraEnabled: false,
+        });
+        // Redis TTL 갱신 heartbeat
+        const sessionId = room.name;
+        heartbeatTimer = setInterval(() => {
+          chatStompSession.sendVideoParticipantHeartbeat({ roomId, participantId, sessionId });
+        }, VIDEO_HEARTBEAT_INTERVAL_MS);
       })
       .catch((err) => {
         if (active) console.error("[livekit] connect error", err);
@@ -82,18 +98,30 @@ export function useLiveKitSession({
 
     return () => {
       active = false;
+      if (heartbeatTimer !== null) clearInterval(heartbeatTimer);
       void syncVideoSession(false).catch((err) => {
         console.warn("[livekit] session sync on cleanup failed", err);
       });
-      localTrackRef.current?.stop();
-      localTrackRef.current = null;
-      setLocalVideoTrack(null);
+      // 카메라가 켜진 상태로 방을 나가는 경우 publish 해제 후 트랙 정지
+      const localTrack = localTrackRef.current;
+      if (localTrack) {
+        void room.localParticipant.unpublishTrack(localTrack).catch(() => {});
+        localTrack.stop();
+        localTrackRef.current = null;
+        setLocalVideoTrack(null);
+      }
+      // 오프라인 신호 전송 후 LiveKit 연결 해제
+      chatStompSession.sendVideoParticipantOffline({
+        roomId,
+        participantId: participantId!,
+        sessionId: room.name,
+      });
       setIsConnected(false);
       setRemoteVideoTracks(new Map());
       room.disconnect();
       roomRef.current = null;
     };
-  }, [livekitUrl, participantId, syncVideoSession, token]);
+  }, [livekitUrl, participantId, roomId, syncVideoSession, token]);
 
   const publishCamera = useCallback(async () => {
     if (participantId === null) return;
