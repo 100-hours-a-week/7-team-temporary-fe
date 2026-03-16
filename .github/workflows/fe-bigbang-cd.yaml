@@ -6,7 +6,6 @@ on:
       - deprecated
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: fe-cd-${{ github.ref }}
@@ -158,107 +157,12 @@ jobs:
             EOSSH
 
 
-  deploy_gcp:
-    name: Deploy to GCP (main)
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    env:
-      GCP_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
-      GCP_ZONE: ${{ secrets.GCP_ZONE }}
-      GCP_INSTANCE: ${{ secrets.GCE_INSTANCE_NAME }}
-      GCP_USER: ${{ secrets.GCE_USER }}
-      GCP_TARGET_DIR: ${{ secrets.APP_DIR_GCP }}
-      GCP_SERVICE: ${{ secrets.PM2_NAME }}
-    steps:
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: app-build
-          path: .
-
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-
-
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
-        
-      - name: Force set active project (critical)
-        shell: bash
-        run: |
-          set -euo pipefail
-          gcloud config set project "${GCP_PROJECT}"
-          echo "ACTIVE_PROJECT=$(gcloud config get-value project)"
-          gcloud config list
-          
-      - name: SSH into VM (public IP) and run simple commands
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Using project=${GCP_PROJECT}, zone=${GCP_ZONE}, instance=${GCP_INSTANCE}, user=${GCP_USER}"
-          gcloud compute ssh "${GCP_INSTANCE}" \
-            --project "${GCP_PROJECT}" \
-            --zone "${GCP_ZONE}" \
-            --quiet \
-            --command "echo 'SSH_OK'; whoami; hostname; uname -a"
-
-      - name: Deploy (pm2)
-        run: |
-          set -euo pipefail
-          gcloud compute scp app.tar.gz \
-            ${GCP_USER}@${GCP_INSTANCE}:/tmp/app.tar.gz \
-            --zone="${GCP_ZONE}" \
-            --project="${GCP_PROJECT}" \
-            --quiet
-          
-          gcloud compute ssh ${GCP_USER}@${GCP_INSTANCE} \
-            --zone "${GCP_ZONE}" \
-            --project "${GCP_PROJECT}" \
-            --quiet \
-            --command "GCP_TARGET_DIR='${GCP_TARGET_DIR}' GCP_SERVICE='${GCP_SERVICE:-app}' bash -se" <<'EOSSH'
-            set -euo pipefail
-            TARGET_DIR="${GCP_TARGET_DIR:-}"
-            if [ -z "${TARGET_DIR}" ]; then
-              echo "GCP_TARGET_DIR is empty"; exit 1;
-            fi
-            case "$TARGET_DIR" in
-              "~"|"~/"*) TARGET_DIR="${HOME}${TARGET_DIR#\~}";;
-            esac
-            if ! command -v node >/dev/null 2>&1; then
-              echo "Node.js is required on target host"; exit 1;
-            fi
-            if command -v corepack >/dev/null 2>&1; then
-              corepack enable
-              corepack prepare pnpm@9.15.1 --activate
-            fi
-            if ! command -v pm2 >/dev/null 2>&1; then
-              echo "pm2 is required on target host"; exit 1;
-            fi
-            RELEASE_DIR="${TARGET_DIR}/releases/$(date +%Y%m%d_%H%M%S)"
-            CURRENT_LINK="${TARGET_DIR}/current"
-            mkdir -p "${RELEASE_DIR}"
-            tar -xzf /tmp/app.tar.gz -C "${RELEASE_DIR}"
-            cd "${RELEASE_DIR}"
-            pnpm install --prod --frozen-lockfile
-            ln -sfn "${RELEASE_DIR}" "${CURRENT_LINK}"
-            cd "${TARGET_DIR}"
-            pm2 restart ecosystem.config.js --update-env || pm2 start ecosystem.config.js
-            ls -dt ${TARGET_DIR}/releases/* 2>/dev/null | tail -n +4 | xargs -r rm -rf || true
-          EOSSH
-
   notify:
     name: Notify CD result
     runs-on: ubuntu-latest
     needs:
       - build
       - deploy_aws
-      - deploy_gcp
     if: always()
 
     steps:
@@ -276,12 +180,6 @@ jobs:
 
           if [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
             if [ "${{ needs.deploy_aws.result }}" != "success" ]; then
-              RESULT="failure"
-            fi
-          fi
-
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            if [ "${{ needs.deploy_gcp.result }}" != "success" ]; then
               RESULT="failure"
             fi
           fi
