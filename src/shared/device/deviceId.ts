@@ -1,3 +1,5 @@
+import { createUuid } from "@/shared/lib";
+
 const DEVICE_ID_STORAGE_KEY = "deviceId";
 
 /**
@@ -11,11 +13,11 @@ export function getOrCreateDeviceId(): string {
     const existing = window.localStorage.getItem(DEVICE_ID_STORAGE_KEY);
     if (existing) return existing;
 
-    const created = window.crypto.randomUUID();
+    const created = createUuid();
     window.localStorage.setItem(DEVICE_ID_STORAGE_KEY, created);
     return created;
   } catch (error) {
     console.warn("[device] deviceId storage failed", error);
-    return window.crypto.randomUUID();
+    return createUuid();
   }
 }
