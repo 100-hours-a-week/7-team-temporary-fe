@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { cn } from "@/shared/lib";
 
@@ -17,8 +17,13 @@ interface TabScopeProps {
 export function TabScope({ tab, children, className, keepMounted = false }: TabScopeProps) {
   const { activeTab } = useTab();
   const isActive = activeTab === tab;
+  const hasBeenActiveRef = useRef(isActive);
 
-  if (!isActive && !keepMounted) {
+  useEffect(() => {
+    if (isActive) hasBeenActiveRef.current = true;
+  }, [isActive]);
+
+  if (!isActive && !keepMounted && !hasBeenActiveRef.current) {
     return null;
   }
 

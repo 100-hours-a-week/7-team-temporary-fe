@@ -124,24 +124,28 @@ function AppShellContent({ onReportClick }: AppShellContentProps) {
         <TabScope
           tab="home"
           className="h-full"
+          keepMounted
         >
           <HomePage enabled={activeTab === "home"} />
         </TabScope>
         <TabScope
           tab="retro"
           className="h-full"
+          keepMounted
         >
           <RetroPage enabled={activeTab === "retro"} />
         </TabScope>
         <TabScope
           tab="room"
           className="h-full"
+          keepMounted
         >
           <RoomPage enabled={activeTab === "room"} />
         </TabScope>
         <TabScope
           tab="profile"
           className="h-full"
+          keepMounted
         >
           <ProfilePage enabled={activeTab === "profile"} />
         </TabScope>
