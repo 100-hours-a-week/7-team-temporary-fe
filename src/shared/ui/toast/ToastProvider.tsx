@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
+import { createUuid } from "@/shared/lib";
+
 import { ToastViewport } from "./ToastViewport";
 
 import type { Toast, ToastType } from "./types";
@@ -22,7 +24,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const TOAST_DURATION_MS = 3000;
 
   const showToast = useCallback((message: string, type: ToastType = "info") => {
-    const id = crypto.randomUUID();
+    const id = createUuid();
 
     setToasts((prev) => [...prev, { id, message, type, duration: TOAST_DURATION_MS }]);
 
