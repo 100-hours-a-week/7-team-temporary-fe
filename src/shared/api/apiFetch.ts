@@ -1,5 +1,10 @@
 import { ApiError } from "./error";
-import { getAccessToken } from "@/shared/auth";
+
+function getXsrfToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -37,10 +42,9 @@ export async function apiFetch<TResponse, TBody = unknown>(
     mergedHeaders.set("Content-Type", "application/json");
   }
 
-  const accessToken = getAccessToken();
-  if (accessToken && !mergedHeaders.has("Authorization")) {
-    const bearerToken = accessToken.startsWith("Bearer ") ? accessToken : `Bearer ${accessToken}`;
-    mergedHeaders.set("Authorization", bearerToken);
+  if (method !== "GET" && !mergedHeaders.has("X-XSRF-TOKEN")) {
+    const xsrfToken = getXsrfToken();
+    if (xsrfToken) mergedHeaders.set("X-XSRF-TOKEN", xsrfToken);
   }
 
   const res = await fetch(url, {
