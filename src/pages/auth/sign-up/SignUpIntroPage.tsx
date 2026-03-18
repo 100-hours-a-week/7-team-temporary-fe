@@ -28,12 +28,10 @@ export function SignUpIntroPage() {
     <SignUpFormContainer
       onSuccess={(data, form) => {
         setSuppressPublicRedirect(true);
-        if (typeof data.accessToken === "string" && data.accessToken.length > 0) {
-          setAuthenticated(data.accessToken);
-          void registerFcmToken({ promptPermission: true }).catch((error) => {
-            console.warn("[FCM] token register failed after sign up", error);
-          });
-        }
+        setAuthenticated();
+        void registerFcmToken({ promptPermission: true }).catch((error) => {
+          console.warn("[FCM] token register failed after sign up", error);
+        });
         push(
           <SignUpSuccessPage
             autoLoginCredential={{

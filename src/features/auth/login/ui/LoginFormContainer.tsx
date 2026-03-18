@@ -17,8 +17,8 @@ export function LoginFormContainer({ onGoToSignUp, onPrepareSignUp }: LoginFormC
   const setAuthenticated = useAuthStore((state: AuthState) => state.setAuthenticated);
   const { form, register, errors, isSubmitting, handleSubmit } = useLoginForm();
   const mutation = useLoginMutation({
-    onSuccess: (data) => {
-      setAuthenticated(data.accessToken);
+    onSuccess: () => {
+      setAuthenticated();
     },
   });
 

@@ -9,7 +9,7 @@ import { AUTH_DEFAULT_AUTHENTICATED_PATH, AUTH_LOGIN_PATH, isAuthPublicPath } fr
 export function AuthRouteWatcher() {
   const router = useRouter();
   const pathname = usePathname();
-  const accessToken = useAuthStore((state) => state.accessToken);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isAuthChecking = useAuthStore((state) => state.isAuthChecking);
   const suppressPublicRedirect = useAuthStore((state) => state.suppressPublicRedirect);
 
@@ -19,15 +19,15 @@ export function AuthRouteWatcher() {
 
     const isPublic = isAuthPublicPath(pathname);
 
-    if (!accessToken && !isPublic) {
+    if (!isAuthenticated && !isPublic) {
       router.replace(AUTH_LOGIN_PATH);
       return;
     }
 
-    if (accessToken && isPublic && !suppressPublicRedirect) {
+    if (isAuthenticated && isPublic && !suppressPublicRedirect) {
       router.replace(AUTH_DEFAULT_AUTHENTICATED_PATH);
     }
-  }, [accessToken, isAuthChecking, pathname, router, suppressPublicRedirect]);
+  }, [isAuthenticated, isAuthChecking, pathname, router, suppressPublicRedirect]);
 
   return null;
 }
