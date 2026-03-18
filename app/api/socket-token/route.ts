@@ -1,39 +1,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import {
-  buildBackendUrl,
-  buildClientResponseHeaders,
-  buildUpstreamRequestHeaders,
-  getProxyTarget,
-} from "../bff/_lib";
-
 /**
- * AT HttpOnly 쿠키를 백엔드에 실제로 검증하고, 소켓 핸드셰이크에 필요한 deviceId를 반환한다.
- * 백엔드 응답의 Set-Cookie(XSRF-TOKEN 포함)를 브라우저로 포워딩하여
- * restoreFromCookie() 경로에서도 XSRF-TOKEN이 세팅되도록 보장한다.
+ * AT + XSRF-TOKEN 쿠키가 모두 존재하는지 확인한다.
+ * XSRF-TOKEN이 없으면 401을 반환해 caller(AuthService)가 refresh()를 실행하도록 유도한다.
+ * refresh(PUT /token) 응답이 XSRF-TOKEN을 세팅하며, 이후 _lib.ts의 clearing 필터가
+ * GET 응답에 의한 XSRF-TOKEN 삭제를 차단하여 토큰이 유지된다.
  */
 export async function GET(req: NextRequest) {
-  const upstreamBase = getProxyTarget("task");
-  const upstreamUrl = buildBackendUrl(req, ["users"], "task");
-  const requestHeaders = buildUpstreamRequestHeaders(req.headers);
-
-  let upstreamResponse: Response;
-  try {
-    upstreamResponse = await fetch(upstreamUrl, {
-      method: "GET",
-      headers: requestHeaders,
-    });
-  } catch {
-    return NextResponse.json({ error: "upstream_unavailable" }, { status: 502 });
+  const accessToken = req.cookies.get("accessToken")?.value;
+  if (!accessToken) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  if (!upstreamResponse.ok) {
-    return NextResponse.json({ error: "unauthorized" }, { status: upstreamResponse.status });
+  const xsrfToken = req.cookies.get("XSRF-TOKEN")?.value;
+  if (!xsrfToken) {
+    return NextResponse.json({ error: "xsrf_missing" }, { status: 401 });
   }
 
-  const clientHeaders = buildClientResponseHeaders(upstreamResponse.headers, req, upstreamBase);
   const deviceId = req.cookies.get("deviceId")?.value ?? null;
-
-  return NextResponse.json({ deviceId }, { headers: clientHeaders });
+  return NextResponse.json({ deviceId });
 }

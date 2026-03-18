@@ -166,6 +166,14 @@ export function buildUpstreamRequestHeaders(source: Headers) {
     headers.set(key, value);
   });
 
+  // BFF 패턴: HttpOnly accessToken 쿠키를 Authorization Bearer 헤더로 변환한다.
+  // 백엔드가 REST 요청을 Authorization 헤더로 인증하는 경우를 지원한다.
+  const cookieStr = source.get("cookie") ?? "";
+  const atMatch = cookieStr.match(/(?:^|;\s*)accessToken=([^;]+)/);
+  if (atMatch?.[1]) {
+    headers.set("Authorization", `Bearer ${atMatch[1]}`);
+  }
+
   return headers;
 }
 
