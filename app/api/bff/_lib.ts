@@ -11,6 +11,7 @@ const REQUEST_HEADER_ALLOWLIST = new Set([
   "user-agent",
   "x-correlation-id",
   "x-request-id",
+  "x-xsrf-token",
 ]);
 
 const RESPONSE_HOP_BY_HOP_HEADERS = new Set([

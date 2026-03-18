@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { type ChatRoomSearchItemVM, useChatRoomSearchListQuery } from "@/entities/chat-room";
 import { useAuthStore } from "@/entities/user";
@@ -11,10 +11,7 @@ import {
   CHAT_SEARCH_SIZE,
   JOIN_CHAT_ROOM_USER_ID_REQUIRED_MESSAGE,
 } from "./chatSearch.constants";
-import {
-  getJoinChatRoomErrorMessage,
-  resolveParticipantIdFromAccessToken,
-} from "./chatSearch.utils";
+import { getJoinChatRoomErrorMessage } from "./chatSearch.utils";
 
 interface UseChatSearchStackPageModelOptions {
   onJoinSuccess: (room: ChatRoomSearchItemVM) => void;
@@ -24,11 +21,7 @@ export function useChatSearchStackPageModel({ onJoinSuccess }: UseChatSearchStac
   const [keyword, setKeyword] = useState("");
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomSearchItemVM | null>(null);
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const participantId = useMemo(
-    () => resolveParticipantIdFromAccessToken(accessToken),
-    [accessToken],
-  );
+  const participantId = useAuthStore((state) => state.userId ?? null);
   const joinChatRoomMutation = useJoinChatRoomMutation();
   const { showToast } = useToast();
 

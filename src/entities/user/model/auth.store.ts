@@ -1,12 +1,11 @@
 import { create } from "zustand";
 
 export interface AuthState {
-  accessToken?: string;
   userId?: number;
   isAuthenticated: boolean;
   isAuthChecking: boolean;
   suppressPublicRedirect: boolean;
-  setAuthenticated: (token: string) => void;
+  setAuthenticated: () => void;
   setUserId: (userId: number) => void;
   clearAuth: () => void;
   setSuppressPublicRedirect: (value: boolean) => void;
@@ -14,17 +13,14 @@ export interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: undefined,
   userId: undefined,
   isAuthenticated: false,
   isAuthChecking: true,
   suppressPublicRedirect: false,
-  setAuthenticated: (token) =>
-    set({ accessToken: token, isAuthenticated: true, isAuthChecking: false }),
+  setAuthenticated: () => set({ isAuthenticated: true, isAuthChecking: false }),
   setUserId: (userId) => set({ userId }),
   clearAuth: () =>
     set({
-      accessToken: undefined,
       userId: undefined,
       isAuthenticated: false,
       isAuthChecking: false,

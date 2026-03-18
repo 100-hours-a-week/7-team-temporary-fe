@@ -2,6 +2,12 @@ export function ensureBearerToken(token: string) {
   return token.startsWith("Bearer ") ? token : `Bearer ${token}`;
 }
 
+export function resolveDeviceIdFromCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)deviceId=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 function toRawAccessToken(token: string) {
   return token.startsWith("Bearer ") ? token.slice(7) : token;
 }
