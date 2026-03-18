@@ -65,6 +65,13 @@ export async function serverFetch<TResponse, TBody = unknown>(
     mergedHeaders.set("Cookie", allCookies.map((c) => `${c.name}=${c.value}`).join("; "));
   }
 
+  // 상태 변경 요청은 XSRF-TOKEN 쿠키값을 헤더로도 전달한다.
+  // Spring Security가 Cookie 헤더를 보고 브라우저 요청으로 간주해 CSRF 체크를 하기 때문이다.
+  if (method !== "GET") {
+    const xsrfToken = cookieStore.get("XSRF-TOKEN")?.value;
+    if (xsrfToken) mergedHeaders.set("X-XSRF-TOKEN", xsrfToken);
+  }
+
   const res = await fetch(url, {
     method,
     headers: mergedHeaders,
