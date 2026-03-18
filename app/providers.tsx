@@ -25,8 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     configureAuthHandlers({
-      getAccessToken: () => useAuthStore.getState().accessToken,
-      setAuthenticated: (token) => useAuthStore.getState().setAuthenticated(token),
+      setAuthenticated: () => useAuthStore.getState().setAuthenticated(),
       setUserId: (userId) => useAuthStore.getState().setUserId(userId),
       clearAuth: () => useAuthStore.getState().clearAuth(),
     });
@@ -43,7 +42,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     const bootstrapAuth = async () => {
       try {
-        if (AuthService.restoreFromSession()) return;
+        // 1순위: AT 쿠키가 살아있으면 refresh 없이 복원 (네트워크 1회)
+        if (await AuthService.restoreFromCookie()) return;
+        // 2순위: RT 쿠키로 AT 재발급
         await AuthService.refresh();
       } catch (error) {
         if (!(error instanceof ApiError && error.httpStatus === 401)) {

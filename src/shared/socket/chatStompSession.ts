@@ -3,7 +3,7 @@
 import { Client, type IFrame, type StompSubscription } from "@stomp/stompjs";
 
 import { ApiError, apiFetch, Endpoint } from "@/shared/api";
-import { AuthService, setAuthUserId } from "@/shared/auth";
+import { AuthService, getDeviceId, setAuthUserId } from "@/shared/auth";
 import {
   parseConnectedErrorCode,
   parseConnectedSuccessPayload,
@@ -60,7 +60,6 @@ import {
   chatSocketWarn,
   resolveStompDebugLogger,
 } from "./model/socketLogger";
-import { ensureBearerToken, resolveDeviceIdFromJwt } from "./model/token";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -413,7 +412,6 @@ function toUnreadChangedPayload(candidate: unknown): UnreadChangedUserEventPaylo
 class ChatStompSession {
   private client: Client | null = null;
   private config: ChatSocketStartConfig | null = null;
-  private lastBearerToken: string | null = null;
   private isRefreshing = false;
   private connectedUserId: number | null = null;
 
@@ -768,27 +766,25 @@ class ChatStompSession {
    * - 동일 토큰 중복 start 방지
    * - CONNECT → CONNECTED → SUBSCRIBE_USER 핸드셰이크 수행
    */
-  start(accessToken: string) {
+  start() {
     if (typeof window === "undefined") return;
 
     const startConfig = resolveChatSocketStartConfig();
     if (!startConfig) return;
 
-    const bearerToken = ensureBearerToken(accessToken);
-    const deviceId = resolveDeviceIdFromJwt(bearerToken);
+    const deviceId = getDeviceId();
     if (!deviceId) {
-      chatSocketWarn("[chat-socket] skip connect: JWT payload에 deviceId가 없습니다.");
+      chatSocketWarn("[chat-socket] skip connect: deviceId가 없습니다.");
       return;
     }
 
     chatSocketLog("[chat-socket] start requested", {
-      hasAccessToken: Boolean(accessToken),
       brokerURL: startConfig.brokerURL,
       isActive: this.client?.active ?? false,
     });
 
-    if (this.client && this.lastBearerToken === bearerToken) {
-      chatSocketLog("[chat-socket] start skipped: existing client with same token", {
+    if (this.client?.active) {
+      chatSocketLog("[chat-socket] start skipped: existing active client", {
         isActive: this.client.active,
         isConnected: this.client.connected,
       });
@@ -811,15 +807,12 @@ class ChatStompSession {
       reconnectDelay: startConfig.reconnectDelayMs,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-      connectHeaders: {
-        accessToken: bearerToken,
-        deviceId,
-      },
+      connectHeaders: {},
       debug: resolveStompDebugLogger(),
     });
 
     client.onConnect = () => {
-      this.setupSubscriptions(client, startConfig, bearerToken, deviceId);
+      this.setupSubscriptions(client, startConfig, deviceId);
     };
 
     client.onStompError = (frame: IFrame) => {
@@ -849,7 +842,6 @@ class ChatStompSession {
     client.activate();
     chatSocketLog("[chat-socket] client.activate called");
     this.client = client;
-    this.lastBearerToken = bearerToken;
   }
 
   /*
@@ -938,7 +930,6 @@ class ChatStompSession {
 
     this.client = null;
     this.config = null;
-    this.lastBearerToken = null;
     this.connectedUserId = null;
   }
 
@@ -984,8 +975,7 @@ class ChatStompSession {
   private handleDuplicateSessionConflict(message: string, retryAfterMs?: number) {
     if (this.isDuplicateReconnectPending) return;
 
-    const retryToken = this.lastBearerToken;
-    if (!retryToken) {
+    if (!this.client) {
       this.stop({
         code: "CONNECT_DUPLICATE_SESSION",
         message: "중복 세션 재연결에 필요한 토큰이 없어 연결을 종료합니다.",
@@ -1020,7 +1010,7 @@ class ChatStompSession {
     this.duplicateReconnectTimer = window.setTimeout(() => {
       this.duplicateReconnectTimer = null;
       this.isDuplicateReconnectPending = false;
-      this.start(retryToken);
+      this.start();
     }, retryDelayMs);
   }
 
@@ -1316,12 +1306,7 @@ class ChatStompSession {
 
   // ─── Subscription setup (called on every onConnect) ──────────────────────────
 
-  private setupSubscriptions(
-    client: Client,
-    config: ChatSocketStartConfig,
-    bearerToken: string,
-    deviceId: string,
-  ) {
+  private setupSubscriptions(client: Client, config: ChatSocketStartConfig, deviceId: string) {
     // Clear refs from previous connection (already closed socket)
     this.handshakeSubscription = null;
     this.userQueueSubscription = null;
@@ -1336,7 +1321,7 @@ class ChatStompSession {
     // Publish socket.connect handshake
     client.publish({
       destination: config.connectDestination,
-      body: JSON.stringify({ accessToken: bearerToken, deviceId }),
+      body: JSON.stringify({ deviceId }),
     });
     chatSocketLog("[chat-socket] socket.connect published", {
       destination: config.connectDestination,
@@ -1424,8 +1409,7 @@ class ChatStompSession {
           this.clearScheduledRefreshReconnectTimer();
           this.scheduledRefreshReconnectTimer = window.setTimeout(() => {
             this.scheduledRefreshReconnectTimer = null;
-            if (!this.lastBearerToken) return;
-            this.start(this.lastBearerToken);
+            this.start();
           }, delay);
         }
         return;
@@ -1909,9 +1893,8 @@ class ChatStompSession {
     this.isRefreshing = true;
 
     try {
-      const nextToken = await AuthService.refresh();
-      // start() detects token change → calls stopClient(preserveRooms=true) → reconnects
-      this.start(nextToken);
+      await AuthService.refresh();
+      this.start();
     } catch (error) {
       chatSocketWarn("[chat-socket] refresh and reconnect failed", error);
       this.stop({

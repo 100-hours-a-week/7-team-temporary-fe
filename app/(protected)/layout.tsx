@@ -16,14 +16,14 @@ interface ProtectedLayoutProps {
 }
 
 export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
-  const accessToken = useAuthStore((state) => state.accessToken);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  const prevAccessTokenRef = useRef<string | undefined>(accessToken);
+  const prevIsAuthenticatedRef = useRef<boolean>(isAuthenticated);
 
   useEffect(() => {
-    const prevAccessToken = prevAccessTokenRef.current;
-    if (prevAccessToken && !accessToken) {
+    const prev = prevIsAuthenticatedRef.current;
+    if (prev && !isAuthenticated) {
       queryClient.clear();
       useHomePlanStore.getState().clearHomePlan();
       useAiArrangeNoticeStore.getState().clearExcludedTitles();
@@ -32,11 +32,11 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
         focusTimeZone: null,
       });
     }
-    prevAccessTokenRef.current = accessToken;
-  }, [accessToken, queryClient]);
+    prevIsAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated, queryClient]);
 
   useEffect(() => {
-    if (!accessToken) {
+    if (!isAuthenticated) {
       chatStompSession.stop({
         code: "LOGOUT",
         message: "로그아웃으로 연결을 종료합니다.",
@@ -44,8 +44,8 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
       return;
     }
 
-    chatStompSession.start(accessToken);
-  }, [accessToken]);
+    chatStompSession.start();
+  }, [isAuthenticated]);
 
   useEffect(() => {
     return () => {
@@ -57,7 +57,7 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
   }, []);
 
   useEffect(() => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
     if (typeof window === "undefined") return;
     if (!("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
@@ -75,7 +75,7 @@ export default function ProtectedLayout({ children }: ProtectedLayoutProps) {
     return () => {
       cancelled = true;
     };
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     let cancelled = false;

@@ -16,7 +16,7 @@ interface SignUpSuccessPageProps {
 }
 
 export function SignUpSuccessPage({ autoLoginCredential }: SignUpSuccessPageProps) {
-  const accessToken = useAuthStore((state: AuthState) => state.accessToken);
+  const isAuthenticated = useAuthStore((state: AuthState) => state.isAuthenticated);
   const setAuthenticated = useAuthStore((state: AuthState) => state.setAuthenticated);
   const setSuppressPublicRedirect = useAuthStore(
     (state: AuthState) => state.setSuppressPublicRedirect,
@@ -32,13 +32,13 @@ export function SignUpSuccessPage({ autoLoginCredential }: SignUpSuccessPageProp
 
   const handleAutoLoginClick = useCallback(async () => {
     try {
-      if (!accessToken) {
+      if (!isAuthenticated) {
         if (autoLoginCredential?.email && autoLoginCredential.password) {
-          const loginResult = await loginMutation.mutateAsync({
+          await loginMutation.mutateAsync({
             email: autoLoginCredential.email,
             password: autoLoginCredential.password,
           });
-          setAuthenticated(loginResult.accessToken);
+          setAuthenticated();
         }
       }
       setSuppressPublicRedirect(false);
@@ -46,7 +46,7 @@ export function SignUpSuccessPage({ autoLoginCredential }: SignUpSuccessPageProp
       console.warn("[SignUpSuccessPage] auto login failed", error);
     }
   }, [
-    accessToken,
+    isAuthenticated,
     autoLoginCredential,
     loginMutation,
     setAuthenticated,
