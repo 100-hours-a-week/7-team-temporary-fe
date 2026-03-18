@@ -32,6 +32,19 @@ type HeadersWithGetSetCookie = Headers & {
 
 export type ProxyTargetKind = "task" | "chat" | "legacy";
 
+/**
+ * 백엔드가 GET 응답에서 XSRF-TOKEN을 빈 값 + 과거 Expires로 삭제하는 경우를 감지한다.
+ * 이런 clearing cookie는 브라우저로 포워딩하지 않아야 한다.
+ */
+function isXsrfClearingCookie(cookie: string): boolean {
+  const firstPart = cookie.split(";")[0]?.trim() ?? "";
+  const eqIdx = firstPart.indexOf("=");
+  if (eqIdx === -1) return false;
+  const name = firstPart.slice(0, eqIdx).trim().toLowerCase();
+  const value = firstPart.slice(eqIdx + 1).trim();
+  return name === "xsrf-token" && value === "";
+}
+
 function getHostFromUrl(url: string) {
   try {
     return new URL(url).host;
@@ -153,6 +166,14 @@ export function buildUpstreamRequestHeaders(source: Headers) {
     headers.set(key, value);
   });
 
+  // BFF 패턴: HttpOnly accessToken 쿠키를 Authorization Bearer 헤더로 변환한다.
+  // 백엔드가 REST 요청을 Authorization 헤더로 인증하는 경우를 지원한다.
+  const cookieStr = source.get("cookie") ?? "";
+  const atMatch = cookieStr.match(/(?:^|;\s*)accessToken=([^;]+)/);
+  if (atMatch?.[1]) {
+    headers.set("Authorization", `Bearer ${atMatch[1]}`);
+  }
+
   return headers;
 }
 
@@ -188,17 +209,21 @@ export function buildClientResponseHeaders(
   const setCookies = setCookiesFromGetter.length > 0 ? setCookiesFromGetter : setCookiesFromRaw;
 
   if (setCookies.length > 0) {
-    setCookies.forEach((cookie) =>
-      headers.append("set-cookie", normalizeSetCookieForClient(cookie, req, upstreamBase)),
-    );
+    setCookies
+      .filter((cookie) => !isXsrfClearingCookie(cookie))
+      .forEach((cookie) =>
+        headers.append("set-cookie", normalizeSetCookieForClient(cookie, req, upstreamBase)),
+      );
     return headers;
   }
 
   const singleCookie = source.get("set-cookie");
   if (singleCookie) {
-    splitCombinedSetCookieHeader(singleCookie).forEach((cookie) =>
-      headers.append("set-cookie", normalizeSetCookieForClient(cookie, req, upstreamBase)),
-    );
+    splitCombinedSetCookieHeader(singleCookie)
+      .filter((cookie) => !isXsrfClearingCookie(cookie))
+      .forEach((cookie) =>
+        headers.append("set-cookie", normalizeSetCookieForClient(cookie, req, upstreamBase)),
+      );
   }
 
   return headers;

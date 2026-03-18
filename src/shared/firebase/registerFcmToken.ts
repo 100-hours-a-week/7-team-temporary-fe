@@ -1,5 +1,4 @@
-import { apiFetch, Endpoint } from "@/shared/api";
-import { AuthService } from "@/shared/auth";
+import { registerFcmTokenAction } from "./fcmServerActions";
 import { requestFcmToken } from "./requestFcmToken";
 
 type RegisterFcmTokenOptions = {
@@ -15,13 +14,7 @@ export async function registerFcmToken(
 
   if (!token) return null;
 
-  await AuthService.refreshAndRetry(() =>
-    apiFetch<void, { fcmToken: string; platform: "WEB" }>(Endpoint.FCM.TOKENS, {
-      method: "POST",
-      body: { fcmToken: token, platform: "WEB" },
-      authRequired: true,
-    }),
-  );
+  await registerFcmTokenAction(token);
 
   return token;
 }

@@ -807,7 +807,7 @@ class ChatStompSession {
       reconnectDelay: startConfig.reconnectDelayMs,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-      connectHeaders: {},
+      connectHeaders: { deviceId: deviceId ?? "" },
       debug: resolveStompDebugLogger(),
     });
 

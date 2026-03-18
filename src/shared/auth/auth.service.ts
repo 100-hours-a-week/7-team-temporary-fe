@@ -22,7 +22,7 @@ function isUnauthorizedError(error: unknown) {
  */
 async function checkAuthCookie(): Promise<boolean> {
   try {
-    const res = await fetch("/api/auth/session", { credentials: "include" });
+    const res = await fetch("/api/socket-token", { credentials: "include" });
     if (!res.ok) return false;
     const json = (await res.json()) as { deviceId?: string | null };
     cachedDeviceId = json.deviceId ?? null;
