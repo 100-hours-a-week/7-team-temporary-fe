@@ -171,6 +171,9 @@ export function useCamStudyRoomStackPageModel({
     const unsubscribeRoom = chatStompSession.subscribeToRoom({
       roomId,
       participantId,
+      onVideoParticipantOfflined: ({ userId }) => {
+        setParticipants((prev) => prev.filter((p) => p.userId !== userId));
+      },
       onVideoParticipantOnlined: ({
         userId,
         participantId: onlinedParticipantId,

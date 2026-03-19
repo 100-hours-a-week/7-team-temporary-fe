@@ -59,9 +59,8 @@ function ParticipantCell({
     );
   }
 
-  const track = participant.isMe
-    ? localVideoTrack
-    : (remoteVideoTracks.get(String(participant.participantId ?? participant.userId)) ?? null);
+  const lookupKey = `user:${participant.userId}:participant:${participant.participantId}`;
+  const track = participant.isMe ? localVideoTrack : (remoteVideoTracks.get(lookupKey) ?? null);
 
   return (
     <div

@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
 
   compiler: {
     emotion: true,
-    removeConsole: true,
+    removeConsole: false,
   },
 
   webpack(config) {
