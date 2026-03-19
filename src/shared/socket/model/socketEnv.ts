@@ -30,7 +30,7 @@ const VIDEO_PARTICIPANT_OFFLINE_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_VIDEO_PARTICIPANT_OFFLINE_DEST?.trim() ??
   "/pub/room/video/offline";
 const RECONNECT_DELAY_MS = Number(process.env.NEXT_PUBLIC_CHAT_SOCKET_RECONNECT_DELAY_MS ?? 5000);
-const CHAT_SOCKET_LOG_ENABLED = false;
+const CHAT_SOCKET_LOG_ENABLED = true;
 
 export interface ChatSocketStartConfig {
   brokerURL: string;
