@@ -2,7 +2,7 @@
 
 import { Client, type IFrame, type StompSubscription } from "@stomp/stompjs";
 
-import { ApiError, apiFetch, Endpoint } from "@/shared/api";
+import { ApiError, apiFetch, Endpoint, getXsrfToken } from "@/shared/api";
 import { AuthService, getDeviceId, setAuthUserId } from "@/shared/auth";
 import {
   parseConnectedErrorCode,
@@ -807,7 +807,7 @@ class ChatStompSession {
       reconnectDelay: startConfig.reconnectDelayMs,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-      connectHeaders: { deviceId: deviceId ?? "" },
+      connectHeaders: { deviceId: deviceId ?? "", "X-XSRF-TOKEN": getXsrfToken() ?? "" },
       debug: resolveStompDebugLogger(),
     });
 
