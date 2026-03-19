@@ -32,7 +32,6 @@ export function RetroCardView({
   isOpenChecked,
 }: RetroCardViewProps) {
   const authorNickname = "authorNickname" in vm ? vm.authorNickname : undefined;
-  const profileImageUrl = "profileImageUrl" in vm ? vm.profileImageUrl : undefined;
   const visibilityText = "visibilityText" in vm ? vm.visibilityText : undefined;
   const [selectedImage, setSelectedImage] = useState<{ url: string; alt: string } | null>(null);
 
@@ -42,22 +41,6 @@ export function RetroCardView({
         {authorNickname ? (
           <>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-200">
-                {profileImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={profileImageUrl}
-                    alt={`${authorNickname} 프로필`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <Icon
-                    name="user_outline"
-                    className="h-5 w-5 text-neutral-500"
-                    aria-hidden
-                  />
-                )}
-              </div>
               <span className="text-[16px] font-semibold text-black">{authorNickname}</span>
               <span className="text-[14px] font-medium text-[#9a9a9a]">{vm.dateLabel}</span>
             </div>

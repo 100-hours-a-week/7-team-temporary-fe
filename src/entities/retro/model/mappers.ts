@@ -71,7 +71,6 @@ export function toPublicRetroCardVM(item: PublicRetroItemResponseDto): PublicRet
     defaultLiked: item.isLikedByMe ?? false,
     isMine: item.isMine ?? false,
     authorNickname: item.ownerNickname ?? item.onwerNickname ?? "알 수 없음",
-    profileImageUrl: item.images?.[0]?.url ?? null,
   };
 }
 
