@@ -9,11 +9,11 @@ import { useStackPage } from "@/widgets/stack";
 
 import { useGroupChatMembersStackPageModel } from "../model";
 
-interface EditGroupChatRoomStackPageProps {
+interface CamStudyRoomInfoStackPageProps {
   roomId: number;
 }
 
-export function EditGroupChatRoomStackPage({ roomId }: EditGroupChatRoomStackPageProps) {
+export function CamStudyRoomInfoStackPage({ roomId }: CamStudyRoomInfoStackPageProps) {
   const { pop, setHeaderContent, setHeaderRightContent } = useStackPage();
   const { showToast } = useToast();
   const leaveChatRoomMutation = useLeaveChatRoomMutation();
@@ -21,7 +21,7 @@ export function EditGroupChatRoomStackPage({ roomId }: EditGroupChatRoomStackPag
 
   useEffect(() => {
     setHeaderContent(
-      <span className="text-[18px] font-semibold text-black">그룹 채팅방 정보</span>,
+      <span className="text-[18px] font-semibold text-black">캠 스터디방 정보</span>,
     );
     setHeaderRightContent(
       <PermissionInfoTooltip
