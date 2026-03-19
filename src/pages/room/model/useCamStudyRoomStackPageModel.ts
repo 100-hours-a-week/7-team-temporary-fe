@@ -91,43 +91,42 @@ export function useCamStudyRoomStackPageModel({
         signal: controller.signal,
       });
 
-      if (onlineRes.participants.length > 0) {
-        setParticipants(
-          onlineRes.participants.map((p) => ({
-            userId: p.userId,
-            participantId: p.participantId,
-            nickname: p.nickname,
-            cameraEnabled: p.cameraEnabled,
-            screenVisible: p.cameraEnabled,
-            isMe: p.userId === resolvedUserId,
-            profileImageUrl: null,
-            joinedAt: p.onlineAt,
-            role:
-              p.userId === detailRes.owner.userId ? ("OWNER" as const) : ("PARTICIPANT" as const),
-          })),
-        );
-      } else {
-        // 온라인 참가자 없으면 나 자신만 표시
+      const onlineList = onlineRes.participants.map((p) => ({
+        userId: p.userId,
+        participantId: p.participantId,
+        nickname: p.nickname,
+        cameraEnabled: p.cameraEnabled,
+        screenVisible: p.cameraEnabled,
+        isMe: p.userId === resolvedUserId,
+        profileImageUrl: null,
+        joinedAt: p.onlineAt,
+        role: p.userId === detailRes.owner.userId ? ("OWNER" as const) : ("PARTICIPANT" as const),
+      }));
+
+      // Redis online 목록에 내가 없으면 직접 추가한다.
+      // (online 이벤트는 LiveKit 연결 후 전송되므로 GET 시점에 나는 목록에 없을 수 있다.)
+      const isMeInList = onlineList.some((p) => p.userId === resolvedUserId);
+      if (!isMeInList) {
         const isOwner = detailRes.owner.userId === resolvedUserId;
         const myEntry = isOwner
           ? detailRes.owner
           : detailRes.participants.find((p) => p.userId === resolvedUserId);
         if (myEntry) {
-          setParticipants([
-            {
-              userId: resolvedUserId,
-              participantId: resolvedParticipantId,
-              nickname: myEntry.nickname,
-              cameraEnabled: myEntry.cameraEnabled,
-              screenVisible: myEntry.cameraEnabled,
-              isMe: true,
-              profileImageUrl: null,
-              joinedAt: "joinedAt" in myEntry ? (myEntry.joinedAt as string) : "",
-              role: isOwner ? ("OWNER" as const) : ("PARTICIPANT" as const),
-            },
-          ]);
+          onlineList.push({
+            userId: resolvedUserId,
+            participantId: resolvedParticipantId,
+            nickname: myEntry.nickname,
+            cameraEnabled: myEntry.cameraEnabled,
+            screenVisible: myEntry.cameraEnabled,
+            isMe: true,
+            profileImageUrl: null,
+            joinedAt: "joinedAt" in myEntry ? (myEntry.joinedAt as string) : "",
+            role: isOwner ? ("OWNER" as const) : ("PARTICIPANT" as const),
+          });
         }
       }
+
+      setParticipants(onlineList);
 
       setParticipantId(resolvedParticipantId);
 
@@ -172,6 +171,32 @@ export function useCamStudyRoomStackPageModel({
     const unsubscribeRoom = chatStompSession.subscribeToRoom({
       roomId,
       participantId,
+      onVideoParticipantOnlined: ({
+        userId,
+        participantId: onlinedParticipantId,
+        nickname,
+        cameraEnabled,
+        at,
+      }) => {
+        setParticipants((prev) => {
+          if (prev.some((p) => p.userId === userId)) return prev;
+          return [
+            ...prev,
+            {
+              userId,
+              participantId: onlinedParticipantId,
+              nickname,
+              cameraEnabled,
+              screenVisible: cameraEnabled,
+              isMe: userId === myUserIdRef.current || onlinedParticipantId === participantId,
+              profileImageUrl: null,
+              joinedAt: at,
+              role:
+                userId === ownerUserIdRef.current ? ("OWNER" as const) : ("PARTICIPANT" as const),
+            },
+          ];
+        });
+      },
       onVideoCameraChanged: ({ userId, cameraEnabled }) => {
         setParticipants((prev) =>
           prev.map((p) =>
