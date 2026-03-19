@@ -1,10 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { MyRetroCardVM, PublicRetroCardVM } from "../model";
 
 import { MoreButton } from "@/shared/ui/button";
-import { HorizontalImageAlbum } from "@/shared/ui/image";
+import { HorizontalImageAlbum, ImageDialog } from "@/shared/ui/image";
 import { Icon } from "@/shared/ui/icon";
 import { RetroVisibilityToggle } from "@/shared/ui/retro";
 
@@ -33,6 +33,7 @@ export function RetroCardView({
 }: RetroCardViewProps) {
   const authorNickname = "authorNickname" in vm ? vm.authorNickname : undefined;
   const visibilityText = "visibilityText" in vm ? vm.visibilityText : undefined;
+  const [selectedImage, setSelectedImage] = useState<{ url: string; alt: string } | null>(null);
 
   return (
     <article className="pb-3">
@@ -53,8 +54,18 @@ export function RetroCardView({
           imageAltPrefix={`${vm.dateLabel} 회고 이미지`}
           scrollAreaLabel={`${vm.dateLabel} 회고 이미지 가로 스크롤`}
           className="mt-3 w-full"
+          onImageClick={(url, alt) => setSelectedImage({ url, alt })}
         />
       ) : null}
+
+      <ImageDialog
+        open={selectedImage !== null}
+        imageUrl={selectedImage?.url ?? null}
+        alt={selectedImage?.alt ?? ""}
+        onOpenChange={(open) => {
+          if (!open) setSelectedImage(null);
+        }}
+      />
 
       <RetroContentText
         value={vm.content}
