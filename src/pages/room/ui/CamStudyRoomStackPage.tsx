@@ -9,7 +9,7 @@ import { useCamStudyRoomStackPageModel } from "../model/useCamStudyRoomStackPage
 import type { CamStudyRoomSummary } from "../model/camStudyRoom.types";
 import { CamStudyControlDock } from "./CamStudyControlDock";
 import { CamStudyParticipantGrid } from "./CamStudyParticipantGrid";
-import { EditGroupChatRoomStackPage } from "./EditGroupChatRoomStackPage";
+import { CamStudyRoomInfoStackPage } from "./CamStudyRoomInfoStackPage";
 
 interface CamStudyRoomStackPageProps {
   roomId: number;
@@ -49,7 +49,7 @@ export function CamStudyRoomStackPage({
       <IconButton
         icon="more"
         label="캠 스터디방 설정"
-        onClick={() => push(<EditGroupChatRoomStackPage roomId={roomId} />)}
+        onClick={() => push(<CamStudyRoomInfoStackPage roomId={roomId} />)}
         className="p-0"
         iconClassName="h-7 w-7 text-ink-900 [&>path]:h-[18px] [&>path]:w-[18px]"
       />,
