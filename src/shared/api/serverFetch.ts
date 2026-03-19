@@ -3,6 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 
 import { ApiError } from "./error";
+import { buildUpstreamRequestHeaders } from "./upstreamHeaders";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -43,9 +44,9 @@ export function serverChatPath(path: string): string {
 }
 
 /**
- * 서버 컴포넌트 전용 fetch 유틸.
- * - `cookies()`로 accessToken을 읽어 Authorization 헤더를 세팅한다.
- * - server-to-server 호출이므로 CSRF 불필요.
+ * 서버 컴포넌트 / Server Action 전용 fetch 유틸.
+ * - `cookies()`로 쿠키 스토어를 읽어 `buildUpstreamRequestHeaders`에 전달한다.
+ * - BFF 프록시와 동일한 정책(허용목록 필터링, accessToken → Authorization Bearer 변환)을 공유한다.
  * - `apiFetch`와 동일한 ApiResponse 래핑/에러 처리를 따른다.
  */
 export async function serverFetch<TResponse, TBody = unknown>(
@@ -56,21 +57,24 @@ export async function serverFetch<TResponse, TBody = unknown>(
 
   const cookieStore = await cookies();
 
-  const mergedHeaders = new Headers(headers);
-  mergedHeaders.set("Content-Type", "application/json");
+  // 공유 정책 함수에 넘기기 위해 쿠키 스토어를 Headers 객체로 변환한다.
+  const syntheticHeaders = new Headers(headers);
+  syntheticHeaders.set("Content-Type", "application/json");
 
-  // BFF 프록시와 동일하게 Cookie 헤더를 백엔드에 전달한다.
   const allCookies = cookieStore.getAll();
   if (allCookies.length > 0) {
-    mergedHeaders.set("Cookie", allCookies.map((c) => `${c.name}=${c.value}`).join("; "));
+    syntheticHeaders.set("Cookie", allCookies.map((c) => `${c.name}=${c.value}`).join("; "));
   }
 
   // 상태 변경 요청은 XSRF-TOKEN 쿠키값을 헤더로도 전달한다.
   // Spring Security가 Cookie 헤더를 보고 브라우저 요청으로 간주해 CSRF 체크를 하기 때문이다.
   if (method !== "GET") {
     const xsrfToken = cookieStore.get("XSRF-TOKEN")?.value;
-    if (xsrfToken) mergedHeaders.set("X-XSRF-TOKEN", xsrfToken);
+    if (xsrfToken) syntheticHeaders.set("X-XSRF-TOKEN", xsrfToken);
   }
+
+  // BFF 프록시와 동일한 정책(허용목록 필터링, accessToken → Authorization Bearer 변환)을 적용한다.
+  const mergedHeaders = buildUpstreamRequestHeaders(syntheticHeaders);
 
   const res = await fetch(url, {
     method,

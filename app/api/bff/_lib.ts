@@ -1,18 +1,6 @@
 import type { NextRequest } from "next/server";
 
-const REQUEST_HEADER_ALLOWLIST = new Set([
-  "accept",
-  "accept-language",
-  "authorization",
-  "content-type",
-  "cookie",
-  "if-match",
-  "if-none-match",
-  "user-agent",
-  "x-correlation-id",
-  "x-request-id",
-  "x-xsrf-token",
-]);
+export { buildUpstreamRequestHeaders } from "@/shared/api/upstreamHeaders";
 
 const RESPONSE_HOP_BY_HOP_HEADERS = new Set([
   "connection",
@@ -148,33 +136,6 @@ export function buildBackendUrl(req: NextRequest, path: string[], kind: ProxyTar
   const upstreamUrl = new URL(path.join("/"), ensureTrailingSlash(base));
   upstreamUrl.search = req.nextUrl.search;
   return upstreamUrl.toString();
-}
-
-/**
- * 브라우저 요청 헤더 중 업스트림 전달이 필요한 항목만 추려서 만든다.
- * Cookie/Authorization/Content-Type 같은 인증·요청 의미 보존 헤더만 유지하고
- * 나머지 헤더는 전달하지 않아 프록시 계층의 변동성과 보안 리스크를 줄인다.
- */
-export function buildUpstreamRequestHeaders(source: Headers) {
-  const headers = new Headers();
-
-  source.forEach((value, key) => {
-    const lowerKey = key.toLowerCase();
-    if (!REQUEST_HEADER_ALLOWLIST.has(lowerKey)) {
-      return;
-    }
-    headers.set(key, value);
-  });
-
-  // BFF 패턴: HttpOnly accessToken 쿠키를 Authorization Bearer 헤더로 변환한다.
-  // 백엔드가 REST 요청을 Authorization 헤더로 인증하는 경우를 지원한다.
-  const cookieStr = source.get("cookie") ?? "";
-  const atMatch = cookieStr.match(/(?:^|;\s*)accessToken=([^;]+)/);
-  if (atMatch?.[1]) {
-    headers.set("Authorization", `Bearer ${atMatch[1]}`);
-  }
-
-  return headers;
 }
 
 /**
