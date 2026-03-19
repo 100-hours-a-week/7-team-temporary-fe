@@ -1,4 +1,4 @@
-export { apiFetch } from "./apiFetch";
+export { apiFetch, getXsrfToken } from "./apiFetch";
 export { ApiError } from "./error";
 export type { UiError } from "./error";
 export { Endpoint } from "./endpoints";

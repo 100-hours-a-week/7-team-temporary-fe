@@ -1,6 +1,6 @@
 import { ApiError } from "./error";
 
-function getXsrfToken(): string | null {
+export function getXsrfToken(): string | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
   return match ? decodeURIComponent(match[1]) : null;
@@ -32,6 +32,7 @@ type ApiResponse<T> = {
 export async function apiFetch<TResponse, TBody = unknown>(
   url: string,
   options: FetchOptions<TBody> = {},
+  _csrfRetry = true,
 ): Promise<TResponse> {
   const { method = "GET", body, headers, signal, authRequired } = options;
   const { credentials } = options;
@@ -57,6 +58,14 @@ export async function apiFetch<TResponse, TBody = unknown>(
 
   if (res.status === 204) {
     return undefined as TResponse;
+  }
+
+  // 403 + non-GET: 서버가 새 XSRF-TOKEN을 발급했을 수 있으므로 한 번만 retry
+  if (res.status === 403 && method !== "GET" && _csrfRetry) {
+    const newToken = getXsrfToken();
+    if (newToken) {
+      return apiFetch(url, options, false);
+    }
   }
 
   const text = await res.text();
