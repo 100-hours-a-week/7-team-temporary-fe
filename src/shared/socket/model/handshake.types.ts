@@ -203,6 +203,17 @@ export interface VideoParticipantOfflinePayload {
 
 // ─── Video: Room broadcast (/sub/room/{roomId}) ───────────────────────────────
 
+export interface VideoParticipantOnlinedPayload {
+  eventId: string;
+  roomId: number;
+  participantId: number;
+  userId: number;
+  nickname: string;
+  sessionId: string;
+  cameraEnabled: boolean;
+  at: string;
+}
+
 export interface VideoParticipantJoinedPayload {
   eventId: string;
   roomId: number;
