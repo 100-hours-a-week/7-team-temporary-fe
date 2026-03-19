@@ -1447,7 +1447,7 @@ class ChatStompSession {
         const retryAfterMs =
           typeof errorPayload?.retryAfterMs === "number" ? errorPayload.retryAfterMs : undefined;
 
-        if (code === "CONNECT_TOKEN_EXPIRED") {
+        if (code === "CONNECT_TOKEN_EXPIRED" || code === "CONNECT_UNAUTHORIZED") {
           this.scheduleRefreshReconnect(retryAfterMs ?? 0);
           return;
         }
