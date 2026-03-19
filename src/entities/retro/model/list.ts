@@ -24,6 +24,7 @@ export interface MyRetroCardVM extends RetroCoreItem {
 
 export interface PublicRetroCardVM extends RetroCoreItem {
   authorNickname: string;
+  profileImageUrl: string | null;
 }
 
 export type RetroListItem = MyRetroCardVM | PublicRetroCardVM;
