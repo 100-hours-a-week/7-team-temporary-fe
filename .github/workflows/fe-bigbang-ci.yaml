@@ -54,6 +54,8 @@ jobs:
 
       - name: Build (Next.js)
         if: github.event.action != 'closed'
+        env:
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ secrets.NEXT_PUBLIC_LIVEKIT_URL }}
         run: pnpm run build
 
       - name: Resolve build metadata
@@ -113,6 +115,7 @@ jobs:
           NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST }}
           NEXT_PUBLIC_CHAT_SOCKET_DEBUG: ${{ secrets.NEXT_PUBLIC_CHAT_SOCKET_DEBUG }}
           NEXT_PUBLIC_CHAT_STOMP_BROKER_URL: ${{ secrets.NEXT_PUBLIC_CHAT_STOMP_BROKER_URL }}
+          NEXT_PUBLIC_LIVEKIT_URL: ${{ secrets.NEXT_PUBLIC_LIVEKIT_URL }}
           API_PROXY_TASK_TARGET: ${{ secrets.API_PROXY_TASK_TARGET }}
           API_PROXY_CHAT_TARGET: ${{ secrets.API_PROXY_CHAT_TARGET }}
           API_PROXY_TARGET: ${{ secrets.API_PROXY_TARGET }}
@@ -145,6 +148,7 @@ jobs:
             --build-arg NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST="${NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST}" \
             --build-arg NEXT_PUBLIC_CHAT_SOCKET_DEBUG="${NEXT_PUBLIC_CHAT_SOCKET_DEBUG}" \
             --build-arg NEXT_PUBLIC_CHAT_STOMP_BROKER_URL="${NEXT_PUBLIC_CHAT_STOMP_BROKER_URL}" \
+            --build-arg NEXT_PUBLIC_LIVEKIT_URL="${NEXT_PUBLIC_LIVEKIT_URL}" \
             --build-arg API_PROXY_TASK_TARGET="${API_PROXY_TASK_TARGET}" \
             --build-arg API_PROXY_CHAT_TARGET="${API_PROXY_CHAT_TARGET}" \
             --build-arg API_PROXY_TARGET="${API_PROXY_TARGET}" \
