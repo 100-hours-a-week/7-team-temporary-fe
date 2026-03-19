@@ -214,6 +214,17 @@ export interface VideoParticipantOnlinedPayload {
   at: string;
 }
 
+export interface VideoParticipantOfflinedPayload {
+  eventId: string;
+  roomId: number;
+  participantId: number;
+  userId: number;
+  nickname: string;
+  sessionId: string;
+  cameraEnabled: boolean;
+  at: string;
+}
+
 export interface VideoParticipantJoinedPayload {
   eventId: string;
   roomId: number;

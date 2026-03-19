@@ -39,6 +39,7 @@ import type {
   VideoCameraChangedPayload,
   VideoCameraToggleAcceptedPayload,
   VideoParticipantOnlinedPayload,
+  VideoParticipantOfflinedPayload,
   VideoParticipantJoinedPayload,
   VideoParticipantLeftPayload,
   VideoPublishStartedPayload,
@@ -126,6 +127,7 @@ export interface SubscribeToRoomParams {
   onVideoPublishStarted?: (payload: VideoPublishStartedPayload) => void;
   onVideoPublishStopped?: (payload: VideoPublishStoppedPayload) => void;
   onVideoParticipantOnlined?: (payload: VideoParticipantOnlinedPayload) => void;
+  onVideoParticipantOfflined?: (payload: VideoParticipantOfflinedPayload) => void;
   onVideoParticipantJoined?: (payload: VideoParticipantJoinedPayload) => void;
   onVideoParticipantLeft?: (payload: VideoParticipantLeftPayload) => void;
   onVideoRoomDeleted?: (payload: VideoRoomDeletedPayload) => void;
@@ -141,6 +143,7 @@ interface ActiveRoomEntry {
   onVideoPublishStarted?: (payload: VideoPublishStartedPayload) => void;
   onVideoPublishStopped?: (payload: VideoPublishStoppedPayload) => void;
   onVideoParticipantOnlined?: (payload: VideoParticipantOnlinedPayload) => void;
+  onVideoParticipantOfflined?: (payload: VideoParticipantOfflinedPayload) => void;
   onVideoParticipantJoined?: (payload: VideoParticipantJoinedPayload) => void;
   onVideoParticipantLeft?: (payload: VideoParticipantLeftPayload) => void;
   onVideoRoomDeleted?: (payload: VideoRoomDeletedPayload) => void;
@@ -1823,6 +1826,12 @@ class ChatStompSession {
       if (event === "video.participant.online") {
         chatSocketLog("[chat-socket] video.participant.online", { roomId });
         entry.onVideoParticipantOnlined?.(payload as VideoParticipantOnlinedPayload);
+        return;
+      }
+
+      if (event === "video.participant.offline") {
+        chatSocketLog("[chat-socket] video.participant.offline", { roomId });
+        entry.onVideoParticipantOfflined?.(payload as VideoParticipantOfflinedPayload);
         return;
       }
 
