@@ -1,3 +1,5 @@
+"use client";
+
 import { useOptimisticMutation } from "@/shared/query";
 
 import { updateMyProfile } from "../api";

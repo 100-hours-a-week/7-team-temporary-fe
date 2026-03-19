@@ -1,3 +1,5 @@
+"use client";
+
 import { useDayPlanScheduleQuery } from "@/entities/day-plan-schedule";
 
 interface UseDayPlanIdOptions {

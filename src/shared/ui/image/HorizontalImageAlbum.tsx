@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, type KeyboardEvent, type WheelEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from "react";
 
 import { cn } from "@/shared/lib";
 
@@ -31,7 +31,7 @@ export function HorizontalImageAlbum({
   }, []);
 
   const handleWheel = useCallback(
-    (event: WheelEvent<HTMLDivElement>) => {
+    (event: WheelEvent) => {
       const element = scrollRef.current;
       if (!element) return;
       if (Math.abs(event.deltaY) < Math.abs(event.deltaX)) return;
@@ -51,6 +51,13 @@ export function HorizontalImageAlbum({
     },
     [scrollByOffset],
   );
+
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    element.addEventListener("wheel", handleWheel, { passive: false });
+    return () => element.removeEventListener("wheel", handleWheel);
+  }, [handleWheel]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -75,7 +82,6 @@ export function HorizontalImageAlbum({
       role="region"
       aria-label={scrollAreaLabel}
       tabIndex={enableKeyboardScroll ? 0 : -1}
-      onWheel={handleWheel}
       onKeyDown={handleKeyDown}
       className={cn(
         "scrollbar-hide touch-pan-x overflow-x-auto overflow-y-hidden overscroll-x-contain",
