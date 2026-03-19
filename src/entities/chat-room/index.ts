@@ -8,6 +8,7 @@ export {
   issueChatRoomWebRtcToken,
   syncChatRoomVideoSession,
   updateChatRoomParticipantCameraStatus,
+  fetchVideoParticipantsOnline,
 } from "./api";
 export type {
   ChatRoomDetailDto,

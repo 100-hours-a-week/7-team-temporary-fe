@@ -11,6 +11,7 @@ import type {
   JoinChatRoomResponseDto,
   SyncVideoSessionRequestDto,
   UpdateParticipantCameraStatusRequestDto,
+  VideoParticipantsOnlineResponseDto,
 } from "./types";
 
 interface FetchChatRoomListParams {
@@ -155,6 +156,19 @@ export async function updateChatRoomParticipantCameraStatus({
       signal,
       authRequired: true,
     },
+  );
+}
+
+export async function fetchVideoParticipantsOnline({
+  roomId,
+  signal,
+}: {
+  roomId: number;
+  signal?: AbortSignal;
+}): Promise<VideoParticipantsOnlineResponseDto> {
+  return apiFetch<VideoParticipantsOnlineResponseDto>(
+    Endpoint.CHAT_ROOMS.VIDEO_PARTICIPANTS_ONLINE(roomId),
+    { signal, authRequired: true },
   );
 }
 
