@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { fetchChatRoomDetail, issueChatRoomWebRtcToken, joinChatRoom } from "@/entities/chat-room";
+import {
+  fetchChatRoomDetail,
+  fetchVideoParticipantsOnline,
+  issueChatRoomWebRtcToken,
+  joinChatRoom,
+} from "@/entities/chat-room";
 import type { ChatRoomDetailDto } from "@/entities/chat-room";
 import { useLiveKitSession } from "@/entities/cam-study-room";
 import { useAuthStore } from "@/entities/user";
@@ -80,25 +85,48 @@ export function useCamStudyRoomStackPageModel({
         throw new Error("참가자 식별자를 확인할 수 없습니다.");
       }
 
-      // video.session.synced 도착 전까지 나 자신만 먼저 표시
-      const isOwner = detailRes.owner.userId === resolvedUserId;
-      const myEntry = isOwner
-        ? detailRes.owner
-        : detailRes.participants.find((p) => p.userId === resolvedUserId);
-      if (myEntry) {
-        setParticipants([
-          {
-            userId: resolvedUserId,
-            participantId: resolvedParticipantId,
-            nickname: myEntry.nickname,
-            cameraEnabled: myEntry.cameraEnabled,
-            screenVisible: myEntry.cameraEnabled,
-            isMe: true,
+      // 현재 온라인 참가자 목록 조회
+      const onlineRes = await fetchVideoParticipantsOnline({
+        roomId,
+        signal: controller.signal,
+      });
+
+      if (onlineRes.participants.length > 0) {
+        setParticipants(
+          onlineRes.participants.map((p) => ({
+            userId: p.userId,
+            participantId: p.participantId,
+            nickname: p.nickname,
+            cameraEnabled: p.cameraEnabled,
+            screenVisible: p.cameraEnabled,
+            isMe: p.userId === resolvedUserId,
             profileImageUrl: null,
-            joinedAt: "joinedAt" in myEntry ? (myEntry.joinedAt as string) : "",
-            role: isOwner ? ("OWNER" as const) : ("PARTICIPANT" as const),
-          },
-        ]);
+            joinedAt: p.onlineAt,
+            role:
+              p.userId === detailRes.owner.userId ? ("OWNER" as const) : ("PARTICIPANT" as const),
+          })),
+        );
+      } else {
+        // 온라인 참가자 없으면 나 자신만 표시
+        const isOwner = detailRes.owner.userId === resolvedUserId;
+        const myEntry = isOwner
+          ? detailRes.owner
+          : detailRes.participants.find((p) => p.userId === resolvedUserId);
+        if (myEntry) {
+          setParticipants([
+            {
+              userId: resolvedUserId,
+              participantId: resolvedParticipantId,
+              nickname: myEntry.nickname,
+              cameraEnabled: myEntry.cameraEnabled,
+              screenVisible: myEntry.cameraEnabled,
+              isMe: true,
+              profileImageUrl: null,
+              joinedAt: "joinedAt" in myEntry ? (myEntry.joinedAt as string) : "",
+              role: isOwner ? ("OWNER" as const) : ("PARTICIPANT" as const),
+            },
+          ]);
+        }
       }
 
       setParticipantId(resolvedParticipantId);
