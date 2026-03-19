@@ -136,8 +136,15 @@ export function RetroListItemCard({
     }
   };
 
-  const handleShareClick = () => {
+  const handleShareClick = async () => {
     setIsActionSheetOpen(false);
+    const shareUrl = `${window.location.origin}/retro/public/${vm.id}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      showToast("링크가 복사되었습니다.", "success");
+    } catch {
+      showToast("링크 복사에 실패했습니다.", "error");
+    }
     onShareClick?.();
   };
 
@@ -171,7 +178,7 @@ export function RetroListItemCard({
             >
               <button
                 type="button"
-                onClick={handleShareClick}
+                onClick={() => void handleShareClick()}
                 className="h-12 w-full rounded-xl border border-[#d9d9d9] bg-white text-[16px] font-semibold text-black"
               >
                 공유하기
