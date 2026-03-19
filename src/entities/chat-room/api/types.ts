@@ -60,6 +60,23 @@ export interface SyncVideoSessionRequestDto {
   published: boolean;
 }
 
+/** GET /chat-rooms/{roomId}/video/participants/online 응답 항목 */
+export interface VideoParticipantOnlineDto {
+  participantId: number;
+  userId: number;
+  nickname: string;
+  sessionId: string;
+  cameraEnabled: boolean;
+  onlineAt: string;
+  lastHeartbeatAt: string;
+}
+
+export interface VideoParticipantsOnlineResponseDto {
+  roomId: number;
+  participantsCount: number;
+  participants: VideoParticipantOnlineDto[];
+}
+
 /** PATCH /chat-rooms/participants/{participantId} 요청 */
 export interface UpdateParticipantCameraStatusRequestDto {
   cameraEnabled: boolean;
