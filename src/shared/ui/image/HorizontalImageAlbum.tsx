@@ -11,6 +11,7 @@ interface HorizontalImageAlbumProps {
   scrollAreaLabel?: string;
   enableKeyboardScroll?: boolean;
   className?: string;
+  onImageClick?: (url: string, alt: string) => void;
 }
 
 export function HorizontalImageAlbum({
@@ -20,6 +21,7 @@ export function HorizontalImageAlbum({
   scrollAreaLabel = "이미지 가로 스크롤 영역",
   enableKeyboardScroll = true,
   className,
+  onImageClick,
 }: HorizontalImageAlbumProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const tileStyle = { width: `${tileSize}px`, height: `${tileSize}px` };
@@ -90,23 +92,44 @@ export function HorizontalImageAlbum({
       )}
     >
       <div className="flex w-max gap-3 pb-1">
-        {imageUrls.map((imageUrl, index) => (
-          <div
-            key={`${imageUrl}-${index}`}
-            className="relative shrink-0 overflow-hidden rounded-2xl bg-[#d9d9d9]"
-            style={tileStyle}
-          >
-            {/* 로컬 Blob URL 미리보기는 next/image 최적화 대상이 아니어서 img를 사용한다. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt={`${imageAltPrefix} ${index + 1}`}
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover"
-            />
-          </div>
-        ))}
+        {imageUrls.map((imageUrl, index) => {
+          const alt = `${imageAltPrefix} ${index + 1}`;
+          return onImageClick ? (
+            <button
+              key={`${imageUrl}-${index}`}
+              type="button"
+              aria-label={alt}
+              onClick={() => onImageClick(imageUrl, alt)}
+              className="relative shrink-0 overflow-hidden rounded-2xl bg-[#d9d9d9]"
+              style={tileStyle}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt={alt}
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
+            </button>
+          ) : (
+            <div
+              key={`${imageUrl}-${index}`}
+              className="relative shrink-0 overflow-hidden rounded-2xl bg-[#d9d9d9]"
+              style={tileStyle}
+            >
+              {/* 로컬 Blob URL 미리보기는 next/image 최적화 대상이 아니어서 img를 사용한다. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt={alt}
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
