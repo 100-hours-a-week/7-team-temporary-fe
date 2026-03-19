@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const VIDEO_HEARTBEAT_INTERVAL_MS = 15_000;
