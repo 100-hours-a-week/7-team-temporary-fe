@@ -38,13 +38,20 @@ export function RetroCardView({
   return (
     <article className="pb-3">
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-[16px] font-semibold text-black">{vm.dateLabel} 회고</h3>
-          {authorNickname ? (
-            <span className="text-[16px] font-semibold text-black">{authorNickname}</span>
-          ) : null}
-        </div>
-        <span className="text-[14px] font-medium text-[#9a9a9a]">{vm.timeLabel}</span>
+        {authorNickname ? (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="text-[16px] font-semibold text-black">{authorNickname}</span>
+              <span className="text-[14px] font-medium text-[#9a9a9a]">{vm.dateLabel}</span>
+            </div>
+            <span className="text-[14px] font-medium text-[#9a9a9a]">{vm.timeLabel}</span>
+          </>
+        ) : (
+          <>
+            <h3 className="text-[16px] font-semibold text-black">{vm.dateLabel} 회고</h3>
+            <span className="text-[14px] font-medium text-[#9a9a9a]">{vm.timeLabel}</span>
+          </>
+        )}
       </header>
 
       {vm.imageUrls.length > 0 ? (
@@ -70,6 +77,7 @@ export function RetroCardView({
       <RetroContentText
         value={vm.content}
         className="mt-3"
+        expandable
       />
 
       <footer className="mt-6 flex items-center justify-between">
