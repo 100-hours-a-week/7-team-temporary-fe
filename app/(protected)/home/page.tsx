@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
 import { AppShellPage } from "@/pages/app-shell";
@@ -28,7 +29,9 @@ function getWeekRange(todayStr: string): { weekStart: string; weekEnd: string } 
   return { weekStart: fmt(start), weekEnd: fmt(end) };
 }
 
-export default async function HomePage() {
+/** 데이터 prefetch 후 HydrationBoundary를 주입하는 async 서버 컴포넌트.
+ *  Suspense로 감싸져 있으므로 await 중에도 서버는 fallback HTML을 먼저 전송한다. */
+async function HomeWithData() {
   const queryClient = new QueryClient();
   const today = getTodayKst();
   const { weekStart, weekEnd } = getWeekRange(today);
@@ -56,5 +59,13 @@ export default async function HomePage() {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <AppShellPage />
     </HydrationBoundary>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<AppShellPage />}>
+      <HomeWithData />
+    </Suspense>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { MyRetroCardVM, PublicRetroCardVM } from "../model";
 
 import { MoreButton } from "@/shared/ui/button";
-import { HorizontalImageAlbum } from "@/shared/ui/image";
+import { HorizontalImageAlbum, ImageDialog } from "@/shared/ui/image";
 import { Icon } from "@/shared/ui/icon";
 import { RetroVisibilityToggle } from "@/shared/ui/retro";
 
@@ -33,17 +33,25 @@ export function RetroCardView({
 }: RetroCardViewProps) {
   const authorNickname = "authorNickname" in vm ? vm.authorNickname : undefined;
   const visibilityText = "visibilityText" in vm ? vm.visibilityText : undefined;
+  const [selectedImage, setSelectedImage] = useState<{ url: string; alt: string } | null>(null);
 
   return (
     <article className="pb-3">
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-[16px] font-semibold text-black">{vm.dateLabel} 회고</h3>
-          {authorNickname ? (
-            <span className="text-[16px] font-semibold text-black">{authorNickname}</span>
-          ) : null}
-        </div>
-        <span className="text-[14px] font-medium text-[#9a9a9a]">{vm.timeLabel}</span>
+        {authorNickname ? (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="text-[16px] font-semibold text-black">{authorNickname}</span>
+              <span className="text-[14px] font-medium text-[#9a9a9a]">{vm.dateLabel}</span>
+            </div>
+            <span className="text-[14px] font-medium text-[#9a9a9a]">{vm.timeLabel}</span>
+          </>
+        ) : (
+          <>
+            <h3 className="text-[16px] font-semibold text-black">{vm.dateLabel} 회고</h3>
+            <span className="text-[14px] font-medium text-[#9a9a9a]">{vm.timeLabel}</span>
+          </>
+        )}
       </header>
 
       {vm.imageUrls.length > 0 ? (
@@ -53,12 +61,23 @@ export function RetroCardView({
           imageAltPrefix={`${vm.dateLabel} 회고 이미지`}
           scrollAreaLabel={`${vm.dateLabel} 회고 이미지 가로 스크롤`}
           className="mt-3 w-full"
+          onImageClick={(url, alt) => setSelectedImage({ url, alt })}
         />
       ) : null}
+
+      <ImageDialog
+        open={selectedImage !== null}
+        imageUrl={selectedImage?.url ?? null}
+        alt={selectedImage?.alt ?? ""}
+        onOpenChange={(open) => {
+          if (!open) setSelectedImage(null);
+        }}
+      />
 
       <RetroContentText
         value={vm.content}
         className="mt-3"
+        expandable
       />
 
       <footer className="mt-6 flex items-center justify-between">

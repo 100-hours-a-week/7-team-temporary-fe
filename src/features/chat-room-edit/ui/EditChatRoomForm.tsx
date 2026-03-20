@@ -31,6 +31,7 @@ import {
 interface EditChatRoomFormProps {
   roomId: number;
   onDeleted?: () => void;
+  onLeave?: () => void;
 }
 
 function getRequestErrorMessage(error: unknown, fallbackMessage: string) {
@@ -55,7 +56,7 @@ function getRequestErrorMessage(error: unknown, fallbackMessage: string) {
   return fallbackMessage;
 }
 
-export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
+export function EditChatRoomForm({ roomId, onDeleted, onLeave }: EditChatRoomFormProps) {
   const { showToast } = useToast();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const myUserId = useAuthStore((state) => state.userId ?? null);
@@ -220,13 +221,23 @@ export function EditChatRoomForm({ roomId, onDeleted }: EditChatRoomFormProps) {
       </section>
 
       <FixedActionBar>
-        <PrimaryButton
-          type="submit"
-          form="edit-chat-room-form"
-          disabled={!canSubmit || isDisabled}
-        >
-          {isEditPending ? "수정 중..." : "그룹 수정하기"}
-        </PrimaryButton>
+        {isNotOwner && onLeave ? (
+          <button
+            type="button"
+            onClick={onLeave}
+            className="h-12 w-full rounded-xl border border-neutral-200 bg-neutral-100 text-sm font-semibold text-neutral-700"
+          >
+            채팅방 나가기
+          </button>
+        ) : (
+          <PrimaryButton
+            type="submit"
+            form="edit-chat-room-form"
+            disabled={!canSubmit || isDisabled}
+          >
+            {isEditPending ? "수정 중..." : "그룹 수정하기"}
+          </PrimaryButton>
+        )}
       </FixedActionBar>
     </>
   );
