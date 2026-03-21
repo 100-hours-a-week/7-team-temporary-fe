@@ -8,7 +8,7 @@ export function useExcludedTasksSheetState(defaultOpen = true) {
 
   const openExcludedTasksSheet = useCallback(() => {
     setIsExcludedSheetOpen(true);
-    setIsExcludedSheetExpanded(false);
+    setIsExcludedSheetExpanded(true);
   }, []);
 
   return {
