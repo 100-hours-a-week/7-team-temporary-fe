@@ -14,6 +14,7 @@ import { usePaginatedAccumulator } from "@/shared/hooks";
 
 const RETRO_LIST_PAGE = 1;
 const RETRO_LIST_SIZE = 10;
+const RETRO_LIST_STALE_TIME = 5 * 60 * 1000;
 
 interface UseRetroSectionOptions {
   enabled?: boolean;
@@ -38,6 +39,7 @@ export function useRetroSection(
     page: currentPage,
     size: RETRO_LIST_SIZE,
     enabled: enabled && isMyPage,
+    staleTime: RETRO_LIST_STALE_TIME,
   });
 
   const publicRetrosQuery = usePublicRetrosQuery({
@@ -45,6 +47,7 @@ export function useRetroSection(
     page: currentPage,
     size: RETRO_LIST_SIZE,
     enabled: enabled && !isMyPage,
+    staleTime: RETRO_LIST_STALE_TIME,
   });
 
   const currentQuery = isMyPage ? myRetrosQuery : publicRetrosQuery;
