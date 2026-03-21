@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
+
+import { Virtuoso } from "react-virtuoso";
 
 import type { ChatMessageItemVM } from "@/entities/chat-room";
-import { InfiniteScrollSentinel } from "@/shared/ui";
 
 import { ChatMessageFeedSkeleton } from "./ChatMessageFeedSkeleton";
 import { ChatMessageItem } from "./ChatMessageItem";
@@ -62,6 +63,20 @@ function DateDivider({ label }: { label: string }) {
   );
 }
 
+function FetchingMoreHeader() {
+  return (
+    <div className="pt-2 pb-1 text-center text-xs text-neutral-400">이전 메시지 불러오는 중...</div>
+  );
+}
+
+function EmptyHeader() {
+  return null;
+}
+
+function FeedFooter() {
+  return <div className="pb-6" />;
+}
+
 type MessageFeedRenderItem =
   | {
       kind: "DATE_DIVIDER";
@@ -75,6 +90,8 @@ type MessageFeedRenderItem =
       messageIndex: number;
     };
 
+const START_INDEX = 100000;
+
 export function ChatMessageFeed({
   messages,
   lastSeenMessageId,
@@ -84,23 +101,16 @@ export function ChatMessageFeed({
   isFetchingMore,
   onLoadMore,
 }: ChatMessageFeedProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const [isReadyForLoadMore, setIsReadyForLoadMore] = useState(false);
-
-  const lastMessage = messages[messages.length - 1];
-  const latestMessageKey = lastMessage ? `${lastMessage.messageId}-${lastMessage.sentAt}` : null;
-
-  useEffect(() => {
-    if (!latestMessageKey) return;
-    bottomRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
-    setIsReadyForLoadMore(true);
-  }, [latestMessageKey]);
+  const firstIndexRef = useRef<number | null>(null);
+  const prevFirstKeyRef = useRef<string | null>(null);
+  const prevLengthRef = useRef(0);
 
   const firstUnreadIndex =
     typeof lastSeenMessageId === "number"
       ? messages.findIndex((message) => message.messageId > lastSeenMessageId)
       : -1;
   const showReadDivider = firstUnreadIndex >= 0;
+
   const renderItems = useMemo<MessageFeedRenderItem[]>(() => {
     const nextItems: MessageFeedRenderItem[] = [];
     let previousDateKey: string | null = null;
@@ -110,7 +120,7 @@ export function ChatMessageFeed({
       if (currentDateKey && currentDateKey !== previousDateKey) {
         nextItems.push({
           kind: "DATE_DIVIDER",
-          key: `date-divider-${currentDateKey}-${messageIndex}`,
+          key: `date-divider-${currentDateKey}-first-${message.messageId}`,
           label: formatDateDividerLabel(message.sentAt),
         });
         previousDateKey = currentDateKey;
@@ -118,7 +128,7 @@ export function ChatMessageFeed({
 
       nextItems.push({
         kind: "MESSAGE",
-        key: `message-${message.messageId}-${message.sentAt}-${messageIndex}`,
+        key: `message-${message.messageId}`,
         message,
         messageIndex,
       });
@@ -126,6 +136,50 @@ export function ChatMessageFeed({
 
     return nextItems;
   }, [messages]);
+
+  // firstItemIndex를 렌더 시점에 동기적으로 계산 (useEffect + setState로 인한 이중 렌더 방지)
+  let firstItemIndex = START_INDEX;
+  if (renderItems.length > 0) {
+    const firstKey = renderItems[0].key;
+
+    if (firstIndexRef.current === null) {
+      firstIndexRef.current = START_INDEX - renderItems.length;
+    } else if (firstKey !== prevFirstKeyRef.current && renderItems.length > prevLengthRef.current) {
+      firstIndexRef.current -= renderItems.length - prevLengthRef.current;
+    }
+
+    firstItemIndex = firstIndexRef.current;
+    prevFirstKeyRef.current = firstKey;
+    prevLengthRef.current = renderItems.length;
+  }
+
+  const components = useMemo(
+    () => ({
+      Header: isFetchingMore ? FetchingMoreHeader : EmptyHeader,
+      Footer: FeedFooter,
+    }),
+    [isFetchingMore],
+  );
+
+  const itemContent = useCallback(
+    (_: number, item: MessageFeedRenderItem) => {
+      if (item.kind === "DATE_DIVIDER") {
+        return <DateDivider label={item.label} />;
+      }
+
+      return (
+        <div className="pb-3">
+          {showReadDivider && item.messageIndex === firstUnreadIndex ? <ReadDivider /> : null}
+          <ChatMessageItem message={item.message} />
+        </div>
+      );
+    },
+    [showReadDivider, firstUnreadIndex],
+  );
+
+  const startReached = useCallback(() => {
+    if (hasMore && !isFetchingMore) onLoadMore();
+  }, [hasMore, isFetchingMore, onLoadMore]);
 
   if (isLoading) {
     return <ChatMessageFeedSkeleton />;
@@ -144,32 +198,15 @@ export function ChatMessageFeed({
   }
 
   return (
-    <section className="flex flex-col gap-3 pb-6">
-      <InfiniteScrollSentinel
-        enabled={isReadyForLoadMore}
-        hasMore={hasMore}
-        isFetching={isFetchingMore}
-        onLoadMore={onLoadMore}
-        loadingLabel="이전 메시지 불러오는 중..."
-        loadingClassName="pb-1"
-      />
-      {renderItems.map((item) => {
-        if (item.kind === "DATE_DIVIDER") {
-          return (
-            <div key={item.key}>
-              <DateDivider label={item.label} />
-            </div>
-          );
-        }
-
-        return (
-          <div key={item.key}>
-            {showReadDivider && item.messageIndex === firstUnreadIndex ? <ReadDivider /> : null}
-            <ChatMessageItem message={item.message} />
-          </div>
-        );
-      })}
-      <div ref={bottomRef} />
-    </section>
+    <Virtuoso
+      style={{ height: "100%" }}
+      firstItemIndex={firstItemIndex}
+      initialTopMostItemIndex={renderItems.length - 1}
+      data={renderItems}
+      followOutput="auto"
+      startReached={startReached}
+      itemContent={itemContent}
+      components={components}
+    />
   );
 }

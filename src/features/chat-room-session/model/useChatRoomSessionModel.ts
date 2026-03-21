@@ -115,7 +115,7 @@ export function useChatRoomSessionModel({
     roomId,
     size: CHAT_ROOM_MESSAGE_PAGE_SIZE,
     myUserId,
-    enabled: isChatRuntimeEnabled,
+    enabled: isRoomEnabled,
   });
 
   const { realtimeMessages } = useChatRoomRealtime({

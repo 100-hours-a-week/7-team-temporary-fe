@@ -1,3 +1,5 @@
+import { useCallback } from "react";
+
 import { ChatRoomStackPage } from "./ui/ChatRoomStackPage";
 import { CamStudyRoomStackPage } from "./ui/CamStudyRoomStackPage";
 import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room";
@@ -12,27 +14,33 @@ interface RoomPageProps {
 export function RoomPage({ enabled = true }: RoomPageProps) {
   const { push } = useStackPage();
 
-  const handleOpenChatSearch = () => {
+  const handleOpenChatSearch = useCallback(() => {
     push(<ChatSearchStackPage />);
-  };
+  }, [push]);
 
-  const handleOpenChatRoom = (id: number) => {
-    push(<ChatRoomStackPage roomId={id} />);
-  };
+  const handleOpenChatRoom = useCallback(
+    (id: number) => {
+      push(<ChatRoomStackPage roomId={id} />);
+    },
+    [push],
+  );
 
-  const handleOpenCamStudyRoom = (room: CamStudyRoomListItemVM) => {
-    push(
-      <CamStudyRoomStackPage
-        roomId={room.roomId}
-        initialTitle={room.title}
-        initialSummary={{
-          activeCamParticipantsCount: room.participantsCount,
-          participantsCount: room.participantsCount,
-          maxParticipants: room.maxParticipants,
-        }}
-      />,
-    );
-  };
+  const handleOpenCamStudyRoom = useCallback(
+    (room: CamStudyRoomListItemVM) => {
+      push(
+        <CamStudyRoomStackPage
+          roomId={room.roomId}
+          initialTitle={room.title}
+          initialSummary={{
+            activeCamParticipantsCount: room.participantsCount,
+            participantsCount: room.participantsCount,
+            maxParticipants: room.maxParticipants,
+          }}
+        />,
+      );
+    },
+    [push],
+  );
 
   return (
     <RoomFeed
