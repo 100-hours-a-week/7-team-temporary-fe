@@ -37,7 +37,7 @@ export function OpenChatSection({ enabled, onRoomClick, scrollRef }: OpenChatSec
     enabled,
     page: currentPage,
     size: CHAT_ROOM_LIST_SIZE,
-    refetchOnMount: "always",
+    staleTime: 5 * 60 * 1000,
   });
 
   const {
