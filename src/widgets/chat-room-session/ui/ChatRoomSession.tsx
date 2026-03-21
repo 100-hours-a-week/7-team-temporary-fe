@@ -32,7 +32,7 @@ export function ChatRoomSession({ roomId, initialParticipantId }: ChatRoomSessio
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-4">
+      <div className="min-h-0 flex-1 px-6 pt-4">
         <ChatMessageFeed
           messages={messages}
           lastSeenMessageId={myLastSeenMessageId}
