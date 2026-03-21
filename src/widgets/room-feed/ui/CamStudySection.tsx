@@ -46,7 +46,7 @@ export function CamStudySection({ enabled, onRoomClick, scrollRef }: CamStudySec
     enabled,
     page: currentPage,
     size: CAM_STUDY_LIST_SIZE,
-    refetchOnMount: "always",
+    staleTime: 5 * 60 * 1000,
   });
 
   const {

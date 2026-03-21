@@ -5,7 +5,13 @@ import { serverFetch, serverTaskPath } from "@/shared/api/serverFetch";
 import { retroQueryKeys } from "@/entities/retro";
 
 export default async function RetroPage() {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000,
+      },
+    },
+  });
 
   await Promise.allSettled([
     queryClient.prefetchQuery({
