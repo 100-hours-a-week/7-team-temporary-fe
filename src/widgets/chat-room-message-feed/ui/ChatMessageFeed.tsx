@@ -110,7 +110,7 @@ export function ChatMessageFeed({
       if (currentDateKey && currentDateKey !== previousDateKey) {
         nextItems.push({
           kind: "DATE_DIVIDER",
-          key: `date-divider-${currentDateKey}-${messageIndex}`,
+          key: `date-divider-${currentDateKey}-first-${message.messageId}`,
           label: formatDateDividerLabel(message.sentAt),
         });
         previousDateKey = currentDateKey;
@@ -118,7 +118,7 @@ export function ChatMessageFeed({
 
       nextItems.push({
         kind: "MESSAGE",
-        key: `message-${message.messageId}-${message.sentAt}-${messageIndex}`,
+        key: `message-${message.messageId}`,
         message,
         messageIndex,
       });
