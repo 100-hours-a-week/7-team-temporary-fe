@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { useQueryClient } from "@tanstack/react-query";
+import { type InfiniteData, useQueryClient } from "@tanstack/react-query";
 
-import type { ChatMessageItemVM } from "@/entities/chat-room";
+import type { ChatMessageItemVM, ChatMessageListModel } from "@/entities/chat-room";
 import {
   chatRoomQueryKeys,
   useChatRoomDetailQuery,
@@ -118,13 +118,6 @@ export function useChatRoomSessionModel({
     enabled: isRoomEnabled,
   });
 
-  const { realtimeMessages } = useChatRoomRealtime({
-    roomId,
-    participantId: myParticipantId,
-    myUserId,
-    enabled: isChatRuntimeEnabled && myParticipantId !== undefined,
-  });
-
   useEffect(() => {
     lastRoomFeedPatchedMessageIdRef.current = 0;
   }, [roomId]);
@@ -181,6 +174,43 @@ export function useChatRoomSessionModel({
     [queryClient, roomId],
   );
 
+  const onRealtimeMessage = useCallback(
+    (vm: ChatMessageItemVM) => {
+      queryClient.setQueryData<InfiniteData<ChatMessageListModel>>(
+        chatRoomQueryKeys.messagesInfinite(roomId, CHAT_ROOM_MESSAGE_PAGE_SIZE, myUserId),
+        (old) => {
+          if (!old) return old;
+          const lastPage = old.pages[old.pages.length - 1];
+          return {
+            ...old,
+            pages: [...old.pages.slice(0, -1), { ...lastPage, content: [...lastPage.content, vm] }],
+          };
+        },
+      );
+
+      if (
+        vm.senderType === "USER" &&
+        vm.senderId === myUserId &&
+        vm.messageId > lastRoomFeedPatchedMessageIdRef.current
+      ) {
+        lastRoomFeedPatchedMessageIdRef.current = vm.messageId;
+        patchRoomFeedLatestMessage({
+          lastMessage: toRoomFeedPreviewFromMessage(vm),
+          lastMessageAt: vm.sentAt,
+        });
+      }
+    },
+    [myUserId, patchRoomFeedLatestMessage, queryClient, roomId],
+  );
+
+  useChatRoomRealtime({
+    roomId,
+    participantId: myParticipantId,
+    myUserId,
+    enabled: isChatRuntimeEnabled && myParticipantId !== undefined,
+    onMessage: onRealtimeMessage,
+  });
+
   useEffect(() => {
     return chatStompSession.onMessageSendAccepted(({ idempotencyKey }) => {
       setPendingMessages((prev) => {
@@ -191,23 +221,6 @@ export function useChatRoomSessionModel({
       });
     });
   }, []);
-
-  useEffect(() => {
-    if (myUserId === null) return;
-    if (realtimeMessages.length === 0) return;
-
-    const latestMine = [...realtimeMessages]
-      .reverse()
-      .find((message) => message.senderType === "USER" && message.senderId === myUserId);
-    if (!latestMine) return;
-    if (latestMine.messageId <= lastRoomFeedPatchedMessageIdRef.current) return;
-
-    lastRoomFeedPatchedMessageIdRef.current = latestMine.messageId;
-    patchRoomFeedLatestMessage({
-      lastMessage: toRoomFeedPreviewFromMessage(latestMine),
-      lastMessageAt: latestMine.sentAt,
-    });
-  }, [myUserId, patchRoomFeedLatestMessage, realtimeMessages]);
 
   useEffect(() => {
     return chatStompSession.onMessageSendFailed(({ idempotencyKey, message }) => {
@@ -233,23 +246,9 @@ export function useChatRoomSessionModel({
     });
   }, [queryClient, showToast]);
 
-  const historicalMessageIds = useMemo(
-    () => new Set(chatMessagesQuery.messages.map((message) => message.messageId)),
-    [chatMessagesQuery.messages],
-  );
-
-  const newRealtimeMessages = useMemo(
-    () => realtimeMessages.filter((message) => !historicalMessageIds.has(message.messageId)),
-    [realtimeMessages, historicalMessageIds],
-  );
-
   const messages = useMemo(
-    () => [
-      ...chatMessagesQuery.messages,
-      ...newRealtimeMessages,
-      ...Array.from(pendingMessages.values()),
-    ],
-    [chatMessagesQuery.messages, newRealtimeMessages, pendingMessages],
+    () => [...chatMessagesQuery.messages, ...Array.from(pendingMessages.values())],
+    [chatMessagesQuery.messages, pendingMessages],
   );
 
   const latestConfirmedMessageId = useMemo(

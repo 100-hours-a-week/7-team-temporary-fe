@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { chatStompSession } from "@/shared/socket";
 
@@ -12,6 +12,7 @@ interface UseChatRoomRealtimeOptions {
   participantId?: number;
   myUserId?: number | null;
   enabled?: boolean;
+  onMessage?: (vm: ChatMessageItemVM) => void;
 }
 
 export function useChatRoomRealtime({
@@ -19,10 +20,13 @@ export function useChatRoomRealtime({
   participantId,
   myUserId = null,
   enabled = true,
+  onMessage,
 }: UseChatRoomRealtimeOptions) {
-  const [realtimeMessages, setRealtimeMessages] = useState<ChatMessageItemVM[]>([]);
   const myUserIdRef = useRef(myUserId);
   myUserIdRef.current = myUserId;
+
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
 
   useEffect(() => {
     if (!enabled || roomId <= 0) return;
@@ -32,10 +36,8 @@ export function useChatRoomRealtime({
       participantId,
       onMessageCreated: (payload) => {
         const vm = messageCreatedPayloadToVM(payload, myUserIdRef.current);
-        setRealtimeMessages((prev) => [...prev, vm]);
+        onMessageRef.current?.(vm);
       },
     });
   }, [enabled, roomId, participantId]);
-
-  return { realtimeMessages };
 }
