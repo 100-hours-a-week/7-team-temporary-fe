@@ -32,6 +32,7 @@ export type {
 
 export {
   toChatRoomListModel,
+  toChatMessageListModel,
   chatRoomQueryKeys,
   useChatRoomMessagesInfiniteQuery,
   useChatRoomMessagesQuery,

@@ -1,16 +1,51 @@
-import type { ChatRoomListItemVM } from "@/entities/chat-room";
+import { memo } from "react";
+
+import { useQueryClient } from "@tanstack/react-query";
+
+import {
+  chatRoomQueryKeys,
+  fetchChatRoomMessages,
+  toChatMessageListModel,
+  type ChatRoomListItemVM,
+} from "@/entities/chat-room";
+import { useAuthStore } from "@/entities/user";
 import { Icon } from "@/shared/ui/icon";
+
+const PREFETCH_SIZE = 50;
 
 interface ChatRoomListItemProps {
   item: ChatRoomListItemVM;
   onClick: (roomId: number) => void;
 }
 
-export function ChatRoomListItem({ item, onClick }: ChatRoomListItemProps) {
+export const ChatRoomListItem = memo(function ChatRoomListItem({
+  item,
+  onClick,
+}: ChatRoomListItemProps) {
+  const queryClient = useQueryClient();
+  const myUserId = useAuthStore((state) => state.userId ?? null);
+
+  const handlePointerDown = () => {
+    void queryClient.prefetchInfiniteQuery({
+      queryKey: chatRoomQueryKeys.messagesInfinite(item.roomId, PREFETCH_SIZE, myUserId),
+      queryFn: ({ pageParam, signal }) => {
+        const cursor = (pageParam ?? undefined) as number | undefined;
+        return fetchChatRoomMessages({
+          roomId: item.roomId,
+          cursor,
+          size: PREFETCH_SIZE,
+          signal,
+        }).then((dto) => toChatMessageListModel(dto, { myUserId }));
+      },
+      initialPageParam: null,
+    });
+  };
+
   return (
     <button
       type="button"
       className="w-full rounded-[20px] border border-neutral-200 bg-white px-6 py-5 text-left"
+      onPointerDown={handlePointerDown}
       onClick={() => onClick(item.roomId)}
     >
       <div className="flex items-start justify-between gap-3">
@@ -50,7 +85,7 @@ export function ChatRoomListItem({ item, onClick }: ChatRoomListItemProps) {
       </div>
     </button>
   );
-}
+});
 
 function formatLastMessageTime(isoString: string): string {
   const date = new Date(isoString);
