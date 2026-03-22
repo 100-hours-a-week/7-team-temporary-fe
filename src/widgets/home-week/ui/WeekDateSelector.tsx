@@ -1,5 +1,5 @@
 import { cn } from "@/shared/lib";
-import { DateSwapText } from "@/shared/ui";
+import { DateSwapText } from "@/shared/ui/text";
 import { useHomePlanStore } from "@/entities/day-plan";
 import { isSameDate } from "@/shared/lib";
 

@@ -1,4 +1,4 @@
-import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room";
+import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room-list";
 import { EmptyStateCard } from "@/shared/ui/empty";
 
 import { CamStudyRoomListItem } from "./CamStudyRoomListItem";

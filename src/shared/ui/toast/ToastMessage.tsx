@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 const AnimatedContent = dynamic(() => import("@/shared/ui/AnimatedContent"), { ssr: false });
-import { Icon } from "@/shared/ui";
+import { Icon } from "@/shared/ui/icon";
 import type { Toast } from "./types";
 
 interface ToastMessageProps {

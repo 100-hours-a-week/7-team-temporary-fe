@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { FriendBaseItem } from "@/entities/friend";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
-import { BottomSheet } from "@/shared/ui";
+import { BottomSheet } from "@/shared/ui/bottom-sheet/bottom-sheet";
 import { SearchBar } from "@/shared/ui/search";
 import { type FriendSearchResultVM, useFriendSearchSection } from "../model";
 

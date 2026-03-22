@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { SectionCard } from "@/shared/ui";
+import { SectionCard } from "@/shared/ui/surface";
 import { useReportMessagesInfiniteQuery } from "@/entities/report";
 import type { ReportMessageItemVM } from "@/entities/report";
 import { reportQueryKeys } from "@/entities/report";

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "@/shared/lib/utils";
-import { PrimaryButton } from "@/shared/ui/button";
+import { PrimaryButton } from "@/shared/ui/button/primary";
 
 interface ActionSheetContentProps {
   title?: ReactNode;

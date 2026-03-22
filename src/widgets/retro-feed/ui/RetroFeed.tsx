@@ -7,8 +7,8 @@ import {
   type RetroSection,
   type MyRetroCardVM,
   retroQueryKeys,
-  RetroCardSkeleton,
 } from "@/entities/retro";
+import { RetroCardSkeleton } from "@/entities/retro-ui";
 import { RetroListItemCard, RetroEditSheet, useRetroSection } from "@/features/retro";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
 import { EmptyStateCard } from "@/shared/ui/empty";

@@ -5,9 +5,9 @@ import { useState } from "react";
 import Link from "next/link";
 
 import type { PublicRetroCardVM } from "@/entities/retro";
-import { RetroCardView } from "@/entities/retro";
+import { RetroCardView } from "@/entities/retro-ui";
 import { AUTH_LOGIN_PATH } from "@/shared/auth";
-import { MoreActionSheet } from "@/shared/ui/bottom-sheet";
+import { MoreActionSheet } from "@/shared/ui/bottom-sheet/more-action-sheet";
 import { useToast } from "@/shared/ui/toast";
 
 interface RetroShareContentProps {

@@ -1,4 +1,4 @@
-import { IconButton } from "@/shared/ui/button";
+import { IconButton } from "@/shared/ui/button/icon";
 
 import { HeaderFrame } from "./HeaderFrame";
 

@@ -5,7 +5,8 @@ import { useCallback, useEffect } from "react";
 import type { AuthState } from "@/entities/user";
 import { useAuthStore } from "@/entities";
 import { useLoginMutation } from "@/features/auth";
-import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
+import { FixedActionBar } from "@/shared/ui/button/fixed-action-bar";
+import { PrimaryButton } from "@/shared/ui/button/primary";
 import { AnimatedStar } from "./ui/steps/AnimatedStar";
 
 interface SignUpSuccessPageProps {

@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import type { MyRetroCardVM, PublicRetroCardVM } from "../model";
 
-import { MoreButton } from "@/shared/ui/button";
+import { MoreButton } from "@/shared/ui/button/more";
 import { HorizontalImageAlbum, ImageDialog } from "@/shared/ui/image";
 import { Icon } from "@/shared/ui/icon";
 import { RetroVisibilityToggle } from "@/shared/ui/retro";

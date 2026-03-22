@@ -1,7 +1,8 @@
 "use client";
 
 import { TaskBasketAddSheet } from "@/features/home";
-import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
+import { FixedActionBar } from "@/shared/ui/button/fixed-action-bar";
+import { PrimaryButton } from "@/shared/ui/button/primary";
 import { useTaskBasketStackPageModel } from "../model/useTaskBasketStackPageModel";
 
 import {

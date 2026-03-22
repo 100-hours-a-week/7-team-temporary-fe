@@ -6,8 +6,9 @@ import { useAuthStore } from "@/entities/user";
 import { ApiError, COMMON_ERROR_CODE, CommonError } from "@/shared/api";
 
 import { BaseInput, FormField } from "@/shared/form/ui";
-import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
-import { ConfirmDialog } from "@/shared/ui";
+import { FixedActionBar } from "@/shared/ui/button/fixed-action-bar";
+import { PrimaryButton } from "@/shared/ui/button/primary";
+import { ConfirmDialog } from "@/shared/ui/dialogs";
 import { useToast } from "@/shared/ui/toast";
 
 import {

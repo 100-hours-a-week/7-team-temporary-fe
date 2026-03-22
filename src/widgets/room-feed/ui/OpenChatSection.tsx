@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 
-import type { ChatRoomListItemVM } from "@/entities/chat-room";
-import { chatRoomQueryKeys, useGroupChatRoomListQuery } from "@/entities/chat-room";
+import type { ChatRoomListItemVM } from "@/entities/chat-room-list";
+import { useGroupChatRoomListQuery } from "@/entities/chat-room-list";
+import { chatRoomQueryKeys } from "@/entities/chat-room-query-keys";
 import { usePaginatedAccumulator, useInfiniteScrollTrigger } from "@/shared/hooks";
 import { chatStompSession } from "@/shared/socket";
 import { useStackPage } from "@/widgets/stack";

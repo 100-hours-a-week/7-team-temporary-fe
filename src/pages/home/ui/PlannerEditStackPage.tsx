@@ -21,9 +21,10 @@ import {
 } from "@/entities/day-plan-schedule";
 import { useHomePlanStore } from "@/entities/day-plan";
 import { useMyProfileQuery, type UserFocusTimeZone } from "@/entities/user";
-import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
+import { FloatingActionButton } from "@/shared/ui/button/floating-action";
+import { FloatingActionDock } from "@/shared/ui/button/floating-dock";
 import { buildTimeRange, formatHHmmRange, isAfterDayEnd, parseHHmmToMinutes } from "@/shared/lib";
-import { ConfirmDialog } from "@/shared/ui";
+import { ConfirmDialog } from "@/shared/ui/dialogs";
 import { useToast } from "@/shared/ui/toast";
 import { StackPageEntryContext, useStackPage } from "@/widgets/stack";
 import { TaskBasketStackPage } from "./TaskBasketStackPage";

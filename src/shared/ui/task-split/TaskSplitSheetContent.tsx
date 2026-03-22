@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { PrimaryButton } from "@/shared/ui/button";
+import { PrimaryButton } from "@/shared/ui/button/primary";
 
 export type TaskSplitItem = {
   id: string | number;

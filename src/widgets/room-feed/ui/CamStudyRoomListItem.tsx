@@ -1,5 +1,5 @@
-import { getCamStudyStatus } from "@/entities/cam-study-room";
-import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room";
+import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room-list";
+import { getCamStudyStatus } from "@/entities/cam-study-room-status";
 import { Icon } from "@/shared/ui/icon";
 
 interface CamStudyRoomListItemProps {

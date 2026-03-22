@@ -1,6 +1,7 @@
 "use client";
 
-import { ActionSheetContent, BottomSheet } from "@/shared/ui";
+import { ActionSheetContent } from "@/shared/ui/bottom-sheet/action-sheet-content";
+import { BottomSheet } from "@/shared/ui/bottom-sheet/bottom-sheet";
 
 interface AiArrangeSheetProps {
   open: boolean;

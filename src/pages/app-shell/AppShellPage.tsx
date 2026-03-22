@@ -12,7 +12,6 @@ const ReportSheet = dynamic(
 import { BottomNav, TabRoot, TabScope, useTab } from "@/widgets/tab-stack";
 import { StackPageRoot, StackPageScope, useStackPage } from "@/widgets/stack";
 import "./AppShellRoute.css";
-import { HomePage } from "@/pages/home";
 
 interface TabPageProps {
   enabled?: boolean;
@@ -29,6 +28,12 @@ function TabPageFallback() {
 
 const RetroPage = dynamic<TabPageProps>(
   () => import("@/pages/retro/RetroPage").then((module) => module.RetroPage),
+  {
+    loading: TabPageFallback,
+  },
+);
+const HomePage = dynamic<TabPageProps>(
+  () => import("@/pages/home/HomePage").then((module) => module.HomePage),
   {
     loading: TabPageFallback,
   },
@@ -124,28 +129,24 @@ function AppShellContent({ onReportClick }: AppShellContentProps) {
         <TabScope
           tab="home"
           className="h-full"
-          keepMounted
         >
           <HomePage enabled={activeTab === "home"} />
         </TabScope>
         <TabScope
           tab="retro"
           className="h-full"
-          keepMounted
         >
           <RetroPage enabled={activeTab === "retro"} />
         </TabScope>
         <TabScope
           tab="room"
           className="h-full"
-          keepMounted
         >
           <RoomPage enabled={activeTab === "room"} />
         </TabScope>
         <TabScope
           tab="profile"
           className="h-full"
-          keepMounted
         >
           <ProfilePage enabled={activeTab === "profile"} />
         </TabScope>

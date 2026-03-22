@@ -1,4 +1,6 @@
-import { ActionSheetContent, BottomSheet, TaskSplitSheetContent } from "@/shared/ui";
+import { ActionSheetContent } from "@/shared/ui/bottom-sheet/action-sheet-content";
+import { BottomSheet } from "@/shared/ui/bottom-sheet/bottom-sheet";
+import { TaskSplitSheetContent } from "@/shared/ui/task-split";
 import {
   TASK_BASKET_AI_SHEET_DESCRIPTION,
   TASK_BASKET_AI_SHEET_INFO_PREFIX,

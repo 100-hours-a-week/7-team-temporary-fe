@@ -5,7 +5,8 @@ import { ApiError, COMMON_ERROR_CODE, CommonError } from "@/shared/api";
 import { cn } from "@/shared/lib";
 
 import { BaseInput, FormField } from "@/shared/form/ui";
-import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
+import { FixedActionBar } from "@/shared/ui/button/fixed-action-bar";
+import { PrimaryButton } from "@/shared/ui/button/primary";
 import { useToast } from "@/shared/ui/toast";
 import type { ChatRoomType } from "@/entities/chat-room";
 

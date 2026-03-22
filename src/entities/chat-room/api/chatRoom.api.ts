@@ -1,5 +1,4 @@
 import { apiFetch, Endpoint } from "@/shared/api";
-import { CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED, getMockChatRoomMessageListResponse } from "./mock";
 
 import type {
   ChatRoomDetailDto,
@@ -13,6 +12,9 @@ import type {
   UpdateParticipantCameraStatusRequestDto,
   VideoParticipantsOnlineResponseDto,
 } from "./types";
+
+const CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED =
+  process.env.NEXT_PUBLIC_CHAT_ROOM_MESSAGE_LIST_MOCK === "true";
 
 interface FetchChatRoomListParams {
   page?: number;
@@ -184,6 +186,7 @@ export async function fetchChatRoomMessages({
   signal?: AbortSignal;
 }): Promise<ChatMessageListResponseDto> {
   if (CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED) {
+    const { getMockChatRoomMessageListResponse } = await import("./mock");
     return getMockChatRoomMessageListResponse({ roomId, cursor, size });
   }
 

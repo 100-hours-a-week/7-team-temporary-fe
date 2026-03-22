@@ -2,8 +2,9 @@
 
 import type { ReactNode } from "react";
 
-import { BottomSheet, TaskSplitSheetContent } from "@/shared/ui";
-import type { TaskSplitGroup, TaskSplitItem } from "@/shared/ui";
+import { BottomSheet } from "@/shared/ui/bottom-sheet/bottom-sheet";
+import { TaskSplitSheetContent } from "@/shared/ui/task-split";
+import type { TaskSplitGroup, TaskSplitItem } from "@/shared/ui/task-split";
 import {
   TASK_SPLIT_SHEET_DEFAULT_DESCRIPTION,
   TASK_SPLIT_SHEET_DEFAULT_REMOVE_ITEM_ARIA_LABEL,

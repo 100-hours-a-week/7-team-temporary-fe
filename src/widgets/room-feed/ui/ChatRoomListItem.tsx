@@ -2,12 +2,8 @@ import { memo } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 
-import {
-  chatRoomQueryKeys,
-  fetchChatRoomMessages,
-  toChatMessageListModel,
-  type ChatRoomListItemVM,
-} from "@/entities/chat-room";
+import type { ChatRoomListItemVM } from "@/entities/chat-room-list";
+import { chatRoomQueryKeys } from "@/entities/chat-room-query-keys";
 import { useAuthStore } from "@/entities/user";
 import { Icon } from "@/shared/ui/icon";
 
@@ -26,19 +22,25 @@ export const ChatRoomListItem = memo(function ChatRoomListItem({
   const myUserId = useAuthStore((state) => state.userId ?? null);
 
   const handlePointerDown = () => {
-    void queryClient.prefetchInfiniteQuery({
-      queryKey: chatRoomQueryKeys.messagesInfinite(item.roomId, PREFETCH_SIZE, myUserId),
-      queryFn: ({ pageParam, signal }) => {
-        const cursor = (pageParam ?? undefined) as number | undefined;
-        return fetchChatRoomMessages({
-          roomId: item.roomId,
-          cursor,
-          size: PREFETCH_SIZE,
-          signal,
-        }).then((dto) => toChatMessageListModel(dto, { myUserId }));
-      },
-      initialPageParam: null,
-    });
+    // fetchChatRoomMessages, toChatMessageListModel은 chat room session 청크와 공유되므로
+    // 정적 import 시 room 청크에 불필요하게 포함됨 → 동적 import로 분리
+    void import("@/entities/chat-room/api/chatRoom.api").then(({ fetchChatRoomMessages }) =>
+      import("@/entities/chat-room/model/chatMessage.mapper").then(({ toChatMessageListModel }) =>
+        queryClient.prefetchInfiniteQuery({
+          queryKey: chatRoomQueryKeys.messagesInfinite(item.roomId, PREFETCH_SIZE, myUserId),
+          queryFn: ({ pageParam, signal }) => {
+            const cursor = (pageParam ?? undefined) as number | undefined;
+            return fetchChatRoomMessages({
+              roomId: item.roomId,
+              cursor,
+              size: PREFETCH_SIZE,
+              signal,
+            }).then((dto) => toChatMessageListModel(dto, { myUserId }));
+          },
+          initialPageParam: null,
+        }),
+      ),
+    );
   };
 
   return (

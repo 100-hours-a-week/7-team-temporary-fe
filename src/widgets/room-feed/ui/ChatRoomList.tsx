@@ -1,4 +1,4 @@
-import type { ChatRoomListItemVM } from "@/entities/chat-room";
+import type { ChatRoomListItemVM } from "@/entities/chat-room-list";
 import { EmptyStateCard } from "@/shared/ui/empty";
 
 import { ChatRoomListItem } from "./ChatRoomListItem";

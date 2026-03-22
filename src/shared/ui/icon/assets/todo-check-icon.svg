@@ -1,14 +1,1 @@
-<svg viewBox="3 3 24 24" fill="none" color="#541E0F" xmlns="http://www.w3.org/2000/svg">
-<style>
-  @keyframes check-draw {
-    to { stroke-dashoffset: 0; }
-  }
-  .todo-check-line {
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    animation: check-draw 260ms ease-out forwards;
-  }
-</style>
-<path d="M16.3893 4.03262C17.1421 3.53877 18.1571 3.81075 18.5621 4.61484L20.4206 8.30447C20.5659 8.59301 20.8001 8.82721 21.0887 8.97254L24.7783 10.831C25.5824 11.236 25.8544 12.2511 25.3605 13.0039L23.0945 16.4582C22.9172 16.7283 22.8315 17.0482 22.8499 17.3708L23.0853 21.4953C23.1365 22.3942 22.3935 23.1373 21.4946 23.086L17.3701 22.8506C17.0475 22.8322 16.7276 22.918 16.4575 23.0952L13.0031 25.3613C12.2503 25.8551 11.2353 25.5831 10.8303 24.779L8.97182 21.0894C8.82649 20.8009 8.59229 20.5667 8.30375 20.4213L4.61412 18.5629C3.81003 18.1578 3.53805 17.1428 4.0319 16.39L6.29798 12.9357C6.47519 12.6656 6.56092 12.3456 6.54251 12.0231L6.30718 7.89854C6.2559 6.99967 6.99895 6.25662 7.89782 6.3079L12.0224 6.54323C12.3449 6.56164 12.6648 6.47591 12.935 6.2987L16.3893 4.03262Z" fill="currentColor"/>
-<path d="M10.164 15.6476L13.2676 18.3015L19.4945 11.8255" class="todo-check-line" pathLength="1" stroke="white" stroke-width="3.20787" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" color="#541e0f" viewBox="3 3 24 24"><style>@keyframes check-draw{to{stroke-dashoffset:0}}</style><path fill="currentColor" d="M16.39 4.03a1.5 1.5 0 0 1 2.17.58l1.86 3.7q.23.44.67.66l3.69 1.86c.8.4 1.07 1.42.58 2.17l-2.27 3.46a1.5 1.5 0 0 0-.24.91l.24 4.13c.05.9-.7 1.64-1.6 1.59l-4.12-.24a1.5 1.5 0 0 0-.91.25L13 25.36a1.5 1.5 0 0 1-2.17-.58l-1.86-3.7a1.5 1.5 0 0 0-.67-.66l-3.69-1.86a1.5 1.5 0 0 1-.58-2.17l2.27-3.45q.27-.42.24-.92L6.31 7.9A1.5 1.5 0 0 1 7.9 6.3l4.12.24q.49.03.92-.24z"/><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.21" d="m10.16 15.65 3.1 2.65 6.23-6.47" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1;animation:check-draw 260ms ease-out forwards"/></svg>

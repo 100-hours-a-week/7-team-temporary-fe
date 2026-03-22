@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   productionBrowserSourceMaps: false,
 
+  // 대형 패키지의 barrel export를 named import로 최적화 → 컴파일 시간 단축
+  experimental: {
+    optimizePackageImports: ["recharts", "@radix-ui/react-dialog", "firebase", "livekit-client"],
+  },
+
   compiler: {
     emotion: true,
     removeConsole: false,

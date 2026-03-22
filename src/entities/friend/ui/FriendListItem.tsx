@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { ConfirmDialog } from "@/shared/ui";
+import { ConfirmDialog } from "@/shared/ui/dialogs";
 import { Icon } from "@/shared/ui/icon";
 
 import type { FriendListItemVM } from "../model";

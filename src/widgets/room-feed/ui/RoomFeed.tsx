@@ -2,8 +2,9 @@
 
 import { useRef, useState } from "react";
 
-import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room";
-import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
+import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room-list";
+import { FloatingActionButton } from "@/shared/ui/button/floating-action";
+import { FloatingActionDock } from "@/shared/ui/button/floating-dock";
 import { SectionTabs, type SectionTab } from "@/shared/ui/section-tabs";
 
 import { CamStudySection } from "./CamStudySection";
