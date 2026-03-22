@@ -4,14 +4,14 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { AppHeader } from "@/widgets/app-header";
-
-const ReportSheet = dynamic(
-  () => import("@/widgets/app-header/ui/ReportSheet").then((m) => m.ReportSheet),
-  { ssr: false },
-);
-import { BottomNav, TabRoot, TabScope, useTab } from "@/widgets/tab-stack";
 import { StackPageRoot, StackPageScope, useStackPage } from "@/widgets/stack";
+import { BottomNav, TabRoot, TabScope, useTab } from "@/widgets/tab-stack";
 import "./AppShellRoute.css";
+
+const loadReportSheet = () =>
+  import("@/widgets/app-header/ui/ReportSheet").then((m) => m.ReportSheet);
+
+const ReportSheet = dynamic(loadReportSheet, { ssr: false });
 
 interface TabPageProps {
   enabled?: boolean;
@@ -158,7 +158,10 @@ function AppShellContent({ onReportClick }: AppShellContentProps) {
 
 export function AppShellPage() {
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const handleReportClick = () => setIsReportOpen(true);
+  const handleReportClick = () => {
+    void loadReportSheet();
+    setIsReportOpen(true);
+  };
   const handleReportClose = () => setIsReportOpen(false);
 
   return (
@@ -171,12 +174,14 @@ export function AppShellPage() {
         <TabRoot>
           <AppShellContent onReportClick={handleReportClick} />
         </TabRoot>
-        <ReportSheet
-          open={isReportOpen}
-          onOpenChange={setIsReportOpen}
-          onConfirm={handleReportClose}
-          onCancel={handleReportClose}
-        />
+        {isReportOpen ? (
+          <ReportSheet
+            open={isReportOpen}
+            onOpenChange={setIsReportOpen}
+            onConfirm={handleReportClose}
+            onCancel={handleReportClose}
+          />
+        ) : null}
       </StackPageScope>
     </StackPageRoot>
   );

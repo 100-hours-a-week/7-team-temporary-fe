@@ -3,9 +3,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useEffect, useState } from "react";
+import { AuthRouteWatcher } from "./_components/AuthRouteWatcher";
 import { ToastProvider } from "@/shared/ui/toast";
 import { ApiError } from "@/shared/api";
-import { AuthRouteWatcher } from "@/features/auth";
 import { AuthService, configureAuthHandlers } from "@/shared/auth";
 import { useAuthStore } from "@/entities/user";
 import { registerServiceWorker } from "@/shared/pwa/registerServiceWorker";
@@ -34,7 +34,34 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const setAuthChecking = useAuthStore((state) => state.setAuthChecking);
 
   useEffect(() => {
-    registerServiceWorker();
+    if (typeof window === "undefined") return;
+
+    const supportsIdleCallback =
+      typeof window.requestIdleCallback === "function" &&
+      typeof window.cancelIdleCallback === "function";
+    let cancelled = false;
+    let handle: number | null = null;
+
+    const run = () => {
+      if (cancelled) return;
+      void registerServiceWorker();
+    };
+
+    if (supportsIdleCallback) {
+      handle = window.requestIdleCallback(run, { timeout: 2000 });
+    } else {
+      handle = window.setTimeout(run, 400);
+    }
+
+    return () => {
+      cancelled = true;
+      if (handle === null) return;
+      if (supportsIdleCallback) {
+        window.cancelIdleCallback(handle);
+        return;
+      }
+      window.clearTimeout(handle);
+    };
   }, []);
 
   useEffect(() => {

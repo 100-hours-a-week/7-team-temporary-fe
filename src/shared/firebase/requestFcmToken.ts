@@ -1,4 +1,3 @@
-import { getToken } from "firebase/messaging";
 import { getFirebaseMessaging } from "./firebase";
 
 type RequestFcmTokenOptions = {
@@ -36,6 +35,7 @@ export async function requestFcmToken(options: RequestFcmTokenOptions = {}) {
     return null;
   }
 
+  const { getToken } = await import("firebase/messaging");
   const token = await getToken(messaging, {
     vapidKey,
     serviceWorkerRegistration: registration,

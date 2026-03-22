@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { createIssue } from "@/entities";
+import { createIssue } from "@/entities/issue";
 import { ActionSheetContent } from "@/shared/ui/bottom-sheet/action-sheet-content";
 import { BottomSheet } from "@/shared/ui/bottom-sheet/bottom-sheet";
 import { useToast } from "@/shared/ui/toast";

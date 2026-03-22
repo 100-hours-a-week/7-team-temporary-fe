@@ -62,7 +62,12 @@ export default function ProtectedLayoutEffects({ children }: ProtectedLayoutEffe
     if (!("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
 
+    const supportsIdleCallback =
+      typeof window.requestIdleCallback === "function" &&
+      typeof window.cancelIdleCallback === "function";
     let cancelled = false;
+    let handle: number | null = null;
+
     const run = async () => {
       if (cancelled) return;
       const { registerFcmToken } = await import("@/shared/firebase/registerFcmToken");
@@ -70,15 +75,38 @@ export default function ProtectedLayoutEffects({ children }: ProtectedLayoutEffe
       await registerFcmToken({ promptPermission: false });
     };
 
-    void run();
+    const start = () => {
+      void run();
+    };
+
+    if (supportsIdleCallback) {
+      handle = window.requestIdleCallback(start, { timeout: 2000 });
+    } else {
+      handle = window.setTimeout(start, 300);
+    }
 
     return () => {
       cancelled = true;
+      if (handle === null) return;
+      if (supportsIdleCallback) {
+        window.cancelIdleCallback(handle);
+        return;
+      }
+      window.clearTimeout(handle);
     };
   }, [isAuthenticated]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+
+    const supportsIdleCallback =
+      typeof window.requestIdleCallback === "function" &&
+      typeof window.cancelIdleCallback === "function";
     let cancelled = false;
+    let handle: number | null = null;
     let unsubscribe: (() => void) | null = null;
 
     const run = async () => {
@@ -97,13 +125,28 @@ export default function ProtectedLayoutEffects({ children }: ProtectedLayoutEffe
       });
     };
 
-    void run();
+    const start = () => {
+      void run();
+    };
+
+    if (supportsIdleCallback) {
+      handle = window.requestIdleCallback(start, { timeout: 2500 });
+    } else {
+      handle = window.setTimeout(start, 500);
+    }
 
     return () => {
       cancelled = true;
+      if (handle !== null) {
+        if (supportsIdleCallback) {
+          window.cancelIdleCallback(handle);
+        } else {
+          window.clearTimeout(handle);
+        }
+      }
       if (unsubscribe) unsubscribe();
     };
-  }, [showToast]);
+  }, [isAuthenticated, showToast]);
 
   return <>{children}</>;
 }
