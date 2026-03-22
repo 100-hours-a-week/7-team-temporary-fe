@@ -12,6 +12,7 @@ import { useStackPage } from "@/widgets/stack";
 
 import { isPatchResolvedByServer } from "../model/realtimePatch";
 import { ChatRoomList } from "./ChatRoomList";
+import { ChatRoomListSkeleton } from "./ChatRoomListSkeleton";
 
 const CHAT_ROOM_LIST_PAGE = 1;
 const CHAT_ROOM_LIST_SIZE = 10;
@@ -203,11 +204,7 @@ export function OpenChatSection({ enabled, onRoomClick, scrollRef }: OpenChatSec
 
   return (
     <>
-      {isInitialLoading ? (
-        <div className="mt-4 rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
-          채팅방 목록을 불러오는 중...
-        </div>
-      ) : null}
+      {isInitialLoading ? <ChatRoomListSkeleton /> : null}
 
       {isError ? (
         <div className="mt-4 rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
