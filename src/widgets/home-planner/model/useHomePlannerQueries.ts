@@ -42,15 +42,17 @@ export function useHomePlannerQueries({
     page: currentPage,
     size: pageSize,
     enabled,
+    staleTime: 5 * 60 * 1000,
   });
 
   const periodSchedulesQuery = useDayPlanPeriodSchedulesQuery({
     startDate: weekStartDate,
     endDate: weekEndDate,
     enabled,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const currentScheduleQuery = useCurrentScheduleQuery({ enabled });
+  const currentScheduleQuery = useCurrentScheduleQuery({ enabled, staleTime: 5 * 60 * 1000 });
 
   return {
     scheduleQuery,

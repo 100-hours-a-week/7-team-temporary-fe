@@ -1,5 +1,10 @@
 import { create } from "zustand";
 
+function hasAuthHint(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split(";").some((c) => c.trim().startsWith("auth_hint=1"));
+}
+
 export interface AuthState {
   userId?: number;
   isAuthenticated: boolean;
@@ -14,8 +19,8 @@ export interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   userId: undefined,
-  isAuthenticated: false,
-  isAuthChecking: true,
+  isAuthenticated: hasAuthHint(),
+  isAuthChecking: !hasAuthHint(),
   suppressPublicRedirect: false,
   setAuthenticated: () => set({ isAuthenticated: true, isAuthChecking: false }),
   setUserId: (userId) => set({ userId }),

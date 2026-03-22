@@ -11,6 +11,7 @@ interface UseCamStudyRoomListQueryOptions {
   page?: number;
   size?: number;
   enabled?: boolean;
+  staleTime?: number;
   refetchOnMount?: boolean | "always";
 }
 
@@ -18,6 +19,7 @@ export function useCamStudyRoomListQuery({
   page = 1,
   size = 10,
   enabled = true,
+  staleTime,
   refetchOnMount,
 }: UseCamStudyRoomListQueryOptions = {}) {
   return useQuery({
@@ -25,6 +27,7 @@ export function useCamStudyRoomListQuery({
     queryFn: ({ signal }) => fetchCamStudyRoomList({ page, size, signal }),
     select: (dto) => toCamStudyRoomListModel(dto),
     enabled,
+    staleTime,
     refetchOnMount,
   });
 }

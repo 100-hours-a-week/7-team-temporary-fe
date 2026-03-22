@@ -32,7 +32,13 @@ function getWeekRange(todayStr: string): { weekStart: string; weekEnd: string } 
 /** 데이터 prefetch 후 HydrationBoundary를 주입하는 async 서버 컴포넌트.
  *  Suspense로 감싸져 있으므로 await 중에도 서버는 fallback HTML을 먼저 전송한다. */
 async function HomeWithData() {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000,
+      },
+    },
+  });
   const today = getTodayKst();
   const { weekStart, weekEnd } = getWeekRange(today);
 
