@@ -46,7 +46,7 @@ export const ChatRoomListItem = memo(function ChatRoomListItem({
   return (
     <button
       type="button"
-      className="w-full rounded-[20px] border border-neutral-200 bg-white px-6 py-5 text-left"
+      className="min-h-[92px] w-full rounded-[20px] border border-neutral-200 bg-white px-6 py-5 text-left"
       onPointerDown={handlePointerDown}
       onClick={() => onClick(item.roomId)}
     >
