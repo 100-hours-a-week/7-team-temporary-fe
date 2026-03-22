@@ -1,5 +1,5 @@
 import { getApps, initializeApp } from "firebase/app";
-import { getMessaging, isSupported, type Messaging } from "firebase/messaging";
+import type { Messaging } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,6 +14,7 @@ const firebaseConfig = {
 export const firebaseApp = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
 export async function getFirebaseMessaging(): Promise<Messaging | null> {
+  const { getMessaging, isSupported } = await import("firebase/messaging");
   const supported = await isSupported();
   if (!supported) return null;
   return getMessaging(firebaseApp);
