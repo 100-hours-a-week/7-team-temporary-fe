@@ -14,6 +14,7 @@ import { useStackPage } from "@/widgets/stack";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { CamStudyRoomList } from "./CamStudyRoomList";
+import { CamStudyRoomListSkeleton } from "./CamStudyRoomListSkeleton";
 
 const CAM_STUDY_LIST_PAGE = 1;
 const CAM_STUDY_LIST_SIZE = 10;
@@ -100,11 +101,7 @@ export function CamStudySection({ enabled, onRoomClick, scrollRef }: CamStudySec
 
   return (
     <>
-      {isInitialLoading ? (
-        <div className="mt-4 rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">
-          캠 스터디방 목록을 불러오는 중...
-        </div>
-      ) : null}
+      {isInitialLoading ? <CamStudyRoomListSkeleton /> : null}
 
       {isError ? (
         <div className="mt-4 rounded-2xl px-4 py-6 text-center text-sm text-neutral-500">

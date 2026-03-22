@@ -17,11 +17,17 @@ async function RetroWithData() {
   await Promise.allSettled([
     queryClient.prefetchQuery({
       queryKey: retroQueryKeys.myList(1, 10),
-      queryFn: () => serverFetch(serverTaskPath("/reflections/me?page=1&size=10")),
+      queryFn: () =>
+        serverFetch(serverTaskPath("/reflections/me?page=1&size=10"), {
+          cache: "no-store",
+        }),
     }),
     queryClient.prefetchQuery({
       queryKey: retroQueryKeys.publicList(true, 1, 10),
-      queryFn: () => serverFetch(serverTaskPath("/reflections?isOpen=true&page=1&size=10")),
+      queryFn: () =>
+        serverFetch(serverTaskPath("/reflections?isOpen=true&page=1&size=10"), {
+          next: { revalidate: 60 },
+        }),
     }),
   ]);
 
