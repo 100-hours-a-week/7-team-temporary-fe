@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface PaginatedData<TItem> {
   content: TItem[];
@@ -27,9 +27,10 @@ interface UsePaginatedAccumulatorOptions<TItem> {
  * - `reset`: 키워드/탭 변경 등 외부 조건이 바뀔 때 누적 상태를 초기화
  *
  * ### 동기 처리 설계
- * useEffect 대신 렌더 타임에 ref를 직접 갱신해 데이터를 즉시 반영한다.
- * HydrationBoundary는 useMemo로 동기 hydration하므로 첫 렌더에 data가 이미 존재하며,
- * 서버/클라이언트 모두 동일한 조건에서 동일한 값을 계산 → hydration mismatch 없음.
+ * 클라이언트 마운트 이후에는 렌더 타임에 ref를 직접 갱신해 데이터를 즉시 반영한다.
+ * 마운트 전(SSR + 첫 hydration)에는 데이터를 처리하지 않아 서버/클라이언트 초기 렌더가
+ * 모두 skeleton을 반환 → Suspense fallback과 일치 → hydration mismatch 없음.
+ * 마운트 후 setIsClientMounted(true) 한 번의 re-render만으로 즉시 데이터가 반영된다.
  */
 export function usePaginatedAccumulator<TItem>({
   data,
@@ -49,43 +50,57 @@ export function usePaginatedAccumulator<TItem>({
   getKeyRef.current = getKey;
   sortRef.current = sort;
 
-  // 누적 상태를 ref로 관리 — 렌더 타임 동기 갱신용
-  const fetchedItemsRef = useRef<TItem[]>([]);
-  const totalPagesRef = useRef<number | null>(null);
-  const lastDataRef = useRef<PaginatedData<TItem> | undefined>(undefined);
-  const lastPageRef = useRef<number | null>(null);
+  // 누적 상태를 단일 ref로 관리 — 원자적 갱신으로 동시성 렌더 중 불일치 방지
+  const accRef = useRef<{
+    fetchedItems: TItem[];
+    totalPages: number | null;
+    lastData: PaginatedData<TItem> | undefined;
+    lastPage: number | null;
+  }>({ fetchedItems: [], totalPages: null, lastData: undefined, lastPage: null });
 
   // reset() 호출 시 리렌더를 강제하기 위한 카운터
   const [, forceRender] = useState(0);
 
-  // 렌더 타임 동기 처리: data나 currentPage가 바뀌었을 때만 실행 (멱등)
-  if (enabled && data && (data !== lastDataRef.current || currentPage !== lastPageRef.current)) {
-    lastDataRef.current = data;
-    lastPageRef.current = currentPage;
-    totalPagesRef.current = data.totalPages;
+  // 클라이언트 마운트 후에만 동기 처리 활성화.
+  // SSR resolved content와 fallback이 동일하게 skeleton을 렌더하도록 보장 → hydration mismatch 방지.
+  // 마운트 후에는 데이터를 렌더 타임에 동기 처리하므로 한 번의 re-render만으로 즉시 전환됨.
+  const [isClientMounted, setIsClientMounted] = useState(false);
+  useEffect(() => {
+    setIsClientMounted(true);
+  }, []);
 
-    const base = currentPage === initialPage ? [] : fetchedItemsRef.current;
+  // 렌더 타임 동기 처리: 클라이언트 마운트 이후 data나 currentPage가 바뀌었을 때만 실행 (멱등)
+  if (
+    isClientMounted &&
+    enabled &&
+    data &&
+    (data !== accRef.current.lastData || currentPage !== accRef.current.lastPage)
+  ) {
+    const base = currentPage === initialPage ? [] : accRef.current.fetchedItems;
     const merged = new Map(base.map((item) => [getKeyRef.current(item), item]));
     data.content.forEach((item) => merged.set(getKeyRef.current(item), item));
     const result = Array.from(merged.values());
-    fetchedItemsRef.current = sortRef.current ? [...result].sort(sortRef.current) : result;
+    // 단일 할당으로 원자적 업데이트
+    accRef.current = {
+      fetchedItems: sortRef.current ? [...result].sort(sortRef.current) : result,
+      totalPages: data.totalPages,
+      lastData: data,
+      lastPage: currentPage,
+    };
   }
 
-  const fetchedItems = fetchedItemsRef.current;
-  const totalPages = totalPagesRef.current;
+  const fetchedItems = accRef.current.fetchedItems;
+  const totalPages = accRef.current.totalPages;
 
   const hasMore =
     totalPages === null ? (data?.content.length ?? 0) === pageSize : currentPage < totalPages;
 
   const reset = useCallback(() => {
-    fetchedItemsRef.current = [];
-    totalPagesRef.current = null;
-    lastDataRef.current = undefined;
-    lastPageRef.current = null;
+    accRef.current = { fetchedItems: [], totalPages: null, lastData: undefined, lastPage: null };
     forceRender((n) => n + 1);
   }, []);
 
-  const isDataProcessed = totalPages !== null;
+  const isDataProcessed = accRef.current.totalPages !== null;
 
   return {
     fetchedItems,
