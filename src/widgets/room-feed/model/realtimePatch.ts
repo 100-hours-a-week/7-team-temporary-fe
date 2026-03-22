@@ -1,4 +1,4 @@
-import type { ChatRoomListItemVM } from "@/entities/chat-room";
+import type { ChatRoomListItemVM } from "@/entities/chat-room-list";
 
 /**
  * REST 재조회 결과가 이미 실시간 patch 내용을 반영했는지 확인한다.

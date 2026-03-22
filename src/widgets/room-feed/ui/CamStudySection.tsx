@@ -2,12 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  camStudyRoomQueryKeys,
-  getCamStudyStatus,
-  useCamStudyRoomListQuery,
-} from "@/entities/cam-study-room";
-import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room";
+import { useCamStudyRoomListQuery } from "@/entities/cam-study-room-list";
+import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room-list";
+import { camStudyRoomQueryKeys } from "@/entities/cam-study-room-query-keys";
+import { getCamStudyStatus } from "@/entities/cam-study-room-status";
 import { usePaginatedAccumulator, useInfiniteScrollTrigger } from "@/shared/hooks";
 import { useToast } from "@/shared/ui/toast";
 import { useStackPage } from "@/widgets/stack";

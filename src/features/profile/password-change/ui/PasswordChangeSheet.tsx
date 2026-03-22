@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 
-import { BottomSheet } from "@/shared/ui";
+import { BottomSheet } from "@/shared/ui/bottom-sheet/bottom-sheet";
 import { BASE_INPUT_CLASS_NAME, FormField } from "@/shared/form/ui";
-import { PrimaryButton } from "@/shared/ui/button";
+import { PrimaryButton } from "@/shared/ui/button/primary";
 import { useToast } from "@/shared/ui/toast";
 import { useUpdatePasswordMutation } from "@/entities/user";
 

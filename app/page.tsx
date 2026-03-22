@@ -1,4 +1,4 @@
-import { Icon } from "@/shared/ui";
+import { Icon } from "@/shared/ui/icon";
 
 export default function Home() {
   return (

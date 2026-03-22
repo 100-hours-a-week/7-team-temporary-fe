@@ -1,5 +1,5 @@
 import type { IconName } from "@/shared/ui/icon";
-import { Icon } from "@/shared/ui";
+import { Icon } from "@/shared/ui/icon";
 import "./AnimatedStar.css";
 
 interface AnimatedStarProps {

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 
 import { cn } from "@/shared/lib";
-import { Icon } from "@/shared/ui";
+import { Icon } from "@/shared/ui/icon";
 import { prepareImageFile } from "@/shared/validation";
 import Image from "next/image";
 

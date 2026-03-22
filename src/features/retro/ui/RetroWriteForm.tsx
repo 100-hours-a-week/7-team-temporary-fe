@@ -3,7 +3,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 
 import { RETRO_VISIBILITY, type RetroVisibility } from "@/entities/retro";
-import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
+import { FixedActionBar } from "@/shared/ui/button/fixed-action-bar";
+import { PrimaryButton } from "@/shared/ui/button/primary";
 import { HorizontalImageAlbum } from "@/shared/ui/image";
 import { RetroContentField, RetroVisibilityToggle } from "@/shared/ui/retro";
 import { useToast } from "@/shared/ui/toast";

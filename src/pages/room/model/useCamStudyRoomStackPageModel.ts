@@ -7,7 +7,7 @@ import {
   joinChatRoom,
 } from "@/entities/chat-room";
 import type { ChatRoomDetailDto } from "@/entities/chat-room";
-import { useLiveKitSession } from "@/entities/cam-study-room";
+import { useLiveKitSession } from "@/entities/cam-study-room-livekit";
 import { useAuthStore } from "@/entities/user";
 import { chatStompSession } from "@/shared/socket";
 

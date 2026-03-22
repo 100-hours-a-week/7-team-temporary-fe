@@ -7,7 +7,7 @@ import { FormField, ProfileImageKeyInput } from "@/shared/form/ui";
 import { useStackPage } from "@/widgets/stack";
 import { useMyProfileQuery, useUpdateMyProfileImageMutation } from "@/entities/user";
 import { useProfileImagePresign } from "@/features/image";
-import { ActionButton } from "@/shared/ui/button";
+import { ActionButton } from "@/shared/ui/button/action";
 import { useToast } from "@/shared/ui/toast";
 import { AuthService } from "@/shared/auth";
 import { chatStompSession } from "@/shared/socket";

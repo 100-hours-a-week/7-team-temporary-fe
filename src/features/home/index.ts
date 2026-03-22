@@ -13,7 +13,6 @@ export type {
   TaskSplitGroup,
   TaskSplitItem,
 } from "@/features/task-basket";
-export { useDayPlanId } from "@/entities/day-plan";
 export { useAiArrangeNoticeStore, useAiArrangeScheduleMutation } from "@/features/ai-arrange";
 export {
   useDeleteScheduleMutation,

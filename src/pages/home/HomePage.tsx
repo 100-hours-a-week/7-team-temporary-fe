@@ -1,7 +1,8 @@
 import { useHomePlanStore, useDayPlanReflectionStatusQuery } from "@/entities/day-plan";
 import { useStackPage } from "@/widgets/stack";
 import { HomePlanner } from "@/widgets/home-planner";
-import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
+import { FloatingActionButton } from "@/shared/ui/button/floating-action";
+import { FloatingActionDock } from "@/shared/ui/button/floating-dock";
 
 interface HomePageProps {
   enabled?: boolean;

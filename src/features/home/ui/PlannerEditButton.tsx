@@ -1,4 +1,4 @@
-import { ActionButton } from "@/shared/ui/button";
+import { ActionButton } from "@/shared/ui/button/action";
 
 interface PlannerEditButtonProps {
   onClick: () => void;

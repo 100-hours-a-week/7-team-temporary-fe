@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { IconButton } from "@/shared/ui/button";
+import { IconButton } from "@/shared/ui/button/icon";
 import { HeaderFrame } from "@/widgets/app-header";
 
 interface StackHeaderProps {

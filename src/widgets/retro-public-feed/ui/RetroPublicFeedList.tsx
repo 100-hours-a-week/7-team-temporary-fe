@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { PublicRetroCardVM, PublicRetroListModel } from "@/entities/retro";
-import { usePublicRetrosQuery, RetroCardSkeleton } from "@/entities/retro";
+import { usePublicRetrosQuery } from "@/entities/retro";
+import { RetroCardSkeleton } from "@/entities/retro-ui";
 import { RetroListItemCard } from "@/features/retro";
 import { useInfiniteScrollTrigger } from "@/shared/hooks";
-import { EmptyStateCard } from "@/shared/ui";
+import { EmptyStateCard } from "@/shared/ui/empty";
 
 interface RetroPublicFeedListProps {
   initialList: PublicRetroListModel;

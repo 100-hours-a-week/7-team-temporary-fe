@@ -1,7 +1,7 @@
 import type { UseFormRegisterReturn } from "react-hook-form";
 import { useFormContext, useWatch } from "react-hook-form";
 
-import { SelectCard } from "@/shared/ui/button";
+import { SelectCard } from "@/shared/ui/button/select-card";
 
 interface GenderSelectProps {
   register: UseFormRegisterReturn;

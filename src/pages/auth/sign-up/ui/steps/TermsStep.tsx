@@ -8,7 +8,7 @@ import { Endpoint } from "@/shared/api";
 import { useApiQuery } from "@/shared/query";
 
 import type { SignUpFormModel } from "@/features/auth";
-import { Icon } from "@/shared/ui";
+import { Icon } from "@/shared/ui/icon";
 import SplitText from "@/shared/ui/split-text";
 import { OnboardingQuestionLayout } from "@/widgets/auth";
 
