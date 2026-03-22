@@ -3,8 +3,8 @@ import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query
 
 import { AppShellPage } from "@/pages/app-shell";
 import { serverFetch, serverChatPath } from "@/shared/api/serverFetch";
-import { chatRoomQueryKeys } from "@/entities/chat-room";
-import { camStudyRoomQueryKeys } from "@/entities/cam-study-room";
+import { chatRoomQueryKeys } from "@/entities/chat-room-query-keys";
+import { camStudyRoomQueryKeys } from "@/entities/cam-study-room-query-keys";
 
 async function RoomWithData() {
   const queryClient = new QueryClient({
