@@ -1,5 +1,5 @@
 import type { TodoCartTaskItemModel } from "@/entities/day-plan-schedule";
-import type { TaskSplitGroup, TaskSplitItem } from "@/shared/ui";
+import type { TaskSplitGroup, TaskSplitItem } from "@/shared/ui/task-split";
 
 export type TaskBasketTodoTask = TodoCartTaskItemModel & { status?: "TODO" | "DONE" };
 

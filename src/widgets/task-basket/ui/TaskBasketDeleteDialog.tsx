@@ -1,4 +1,4 @@
-import { ConfirmDialog } from "@/shared/ui";
+import { ConfirmDialog } from "@/shared/ui/dialogs";
 import {
   TASK_BASKET_DELETE_DIALOG_CANCEL_LABEL,
   TASK_BASKET_DELETE_DIALOG_CONFIRM_LABEL,

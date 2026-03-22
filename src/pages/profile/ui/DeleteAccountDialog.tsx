@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/shared/ui";
+} from "@/shared/ui/modal";
 
 interface DeleteAccountDialogProps {
   open: boolean;

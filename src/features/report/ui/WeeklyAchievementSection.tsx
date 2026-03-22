@@ -2,7 +2,7 @@
 
 import { useWeeklyAchievementChart } from "../model";
 import type { WeeklyAchievementPoint } from "../model";
-import { SectionCard } from "@/shared/ui";
+import { SectionCard } from "@/shared/ui/surface";
 import { WeeklyAchievementChart } from "./WeeklyAchievementChart";
 import { WeeklyAchievementSummary } from "./WeeklyAchievementSummary";
 

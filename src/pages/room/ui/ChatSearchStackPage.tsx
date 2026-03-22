@@ -3,8 +3,9 @@
 import { useCallback } from "react";
 
 import type { ChatRoomSearchItemVM, ChatRoomType } from "@/entities/chat-room";
-import { ConfirmDialog } from "@/shared/ui";
-import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
+import { ConfirmDialog } from "@/shared/ui/dialogs";
+import { FloatingActionButton } from "@/shared/ui/button/floating-action";
+import { FloatingActionDock } from "@/shared/ui/button/floating-dock";
 import { Icon } from "@/shared/ui/icon";
 import { SearchBar } from "@/shared/ui/search";
 import { useStackPage } from "@/widgets/stack";

@@ -1,4 +1,4 @@
-import { RetroCardSkeleton } from "@/entities/retro";
+import { RetroCardSkeleton } from "@/entities/retro-ui";
 import { PublicPageHeader } from "@/widgets/public-page-header";
 
 export default function Loading() {

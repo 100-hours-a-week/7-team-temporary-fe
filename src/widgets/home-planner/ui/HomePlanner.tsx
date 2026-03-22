@@ -3,8 +3,9 @@
 import { Profiler, useCallback } from "react";
 import type { CSSProperties, ProfilerOnRenderCallback } from "react";
 
-import { SectionCard, ShinyText } from "@/shared/ui";
-import { SectionActionButton } from "@/shared/ui/button";
+import { SectionCard } from "@/shared/ui/surface";
+import { ShinyText } from "@/shared/ui/text";
+import { SectionActionButton } from "@/shared/ui/button/section-action";
 import { Icon } from "@/shared/ui/icon";
 import { HomeTaskItem } from "@/entities/day-plan-schedule-core";
 import { useHomePlanner } from "../model/useHomePlanner";

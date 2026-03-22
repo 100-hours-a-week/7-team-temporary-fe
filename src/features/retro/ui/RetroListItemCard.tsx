@@ -5,14 +5,14 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import {
-  RetroCardView,
   type MyRetroCardVM,
   type PublicRetroCardVM,
   useRetroLikeMutation,
   useRetroDeleteMutation,
   retroQueryKeys,
 } from "@/entities/retro";
-import { MoreActionSheet } from "@/shared/ui/bottom-sheet";
+import { RetroCardView } from "@/entities/retro-ui";
+import { MoreActionSheet } from "@/shared/ui/bottom-sheet/more-action-sheet";
 import { useToast } from "@/shared/ui/toast";
 
 import { useRetroVisibilityMutation } from "../model";

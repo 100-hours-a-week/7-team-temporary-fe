@@ -2,7 +2,7 @@
 
 import { useLayoutEffect } from "react";
 
-import { IconButton } from "@/shared/ui/button";
+import { IconButton } from "@/shared/ui/button/icon";
 import { useStackPage } from "@/widgets/stack";
 
 import { useCamStudyRoomStackPageModel } from "../model/useCamStudyRoomStackPageModel";

@@ -1,4 +1,4 @@
-import { BottomSheet } from "@/shared/ui";
+import { BottomSheet } from "@/shared/ui/bottom-sheet/bottom-sheet";
 
 type ExcludedListBottomSheetProps = {
   open: boolean;

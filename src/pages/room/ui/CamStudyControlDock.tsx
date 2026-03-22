@@ -1,5 +1,6 @@
 import { cn } from "@/shared/lib";
-import { FloatingActionButton, FloatingActionDock } from "@/shared/ui/button";
+import { FloatingActionButton } from "@/shared/ui/button/floating-action";
+import { FloatingActionDock } from "@/shared/ui/button/floating-dock";
 
 interface CamStudyControlDockProps {
   isCameraEnabled: boolean;

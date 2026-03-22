@@ -6,8 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 import { type MyRetroCardVM, retroQueryKeys } from "@/entities/retro";
-import { PrimaryButton } from "@/shared/ui/button";
-import { BottomSheet } from "@/shared/ui";
+import { PrimaryButton } from "@/shared/ui/button/primary";
+import { BottomSheet } from "@/shared/ui/bottom-sheet/bottom-sheet";
 import { HorizontalImageAlbum } from "@/shared/ui/image";
 import { RetroContentField, RetroVisibilityToggle } from "@/shared/ui/retro";
 import { useToast } from "@/shared/ui/toast";

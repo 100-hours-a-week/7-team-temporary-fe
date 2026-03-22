@@ -6,9 +6,9 @@ import type { TodoCartTaskItemModel } from "@/entities/day-plan-schedule";
 import { TASK_BASKET_FORM_DEFAULTS, useTaskBasketForm, type TaskBasketFormModel } from "../model";
 import { parseHHmmToMinutes } from "@/shared/lib";
 import { useMutationErrorEffect } from "@/shared/query";
-import { BottomSheet } from "@/shared/ui";
+import { BottomSheet } from "@/shared/ui/bottom-sheet/bottom-sheet";
 import { FormField, BASE_INPUT_CLASS_NAME } from "@/shared/form/ui";
-import { PrimaryButton } from "@/shared/ui/button";
+import { PrimaryButton } from "@/shared/ui/button/primary";
 import { useToast } from "@/shared/ui/toast";
 import { useUserPreferencesStore } from "@/entities/user";
 import {

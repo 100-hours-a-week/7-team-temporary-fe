@@ -13,12 +13,15 @@ import {
   type UpdateMyProfileModel,
 } from "@/entities/user";
 
-import { FixedActionBar, PrimaryButton } from "@/shared/ui/button";
+import { FixedActionBar } from "@/shared/ui/button/fixed-action-bar";
+import { PrimaryButton } from "@/shared/ui/button/primary";
 import { BASE_INPUT_CLASS_NAME, FormField } from "@/shared/form/ui";
 import { useToast } from "@/shared/ui/toast";
 import { PasswordChangeSheet } from "@/features/profile";
 import { AuthService } from "@/shared/auth";
-import { BottomSheet, ConfirmDialog, Icon } from "@/shared/ui";
+import { BottomSheet } from "@/shared/ui/bottom-sheet/bottom-sheet";
+import { ConfirmDialog } from "@/shared/ui/dialogs";
+import { Icon } from "@/shared/ui/icon";
 import { useMutationErrorEffect } from "@/shared/query";
 import { apiFetch, Endpoint } from "@/shared/api";
 import { registerFcmToken } from "@/shared/firebase";

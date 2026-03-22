@@ -12,7 +12,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { cn } from "@/shared/lib/utils";
-import { PrimaryButton } from "@/shared/ui/button";
+import { PrimaryButton } from "@/shared/ui/button/primary";
 
 interface ConfirmDialogProps {
   trigger: ReactNode;
