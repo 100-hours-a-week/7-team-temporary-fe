@@ -1,10 +1,11 @@
+import { Suspense } from "react";
 import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
 import { AppShellPage } from "@/pages/app-shell";
 import { serverFetch, serverTaskPath } from "@/shared/api/serverFetch";
 import { retroQueryKeys } from "@/entities/retro";
 
-export default async function RetroPage() {
+async function RetroWithData() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -28,5 +29,13 @@ export default async function RetroPage() {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <AppShellPage />
     </HydrationBoundary>
+  );
+}
+
+export default function RetroPage() {
+  return (
+    <Suspense fallback={<AppShellPage />}>
+      <RetroWithData />
+    </Suspense>
   );
 }

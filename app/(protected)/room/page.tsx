@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { QueryClient, dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
 import { AppShellPage } from "@/pages/app-shell";
@@ -5,7 +6,7 @@ import { serverFetch, serverChatPath } from "@/shared/api/serverFetch";
 import { chatRoomQueryKeys } from "@/entities/chat-room";
 import { camStudyRoomQueryKeys } from "@/entities/cam-study-room";
 
-export default async function RoomPage() {
+async function RoomWithData() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -31,5 +32,13 @@ export default async function RoomPage() {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <AppShellPage />
     </HydrationBoundary>
+  );
+}
+
+export default function RoomPage() {
+  return (
+    <Suspense fallback={<AppShellPage />}>
+      <RoomWithData />
+    </Suspense>
   );
 }
