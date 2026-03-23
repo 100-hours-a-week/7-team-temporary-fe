@@ -20,6 +20,15 @@ const USER_QUEUE_ROOM_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_ROOM_DEST?.trim() ?? "/user/queue/room";
 const USER_QUEUE_REPORT_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_USER_QUEUE_REPORT_DEST?.trim() ?? "/user/queue/report";
+const CHAT_PARTICIPANT_ONLINE_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_CHAT_PARTICIPANT_ONLINE_DEST?.trim() ??
+  "/pub/room/chat/online";
+const CHAT_PARTICIPANT_HEARTBEAT_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_CHAT_PARTICIPANT_HEARTBEAT_DEST?.trim() ??
+  "/pub/room/chat/heartbeat";
+const CHAT_PARTICIPANT_OFFLINE_DESTINATION =
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_CHAT_PARTICIPANT_OFFLINE_DEST?.trim() ??
+  "/pub/room/chat/offline";
 const VIDEO_PARTICIPANT_ONLINE_DESTINATION =
   process.env.NEXT_PUBLIC_CHAT_SOCKET_VIDEO_PARTICIPANT_ONLINE_DEST?.trim() ??
   "/pub/room/video/online";
@@ -46,6 +55,9 @@ export interface ChatSocketStartConfig {
   lastSeenUpdateDestination: string;
   userQueueRoomDestination: string;
   userQueueReportDestination: string;
+  chatParticipantOnlineDestination: string;
+  chatParticipantHeartbeatDestination: string;
+  chatParticipantOfflineDestination: string;
   videoParticipantOnlineDestination: string;
   videoParticipantHeartbeatDestination: string;
   videoParticipantOfflineDestination: string;
@@ -112,6 +124,9 @@ export function resolveChatSocketStartConfig(): ChatSocketStartConfig | null {
     lastSeenUpdateDestination: LAST_SEEN_UPDATE_DESTINATION,
     userQueueRoomDestination: USER_QUEUE_ROOM_DESTINATION,
     userQueueReportDestination: USER_QUEUE_REPORT_DESTINATION,
+    chatParticipantOnlineDestination: CHAT_PARTICIPANT_ONLINE_DESTINATION,
+    chatParticipantHeartbeatDestination: CHAT_PARTICIPANT_HEARTBEAT_DESTINATION,
+    chatParticipantOfflineDestination: CHAT_PARTICIPANT_OFFLINE_DESTINATION,
     videoParticipantOnlineDestination: VIDEO_PARTICIPANT_ONLINE_DESTINATION,
     videoParticipantHeartbeatDestination: VIDEO_PARTICIPANT_HEARTBEAT_DESTINATION,
     videoParticipantOfflineDestination: VIDEO_PARTICIPANT_OFFLINE_DESTINATION,
