@@ -58,6 +58,8 @@ export function OpenChatSection({ enabled, onRoomClick, scrollRef }: OpenChatSec
     pageSize: CHAT_ROOM_LIST_SIZE,
     getKey: (item) => item.roomId,
     enabled,
+    // room 페이지는 Suspense 없는 blocking SSR → 서버에서 실데이터 렌더
+    ssrSkeleton: false,
   });
 
   // 섹션 마운트 시 스크롤 초기화

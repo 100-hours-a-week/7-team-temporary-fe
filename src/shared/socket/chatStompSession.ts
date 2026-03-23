@@ -43,6 +43,9 @@ import type {
   VideoParticipantJoinedPayload,
   VideoParticipantLeftPayload,
   VideoPublishStartedPayload,
+  ChatParticipantHeartbeatPayload,
+  ChatParticipantOfflinePayload,
+  ChatParticipantOnlinePayload,
   VideoParticipantHeartbeatPayload,
   VideoParticipantOfflinePayload,
   VideoParticipantOnlinePayload,
@@ -600,6 +603,47 @@ class ChatStompSession {
     }
 
     return () => this.teardownRoomSubscription(roomId);
+  }
+
+  // ─── Chat participant presence ────────────────────────────────────────────────
+
+  sendChatParticipantOnline(payload: ChatParticipantOnlinePayload) {
+    if (!this.client?.connected || !this.config) {
+      chatSocketWarn("[chat-socket] sendChatParticipantOnline: 소켓 미연결 상태");
+      return;
+    }
+    this.publishWithReceipt({
+      client: this.client,
+      destination: this.config.chatParticipantOnlineDestination,
+      body: JSON.stringify(payload),
+      eventName: "chat.participant.online",
+      payloadForLog: { roomId: payload.roomId, participantId: payload.participantId },
+    });
+  }
+
+  sendChatParticipantHeartbeat(payload: ChatParticipantHeartbeatPayload) {
+    if (!this.client?.connected || !this.config) return;
+    this.publishWithReceipt({
+      client: this.client,
+      destination: this.config.chatParticipantHeartbeatDestination,
+      body: JSON.stringify(payload),
+      eventName: "chat.participant.heartbeat",
+      payloadForLog: { roomId: payload.roomId, participantId: payload.participantId },
+    });
+  }
+
+  sendChatParticipantOffline(payload: ChatParticipantOfflinePayload) {
+    if (!this.client?.connected || !this.config) {
+      chatSocketWarn("[chat-socket] sendChatParticipantOffline: 소켓 미연결 상태");
+      return;
+    }
+    this.publishWithReceipt({
+      client: this.client,
+      destination: this.config.chatParticipantOfflineDestination,
+      body: JSON.stringify(payload),
+      eventName: "chat.participant.offline",
+      payloadForLog: { roomId: payload.roomId, participantId: payload.participantId },
+    });
   }
 
   // ─── Video participant online ──────────────────────────────────────────────────

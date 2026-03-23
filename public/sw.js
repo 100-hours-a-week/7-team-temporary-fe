@@ -72,41 +72,79 @@ try {
   console.warn("[SW] Firebase messaging setup failed", error);
 }
 
-/*백그라운드 푸시는 이쪽에서 받는다.*/
-if (messaging) {
-  messaging.onBackgroundMessage((payload) => {
-    console.log("[FCM SW] payload", payload);
+/** FCM data payload → 알림 옵션으로 변환
+ *  FCM data-only 메시지는 모든 필드가 payload.data 아래 string으로 들어온다.
+ */
+function buildNotificationOptions(data) {
+  const title = data?.title ?? "MOLIP";
+  const body = data?.body ?? data?.messagePreview ?? data?.content ?? "";
+  const icon = "/icons/icon-v2.svg";
+  const badge = "/icons/badge.svg";
 
-    const title = payload.data?.title ?? "MOLIP";
-    const body = payload.data?.content ?? payload.data?.body ?? "백그라운드 푸시 알림 테스트!";
-    const icon = payload.data?.icon ?? "/icons/icon.svg";
-
-    self.registration.showNotification(title, {
+  return {
+    title,
+    options: {
       body,
       icon,
-    });
+      badge,
+      tag: data?.notificationId ?? data?.roomId ?? "molip",
+      renotify: true,
+      data: {
+        type: data?.type,
+        roomId: data?.roomId,
+        messageId: data?.messageId,
+        notificationId: data?.notificationId,
+      },
+    },
+  };
+}
+
+/* 백그라운드 FCM 메시지 수신 (앱이 백그라운드/종료 상태일 때) */
+if (messaging) {
+  messaging.onBackgroundMessage((payload) => {
+    const { title, options } = buildNotificationOptions(payload.data);
+    self.registration.showNotification(title, options);
   });
 }
 
-// Fallback for non-FCM test pushes (DevTools "Push" may send plain text)
-/*백엔드가 보내는 푸시는 이쪽에서 받는다.
- *
- */
+/* 직접 Push API 이벤트 (FCM 이외 경로 또는 DevTools 테스트) */
 self.addEventListener("push", (event) => {
-  console.log("[FCM SW] push event", event);
-  let payload = {};
+  let data = {};
   if (event.data) {
     try {
-      payload = event.data.json();
+      const json = event.data.json();
+      // FCM 래핑: { data: { ... } } 또는 flat 구조 모두 대응
+      data = json.data ?? json;
     } catch {
-      payload = { title: "MOLIP", content: event.data.text() };
+      data = { body: event.data.text() };
     }
   }
 
-  const title = payload.data?.title ?? "MOLIP";
-  const body = payload.data?.content ?? payload.data?.body ?? "push 푸시 알림 테스트";
-  const icon = payload.data?.icon ?? "/icons/icon.svg";
-  const badge = payload.data?.badge ?? "/icons/badge.svg";
+  const { title, options } = buildNotificationOptions(data);
+  event.waitUntil(self.registration.showNotification(title, options));
+});
 
-  event.waitUntil(self.registration.showNotification(title, { body, icon, badge }));
+/* 알림 클릭 시 해당 채팅방으로 이동 */
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const { type, roomId } = event.notification.data ?? {};
+  const targetPath = type === "CHAT_MESSAGE" && roomId ? `/room/${roomId}` : "/";
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        // 이미 열린 탭이 있으면 포커스 후 이동
+        for (const client of clientList) {
+          if ("focus" in client) {
+            client.focus();
+            client.navigate(targetPath);
+            return;
+          }
+        }
+        // 열린 탭이 없으면 새 탭 열기
+        return self.clients.openWindow(targetPath);
+      }),
+  );
 });

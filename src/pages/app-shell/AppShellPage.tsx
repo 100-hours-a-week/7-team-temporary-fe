@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { AppHeader } from "@/widgets/app-header";
 import { StackPageRoot, StackPageScope, useStackPage } from "@/widgets/stack";
@@ -57,6 +57,9 @@ interface AppShellHeaderProps {
 
 interface AppShellContentProps {
   onReportClick?: () => void;
+  /** /room 라우트에서 SSR 렌더를 위해 정적으로 주입되는 RoomPage 슬롯.
+   *  dynamic() 청크 다운로드 없이 초기 HTML에 방 목록이 포함되어 LCP를 개선한다. */
+  roomTab?: ReactNode;
 }
 
 function AppShellHeader({ onReportClick }: AppShellHeaderProps) {
@@ -119,7 +122,7 @@ function AppShellHeader({ onReportClick }: AppShellHeaderProps) {
   return null;
 }
 
-function AppShellContent({ onReportClick }: AppShellContentProps) {
+function AppShellContent({ onReportClick, roomTab }: AppShellContentProps) {
   const { activeTab } = useTab();
 
   return (
@@ -142,7 +145,7 @@ function AppShellContent({ onReportClick }: AppShellContentProps) {
           tab="room"
           className="h-full"
         >
-          <RoomPage enabled={activeTab === "room"} />
+          {roomTab ?? <RoomPage enabled={activeTab === "room"} />}
         </TabScope>
         <TabScope
           tab="profile"
@@ -156,7 +159,12 @@ function AppShellContent({ onReportClick }: AppShellContentProps) {
   );
 }
 
-export function AppShellPage() {
+interface AppShellPageProps {
+  /** /room 라우트에서 SSR 렌더를 위해 정적으로 주입되는 RoomPage 슬롯 */
+  roomTab?: ReactNode;
+}
+
+export function AppShellPage({ roomTab }: AppShellPageProps) {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const handleReportClick = () => {
     void loadReportSheet();
@@ -172,7 +180,10 @@ export function AppShellPage() {
         pageClassName="py-0"
       >
         <TabRoot>
-          <AppShellContent onReportClick={handleReportClick} />
+          <AppShellContent
+            onReportClick={handleReportClick}
+            roomTab={roomTab}
+          />
         </TabRoot>
         {isReportOpen ? (
           <ReportSheet

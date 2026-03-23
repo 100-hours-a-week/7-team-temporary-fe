@@ -9,6 +9,7 @@ import { ApiError } from "@/shared/api";
 import { AuthService, configureAuthHandlers } from "@/shared/auth";
 import { useAuthStore } from "@/entities/user";
 import { registerServiceWorker } from "@/shared/pwa/registerServiceWorker";
+import { chatStompSession } from "@/shared/socket";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -70,9 +71,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const bootstrapAuth = async () => {
       try {
         // 1순위: AT 쿠키가 살아있으면 refresh 없이 복원 (네트워크 1회)
-        if (await AuthService.restoreFromCookie()) return;
+        // restoreFromCookie()가 cachedDeviceId를 세팅한 뒤 setAuthenticated()를 호출한다.
+        // auth_hint 최적화로 isAuthenticated가 이미 true이면 상태 변화가 없어
+        // ProtectedLayoutEffects의 effect가 재실행되지 않으므로 여기서 직접 start()를 호출한다.
+        if (await AuthService.restoreFromCookie()) {
+          chatStompSession.start();
+          return;
+        }
         // 2순위: RT 쿠키로 AT 재발급
         await AuthService.refresh();
+        chatStompSession.start();
       } catch (error) {
         if (!(error instanceof ApiError && error.httpStatus === 401)) {
           console.warn("[AuthBootstrap] refresh skipped or failed", error);

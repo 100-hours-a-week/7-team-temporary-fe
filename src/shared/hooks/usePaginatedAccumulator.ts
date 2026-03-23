@@ -18,6 +18,13 @@ interface UsePaginatedAccumulatorOptions<TItem> {
   getKey: (item: TItem) => string | number;
   sort?: (a: TItem, b: TItem) => number;
   enabled?: boolean;
+  /**
+   * true(기본값): Suspense fallback과의 hydration mismatch 방지를 위해
+   *   클라이언트 마운트 전까지 skeleton을 반환한다.
+   * false: SSR에서 실데이터를 바로 렌더한다. Suspense fallback 없이
+   *   blocking SSR을 사용하는 페이지에서만 사용할 것.
+   */
+  ssrSkeleton?: boolean;
 }
 
 /**
@@ -43,6 +50,7 @@ export function usePaginatedAccumulator<TItem>({
   getKey,
   sort,
   enabled = true,
+  ssrSkeleton = true,
 }: UsePaginatedAccumulatorOptions<TItem>) {
   // 최신 함수 참조를 렌더 타임에 동기 갱신 (useEffect 불필요)
   const getKeyRef = useRef(getKey);
@@ -61,15 +69,14 @@ export function usePaginatedAccumulator<TItem>({
   // reset() 호출 시 리렌더를 강제하기 위한 카운터
   const [, forceRender] = useState(0);
 
-  // 클라이언트 마운트 후에만 동기 처리 활성화.
-  // SSR resolved content와 fallback이 동일하게 skeleton을 렌더하도록 보장 → hydration mismatch 방지.
-  // 마운트 후에는 데이터를 렌더 타임에 동기 처리하므로 한 번의 re-render만으로 즉시 전환됨.
-  const [isClientMounted, setIsClientMounted] = useState(false);
+  // ssrSkeleton=true: Suspense fallback과 hydration mismatch 방지를 위해 마운트 전 skeleton 유지.
+  // ssrSkeleton=false: blocking SSR 페이지에서 서버/클라이언트 모두 실데이터로 렌더 → skeleton 불필요.
+  const [isClientMounted, setIsClientMounted] = useState(!ssrSkeleton);
   useEffect(() => {
-    setIsClientMounted(true);
-  }, []);
+    if (ssrSkeleton) setIsClientMounted(true);
+  }, [ssrSkeleton]);
 
-  // 렌더 타임 동기 처리: 클라이언트 마운트 이후 data나 currentPage가 바뀌었을 때만 실행 (멱등)
+  // 렌더 타임 동기 처리: 활성화 조건 충족 후 data나 currentPage가 바뀌었을 때만 실행 (멱등)
   if (
     isClientMounted &&
     enabled &&

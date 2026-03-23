@@ -180,6 +180,26 @@ export interface ReportStreamEndPayload {
   content?: string | null;
 }
 
+// ─── Chat participant presence: Client → Server ───────────────────────────────
+
+export interface ChatParticipantOnlinePayload {
+  roomId: number;
+  participantId: number;
+  sessionId: string;
+}
+
+export interface ChatParticipantHeartbeatPayload {
+  roomId: number;
+  participantId: number;
+  sessionId: string;
+}
+
+export interface ChatParticipantOfflinePayload {
+  roomId: number;
+  participantId: number;
+  sessionId: string;
+}
+
 // ─── Video: Client → Server ───────────────────────────────────────────────────
 
 export interface VideoParticipantOnlinePayload {
