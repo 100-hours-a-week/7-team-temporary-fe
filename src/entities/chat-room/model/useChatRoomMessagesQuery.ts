@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchChatRoomMessages } from "../api";
+import { AuthService } from "@/shared/auth";
 
 import { toChatMessageListModel } from "./chatMessage.mapper";
 import { chatRoomQueryKeys } from "./queryKeys";
@@ -30,7 +31,8 @@ export function useChatRoomMessagesQuery({
 }: UseChatRoomMessagesQueryOptions) {
   return useQuery({
     queryKey: chatRoomQueryKeys.messages(roomId, cursor, size),
-    queryFn: ({ signal }) => fetchChatRoomMessages({ roomId, cursor, size, signal }),
+    queryFn: ({ signal }) =>
+      AuthService.refreshAndRetry(() => fetchChatRoomMessages({ roomId, cursor, size, signal })),
     select: (dto) => toChatMessageListModel(dto, { myUserId }),
     enabled: enabled && roomId > 0,
     staleTime,

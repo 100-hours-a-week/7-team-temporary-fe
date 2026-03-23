@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchChatRoomSearchList } from "../api";
+import { AuthService } from "@/shared/auth";
 
 import { toChatRoomSearchListModel } from "./chatRoomSearchList.mapper";
 import { chatRoomQueryKeys } from "./queryKeys";
@@ -29,12 +30,7 @@ export function useChatRoomSearchListQuery({
   return useQuery({
     queryKey: chatRoomQueryKeys.search(title, page, size),
     queryFn: ({ signal }) =>
-      fetchChatRoomSearchList({
-        title,
-        page,
-        size,
-        signal,
-      }),
+      AuthService.refreshAndRetry(() => fetchChatRoomSearchList({ title, page, size, signal })),
     select: toChatRoomSearchListModel,
     enabled,
     refetchOnMount,

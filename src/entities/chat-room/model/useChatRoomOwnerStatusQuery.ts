@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchChatRoomOwnerStatus } from "../api";
+import { AuthService } from "@/shared/auth";
 
 import { chatRoomQueryKeys } from "./queryKeys";
 
@@ -24,11 +25,9 @@ export function useChatRoomOwnerStatusQuery({
   return useQuery({
     queryKey: chatRoomQueryKeys.ownerStatus(roomId, ownerId ?? -1),
     queryFn: ({ signal }) =>
-      fetchChatRoomOwnerStatus({
-        roomId,
-        ownerId: ownerId as number,
-        signal,
-      }),
+      AuthService.refreshAndRetry(() =>
+        fetchChatRoomOwnerStatus({ roomId, ownerId: ownerId as number, signal }),
+      ),
     enabled: enabled && Number.isFinite(roomId) && Number.isFinite(ownerId),
     staleTime,
     gcTime,

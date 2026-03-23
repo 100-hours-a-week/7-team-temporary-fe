@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchChatRoomList } from "../api";
+import { AuthService } from "@/shared/auth";
 
 import { toChatRoomListModel } from "./chatRoomList.mapper";
 import { chatRoomQueryKeys } from "./queryKeys";
@@ -26,7 +27,8 @@ export function useGroupChatRoomListQuery({
 }: UseGroupChatRoomListQueryOptions = {}) {
   return useQuery({
     queryKey: chatRoomQueryKeys.list(page, size),
-    queryFn: ({ signal }) => fetchChatRoomList({ page, size, signal }),
+    queryFn: ({ signal }) =>
+      AuthService.refreshAndRetry(() => fetchChatRoomList({ page, size, signal })),
     select: (dto) => toChatRoomListModel(dto),
     enabled,
     refetchOnMount,
