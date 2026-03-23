@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback } from "react";
 
 import type { CamStudyRoomListItemVM } from "@/entities/cam-study-room-list";

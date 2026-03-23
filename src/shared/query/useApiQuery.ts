@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { apiFetch } from "@/shared/api";
+import { AuthService } from "@/shared/auth";
 
 // Query Layer 공통 조회 훅: queryKey + endpoint 기준으로 서버 상태를 조회한다.
 interface UseApiQueryProps {
@@ -9,6 +10,7 @@ interface UseApiQueryProps {
   enabled?: boolean;
   staleTime?: number;
   gcTime?: number;
+  authRequired?: boolean;
 }
 
 export function useApiQuery<TResult>({
@@ -17,11 +19,14 @@ export function useApiQuery<TResult>({
   enabled = true,
   staleTime,
   gcTime,
+  authRequired = false,
 }: UseApiQueryProps) {
-  // apiFetch는 Transport Layer로서 HTTP I/O만 수행한다.
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => apiFetch<TResult>(url, { signal }),
+    queryFn: ({ signal }) => {
+      const execute = () => apiFetch<TResult>(url, { signal, authRequired });
+      return authRequired ? AuthService.refreshAndRetry(execute) : execute();
+    },
     enabled,
     staleTime,
     gcTime,

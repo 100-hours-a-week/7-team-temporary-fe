@@ -29,13 +29,10 @@ function initSentry() {
 }
 
 if (typeof window !== "undefined") {
-  // requestIdleCallback: CPU가 한가할 때 실행 → LCP/FID에 영향 없음
-  // timeout: 5000ms → idle이 안 와도 5초 후엔 강제 실행
-  if (typeof requestIdleCallback !== "undefined") {
-    requestIdleCallback(() => initSentry(), { timeout: 5000 });
-  } else {
-    window.setTimeout(initSentry, 2000);
-  }
+  // LCP 완료 후 Sentry 로드 — requestIdleCallback은 LCP 이전 idle 시점에 발동해
+  // 9697(Feedback) 등 Sentry 청크 컴파일이 Long Task로 LCP를 블로킹하는 문제 방지.
+  // setTimeout 2s: LCP가 통상 1s 이내이므로 충분한 여유를 두고 초기화
+  window.setTimeout(initSentry, 2000);
 }
 
 export function onRouterTransitionStart(...args: unknown[]) {

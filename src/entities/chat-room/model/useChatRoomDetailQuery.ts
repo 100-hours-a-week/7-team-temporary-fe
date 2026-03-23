@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchChatRoomDetail } from "../api";
+import { AuthService } from "@/shared/auth";
 
 import { toChatRoomDetailModel } from "./chatRoomDetail.mapper";
 import { chatRoomQueryKeys } from "./queryKeys";
@@ -22,7 +23,8 @@ export function useChatRoomDetailQuery({
 }: UseChatRoomDetailQueryOptions) {
   return useQuery({
     queryKey: chatRoomQueryKeys.detail(roomId),
-    queryFn: ({ signal }) => fetchChatRoomDetail({ roomId, signal }),
+    queryFn: ({ signal }) =>
+      AuthService.refreshAndRetry(() => fetchChatRoomDetail({ roomId, signal })),
     select: toChatRoomDetailModel,
     enabled: enabled && roomId > 0,
     staleTime,

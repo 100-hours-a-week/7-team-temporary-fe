@@ -101,8 +101,11 @@ const sentryAppliedConfig = withSentryConfig(nextConfig, {
 
     // Tree-shaking options for reducing bundle size
     treeshake: {
-      // Automatically tree-shake Sentry logger statements to reduce bundle size
       removeDebugLogging: true,
+      // Replay를 사용하지 않으므로 관련 코드 제거 (f60664a3 청크 ~35 KiB 절감)
+      excludeReplayIframe: true,
+      excludeReplayShadowDOM: true,
+      excludeReplayCompressionWorker: true,
     },
   },
 });
