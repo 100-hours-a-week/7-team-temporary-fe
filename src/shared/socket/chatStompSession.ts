@@ -74,6 +74,7 @@ const DEFAULT_LOGOUT_DISCONNECT_PAYLOAD: DisconnectHandshakePayload = {
 };
 
 const PUBLISH_RECEIPT_TIMEOUT_MS = 3000;
+const CHAT_PARTICIPANT_HEARTBEAT_INTERVAL_MS = 15_000;
 const DUPLICATE_RECONNECT_BASE_DELAY_MS = 1000;
 const DUPLICATE_RECONNECT_MAX_DELAY_MS = 8000;
 const DUPLICATE_RECONNECT_MAX_RETRIES = 8;
@@ -139,6 +140,7 @@ export interface SubscribeToRoomParams {
 interface ActiveRoomEntry {
   participantId: number;
   stompSubscription: StompSubscription | null;
+  chatHeartbeatTimer: ReturnType<typeof setInterval> | null;
   onMessageCreated?: (payload: MessageCreatedPayload) => void;
   onParticipantJoined?: (payload: ParticipantJoinedPayload) => void;
   onParticipantLeft?: (payload: ParticipantLeftPayload) => void;
@@ -423,6 +425,7 @@ class ChatStompSession {
   private config: ChatSocketStartConfig | null = null;
   private isRefreshing = false;
   private connectedUserId: number | null = null;
+  private connectedSessionId: string | null = null;
 
   // Active STOMP subscriptions (cleared on each reconnect)
   private handshakeSubscription: StompSubscription | null = null;
@@ -462,6 +465,10 @@ class ChatStompSession {
 
   get userId(): number | null {
     return this.connectedUserId;
+  }
+
+  get sessionId(): string | null {
+    return this.connectedSessionId;
   }
 
   // ─── Public listener registration ────────────────────────────────────────────
@@ -594,6 +601,7 @@ class ChatStompSession {
     const entry: ActiveRoomEntry = {
       participantId,
       stompSubscription: null,
+      chatHeartbeatTimer: null,
       ...callbacks,
     };
     this.activeRooms.set(roomId, entry);
@@ -981,6 +989,7 @@ class ChatStompSession {
     this.client = null;
     this.config = null;
     this.connectedUserId = null;
+    this.connectedSessionId = null;
   }
 
   private clearScheduledRefreshReconnectTimer() {
@@ -1416,6 +1425,7 @@ class ChatStompSession {
       if (connectedPayload) {
         chatSocketLog("[chat-socket] socket.connected", connectedPayload);
         this.connectedUserId = connectedPayload.userId;
+        this.connectedSessionId = connectedPayload.sessionId;
         setAuthUserId(connectedPayload.userId);
         this.resetReconnectState();
 
@@ -1789,6 +1799,12 @@ class ChatStompSession {
     roomId: number,
     entry: ActiveRoomEntry,
   ) {
+    // 재연결 시 기존 heartbeat 타이머가 살아있을 수 있으므로 먼저 정리한다.
+    if (entry.chatHeartbeatTimer !== null) {
+      clearInterval(entry.chatHeartbeatTimer);
+      entry.chatHeartbeatTimer = null;
+    }
+
     const destination = `/sub/room/${roomId}`;
 
     entry.stompSubscription = client.subscribe(destination, (message) => {
@@ -1916,6 +1932,29 @@ class ChatStompSession {
       payloadForLog: subscribePayload,
     });
 
+    const sessionId = this.connectedSessionId;
+    if (sessionId) {
+      this.sendChatParticipantOnline({
+        roomId,
+        participantId: entry.participantId,
+        sessionId,
+      });
+      entry.chatHeartbeatTimer = setInterval(() => {
+        const currentSessionId = this.connectedSessionId;
+        if (!currentSessionId) return;
+        this.sendChatParticipantHeartbeat({
+          roomId,
+          participantId: entry.participantId,
+          sessionId: currentSessionId,
+        });
+      }, CHAT_PARTICIPANT_HEARTBEAT_INTERVAL_MS);
+    } else {
+      chatSocketWarn("[chat-socket] skip chat.participant.online: sessionId 미확보", {
+        roomId,
+        participantId: entry.participantId,
+      });
+    }
+
     chatSocketLog("[chat-socket] room subscribed", { roomId, destination });
   }
 
@@ -1925,7 +1964,21 @@ class ChatStompSession {
 
     this.activeRooms.delete(roomId);
 
+    if (entry.chatHeartbeatTimer !== null) {
+      clearInterval(entry.chatHeartbeatTimer);
+      entry.chatHeartbeatTimer = null;
+    }
+
     if (this.client?.connected && this.config) {
+      const sessionId = this.connectedSessionId;
+      if (sessionId) {
+        this.sendChatParticipantOffline({
+          roomId,
+          participantId: entry.participantId,
+          sessionId,
+        });
+      }
+
       const unsubscribePayload: UnsubscribeRoomRequestPayload = {
         roomId,
         participantId: entry.participantId,
