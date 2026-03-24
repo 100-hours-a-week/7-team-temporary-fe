@@ -1,5 +1,6 @@
 import { apiFetch, Endpoint } from "@/shared/api";
 import { CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED, getMockChatRoomMessageListResponse } from "./mock";
+import { AuthService } from "@/shared/auth";
 
 import type {
   ChatRoomDetailDto,
@@ -37,9 +38,11 @@ export async function fetchChatRoomList({
     size: String(size),
   });
 
-  return apiFetch<ChatRoomListResponseDto>(
-    `${Endpoint.CHAT_ROOMS.PARTICIPANTS}?${searchParams.toString()}`,
-    { signal, authRequired: true },
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<ChatRoomListResponseDto>(
+      `${Endpoint.CHAT_ROOMS.PARTICIPANTS}?${searchParams.toString()}`,
+      { signal, authRequired: true },
+    ),
   );
 }
 
@@ -49,10 +52,12 @@ export async function fetchChatRoomSearchList({
   size = 10,
   signal,
 }: FetchChatRoomSearchListParams): Promise<ChatRoomListResponseDto> {
-  return apiFetch<ChatRoomListResponseDto>(Endpoint.CHAT_ROOMS.SEARCH({ title, page, size }), {
-    signal,
-    authRequired: true,
-  });
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<ChatRoomListResponseDto>(Endpoint.CHAT_ROOMS.SEARCH({ title, page, size }), {
+      signal,
+      authRequired: true,
+    }),
+  );
 }
 
 export async function fetchChatRoomOwnerStatus({
@@ -64,10 +69,12 @@ export async function fetchChatRoomOwnerStatus({
   ownerId: number;
   signal?: AbortSignal;
 }): Promise<ChatRoomOwnerStatusDto> {
-  return apiFetch<ChatRoomOwnerStatusDto>(Endpoint.CHAT_ROOMS.OWNER_STATUS(roomId, ownerId), {
-    signal,
-    authRequired: true,
-  });
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<ChatRoomOwnerStatusDto>(Endpoint.CHAT_ROOMS.OWNER_STATUS(roomId, ownerId), {
+      signal,
+      authRequired: true,
+    }),
+  );
 }
 
 export async function fetchChatRoomDetail({
@@ -77,10 +84,12 @@ export async function fetchChatRoomDetail({
   roomId: number;
   signal?: AbortSignal;
 }): Promise<ChatRoomDetailDto> {
-  return apiFetch<ChatRoomDetailDto>(Endpoint.CHAT_ROOMS.DETAIL(roomId), {
-    signal,
-    authRequired: true,
-  });
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<ChatRoomDetailDto>(Endpoint.CHAT_ROOMS.DETAIL(roomId), {
+      signal,
+      authRequired: true,
+    }),
+  );
 }
 
 export async function joinChatRoom({
@@ -181,8 +190,10 @@ export async function fetchChatRoomMessages({
     ? `${Endpoint.CHAT_ROOMS.MESSAGES(roomId)}?${query}`
     : Endpoint.CHAT_ROOMS.MESSAGES(roomId);
 
-  return apiFetch<ChatMessageListResponseDto>(url, {
-    signal,
-    authRequired: true,
-  });
+  return AuthService.refreshAndRetry(() =>
+    apiFetch<ChatMessageListResponseDto>(url, {
+      signal,
+      authRequired: true,
+    }),
+  );
 }
