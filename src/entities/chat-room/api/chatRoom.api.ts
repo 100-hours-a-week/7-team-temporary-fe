@@ -16,7 +16,6 @@ import type {
   VideoParticipantsOnlineResponseDto,
 } from "./types";
 
-
 interface FetchChatRoomListParams {
   page?: number;
   size?: number;
