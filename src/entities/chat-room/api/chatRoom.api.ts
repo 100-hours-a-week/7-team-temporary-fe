@@ -1,6 +1,6 @@
 import { apiFetch, Endpoint } from "@/shared/api";
 
-import { CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED, getMockChatRoomMessageListResponse } from "./mock";
+import { CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED } from "./mock";
 import { AuthService } from "@/shared/auth";
 
 import type {
@@ -16,8 +16,6 @@ import type {
   VideoParticipantsOnlineResponseDto,
 } from "./types";
 
-const CHAT_ROOM_MESSAGE_LIST_MOCK_ENABLED =
-  process.env.NEXT_PUBLIC_CHAT_ROOM_MESSAGE_LIST_MOCK === "true";
 
 interface FetchChatRoomListParams {
   page?: number;
