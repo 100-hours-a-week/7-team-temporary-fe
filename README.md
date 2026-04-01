@@ -27,7 +27,7 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 
 - **서비스 URL**: https://molip.today
 
-![MOLIP 표지](.github/assets/readme/cover.png)
+![MOLIP 표지](.github/assets/readme/표지로고.png)
 
 [![MOLIP 시연 영상](.github/assets/readme/demo-banner.png)](https://www.youtube.com/watch?v=nTxPmcUat0I)
 
@@ -37,7 +37,9 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 
 ### 👥 팀 구성
 
-- FE, BE, AI, Design, PM 협업으로 진행한 팀 프로젝트
+> Frontend 및 디자인을 담당하였습니다.
+
+![alt text](<.github/assets/readme/프로젝트 팀 구성원 및 역할.png>)
 
 ### 📆 개발 기간
 
@@ -110,6 +112,8 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 - 스타일/토큰 기준: `src/shared/styles`, Tailwind Theme
 - 설계 원칙: 재사용성, 일관성, 접근성
 - 문서/검증: Storybook 기반 컴포넌트 문서화 및 UI 확인
+
+![디자인시스템](.github/assets/readme/디자인시스템.png)
 
 ---
 
