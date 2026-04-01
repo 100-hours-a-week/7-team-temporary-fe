@@ -27,9 +27,9 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 
 - **서비스 URL**: https://molip.today
 
-![alt text](<docs/images/✅ 표지.png>)
+![MOLIP 표지](.github/assets/readme/cover.png)
 
-[![alt text](docs/images/몰입-시연영상-배너.png)](https://www.youtube.com/watch?v=nTxPmcUat0I)
+[![MOLIP 시연 영상](.github/assets/readme/demo-banner.png)](https://www.youtube.com/watch?v=nTxPmcUat0I)
 
 ---
 
