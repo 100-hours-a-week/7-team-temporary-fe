@@ -27,7 +27,7 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 
 - **서비스 URL**: https://molip.today
 
-![MOLIP 표지](.github/assets/readme/cover.png)
+![MOLIP 표지](.github/assets/readme/표지로고.png)
 
 [![MOLIP 시연 영상](.github/assets/readme/demo-banner.png)](https://www.youtube.com/watch?v=nTxPmcUat0I)
 
@@ -37,63 +37,71 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 
 ### 👥 팀 구성
 
-- FE, BE, AI, Design, PM 협업으로 진행한 팀 프로젝트
+> Frontend 및 디자인을 담당하였습니다.
+
+![alt text](<.github/assets/readme/프로젝트 팀 구성원 및 역할.png>)
 
 ### 📆 개발 기간
 
 - 2025년 12월 22일 ~ 2026년 03월 26일
 
-| 단계 | 기간 | 시작일 | 종료일 |
-| --- | --- | --- | --- |
-| 서비스 기획 및 주제 선정 | 2주 | 2025-12-22 | 2026-01-04 |
-| 기능 요구사항 정의 및 화면 설계 | 2주 | 2026-01-05 | 2026-01-18 |
-| V1 개발 및 테스트 | 3주 | 2026-01-19 | 2026-02-08 |
-| V2 개발 | 3주 | 2026-02-09 | 2026-03-01 |
-| V3 개발 | 3주 | 2026-03-02 | 2026-03-22 |
-| 마무리 점검/배포 정리 | 4일 | 2026-03-23 | 2026-03-26 |
+| 단계                            | 기간 | 시작일     | 종료일     |
+| ------------------------------- | ---- | ---------- | ---------- |
+| 서비스 기획 및 주제 선정        | 2주  | 2025-12-22 | 2026-01-04 |
+| 기능 요구사항 정의 및 화면 설계 | 2주  | 2026-01-05 | 2026-01-18 |
+| V1 개발 및 테스트               | 3주  | 2026-01-19 | 2026-02-08 |
+| V2 개발                         | 3주  | 2026-02-09 | 2026-03-01 |
+| V3 개발                         | 3주  | 2026-03-02 | 2026-03-22 |
+| 마무리 점검/배포 정리           | 4일  | 2026-03-23 | 2026-03-26 |
 
 ---
 
-## 🛠️ 2. Tech Stack
+## 🧱 2. Architecture
+
+![alt text](.github/assets/readme/아키텍처.png)
+
+---
+
+## 🛠️ 3. Tech Stack
 
 ### Core
 
-| 항목         | 기술                                                                    |
-| ------------ | ----------------------------------------------------------------------- |
-| Framework    | Next.js 15 (App Router)                                                 |
-| UI Library   | React 19, React DOM 19                                                  |
-| Language     | TypeScript 5                                                            |
-| Styling      | Tailwind CSS 4, Emotion, `clsx`, `tailwind-merge`                       |
-| Server State | TanStack Query 5, React Query Devtools                                  |
-| Client State | Zustand 5                                                               |
-| Form         | React Hook Form, `@hookform/resolvers`, Zod                             |
-| UI 컴포넌트  | Radix UI (`@radix-ui/react-dialog`)                                     |
-| 인터랙션     | DnD Kit (`@dnd-kit/*`), `react-mobile-picker`                           |
-| 데이터 시각화 | Recharts                                                                |
-| 모션/애니메이션 | GSAP (`gsap`, `@gsap/react`), Motion, `canvas-confetti`                 |
+| 항목            | 기술                                                    |
+| --------------- | ------------------------------------------------------- |
+| Framework       | Next.js 15 (App Router)                                 |
+| UI Library      | React 19, React DOM 19                                  |
+| Language        | TypeScript 5                                            |
+| Styling         | Tailwind CSS 4, Emotion, `clsx`, `tailwind-merge`       |
+| Server State    | TanStack Query 5, React Query Devtools                  |
+| Client State    | Zustand 5                                               |
+| Form            | React Hook Form, `@hookform/resolvers`, Zod             |
+| UI 컴포넌트     | Radix UI (`@radix-ui/react-dialog`)                     |
+| 인터랙션        | DnD Kit (`@dnd-kit/*`), `react-mobile-picker`           |
+| 데이터 시각화   | Recharts                                                |
+| 모션/애니메이션 | GSAP (`gsap`, `@gsap/react`), Motion, `canvas-confetti` |
 
 ### Realtime & Communication
 
-| 항목        | 기술                                        |
-| ----------- | ------------------------------------------- |
-| 실시간 채팅 | STOMP over WebSocket (`@stomp/stompjs`)     |
-| 영상 통화   | LiveKit (`livekit-client`)                  |
+| 항목        | 기술                                             |
+| ----------- | ------------------------------------------------ |
+| 실시간 채팅 | STOMP over WebSocket (`@stomp/stompjs`)          |
+| 영상 통화   | LiveKit (`livekit-client`)                       |
 | 푸시 알림   | Firebase FCM + Web Push (`firebase`, `web-push`) |
-| PWA         | Workbox (`workbox-window`)                  |
+| PWA         | Workbox (`workbox-window`)                       |
 
 ### Infrastructure & DX
 
-| 항목           | 기술                                                                                 |
-| -------------- | ------------------------------------------------------------------------------------ |
-| 모니터링       | Sentry (`@sentry/nextjs`)                                                            |
-| E2E 테스트     | Playwright (`@playwright/test`)                                                      |
-| 성능 테스트    | Artillery                                                                            |
-| 문서화         | Storybook (`storybook`, `@storybook/nextjs`)                                        |
-| 의존성 검사    | Dependency Cruiser                                                                    |
-| 코드 품질      | ESLint, Prettier, TypeScript                                                         |
+| 항목               | 기술                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| 모니터링           | Sentry (`@sentry/nextjs`)                                                               |
+| E2E 테스트         | Playwright (`@playwright/test`)                                                         |
+| 성능 테스트        | Artillery                                                                               |
+| 문서화             | Storybook (`storybook`, `@storybook/nextjs`)                                            |
+| 의존성 검사        | Dependency Cruiser                                                                      |
+| 코드 품질          | ESLint, Prettier, TypeScript                                                            |
 | 경계/아키텍처 규칙 | `eslint-plugin-boundaries`, `eslint-plugin-import`, `eslint-import-resolver-typescript` |
-| 훅/커밋 규칙   | Husky, Commitlint                                                                     |
-| 번들 분석      | `@next/bundle-analyzer`                                                              |
+| 훅/커밋 규칙       | Husky, Commitlint                                                                       |
+| 번들 분석          | `@next/bundle-analyzer`                                                                 |
 
 ### Platform (Repo/Infra)
 
@@ -104,159 +112,18 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 
 ---
 
-## 🎯 3. Design System
+## 🎯 4. Design System
 
 - 컴포넌트 기준: `src/shared/ui`
 - 스타일/토큰 기준: `src/shared/styles`, Tailwind Theme
 - 설계 원칙: 재사용성, 일관성, 접근성
 - 문서/검증: Storybook 기반 컴포넌트 문서화 및 UI 확인
 
----
-
-## 🧱 4. Architecture
-
-### 현재 폴더 구조 (요약)
-
-```text
-.
-├── .agents/
-├── .claude/
-├── .cursor/
-├── .github/
-├── .husky/
-├── .idea/
-├── .storybook/
-├── .vscode/
-├── 7-team-temporary-fe.wiki/
-├── app/
-│   ├── (protected)/
-│   │   ├── home/
-│   │   ├── chat/
-│   │   │   ├── [roomId]/
-│   │   │   ├── create/
-│   │   │   └── search/
-│   │   ├── room/
-│   │   ├── retro/
-│   │   └── profile/
-│   ├── (public)/
-│   │   ├── login/
-│   │   ├── sign-up/
-│   │   │   └── intro/
-│   │   └── retro/
-│   │       └── public/
-│   │           └── [retroId]/
-│   ├── api/
-│   │   ├── _proxy/
-│   │   ├── bff/[...path]/
-│   │   ├── chat/[...path]/
-│   │   ├── task/[...path]/
-│   │   ├── example/
-│   │   └── sentry-example-api/
-│   ├── fonts/
-│   ├── health/
-│   └── sentry-example-page/
-├── docs/
-│   ├── common-domain/
-│   ├── frontend-standard-structure/
-│   └── images/
-├── local-assets/
-├── pages/
-├── public/
-│   └── icons/
-├── scripts/
-├── src/
-│   ├── entities/
-│   │   ├── auth/
-│   │   ├── cam-study-room/
-│   │   ├── chat-room/
-│   │   ├── day-plan/
-│   │   ├── day-plan-presence/
-│   │   ├── day-plan-schedule/
-│   │   ├── day-plan-schedule-core/
-│   │   ├── friend/
-│   │   ├── issue/
-│   │   ├── notification/
-│   │   ├── report/
-│   │   ├── retro/
-│   │   └── user/
-│   ├── features/
-│   │   ├── ai-arrange/
-│   │   ├── auth/
-│   │   ├── chat-room-create/
-│   │   ├── chat-room-edit/
-│   │   ├── chat-room-join/
-│   │   ├── chat-room-leave/
-│   │   ├── chat-room-session/
-│   │   ├── friend/
-│   │   ├── home/
-│   │   ├── image/
-│   │   ├── profile/
-│   │   ├── report/
-│   │   ├── retro/
-│   │   ├── schedule/
-│   │   └── task-basket/
-│   ├── pages/
-│   │   ├── app-shell/
-│   │   ├── auth/
-│   │   ├── friend/
-│   │   ├── home/
-│   │   ├── login/
-│   │   ├── notification/
-│   │   ├── profile/
-│   │   ├── report/
-│   │   ├── retro/
-│   │   ├── room/
-│   │   └── sign-up/
-│   ├── shared/
-│   │   ├── api/
-│   │   ├── auth/
-│   │   ├── device/
-│   │   ├── firebase/
-│   │   ├── form/
-│   │   ├── hooks/
-│   │   ├── lib/
-│   │   ├── model/
-│   │   ├── pwa/
-│   │   ├── query/
-│   │   ├── socket/
-│   │   ├── styles/
-│   │   ├── ui/
-│   │   └── validation/
-│   └── widgets/
-│       ├── app-header/
-│       ├── auth/
-│       ├── chat-room-message-feed/
-│       ├── chat-room-session/
-│       ├── friend-list/
-│       ├── home-planner/
-│       ├── home-week/
-│       ├── planner-edit/
-│       ├── public-page-header/
-│       ├── retro-feed/
-│       ├── retro-public-feed/
-│       ├── room-feed/
-│       ├── stack/
-│       ├── tab-stack/
-│       └── task-basket/
-├── tests/
-│   ├── e2e/
-│   └── load/
-└── (build/output folders omitted: .git, .next, .pnpm-store, node_modules, test-results, tmp)
-```
-
-### BFF Proxy
-
-`app/api/` 하위 API Routes가 백엔드 서버로의 프록시 역할을 수행합니다.
-HTTP 요청은 BFF를 통해 프록시되며, WebSocket(STOMP)은 백엔드에 직접 연결합니다.
+![디자인시스템](.github/assets/readme/디자인시스템.png)
 
 ---
 
 ## 🎨 5. UI/UX 설계 포인트
-
-### AppShell 기반 탭 SPA
-
-`/home` 진입 후 탭 전환은 URL이 아닌 AppShell 내부 상태로 관리합니다.
-페이지 전환 없이 탭 간 이동이 가능해 네이티브 앱과 유사한 UX를 제공합니다.
 
 ### 실시간 채팅 STOMP 세션 관리
 
@@ -348,33 +215,16 @@ scripts/create-issue.sh \
   --project-url https://github.com/orgs/100-hours-a-week/projects/304
 ```
 
-### 성능 측정
+### 템플릿/컨벤션 링크
 
-```bash
-# HAR + React Profiler 데이터 수집
-pnpm profile:collect -- --url http://localhost:3000/home --label "home-perf" --runs 3
-
-# E2E 성능 테스트
-pnpm test:e2e
-
-# 부하 테스트
-pnpm test:load:http
-```
+- [PR 템플릿](.github/pull_request_template.md)
+- [이슈 템플릿/운영 가이드](.github/issue/README.md)
+- [이슈 자동 생성 템플릿 가이드](.github/issue/Github_이슈_자동_생성_스크립트.md)
+- [커밋 컨벤션 가이드](docs/commit-ground-rule.md)
+- [Git Flow 가이드](docs/gitflow.md)
 
 ---
 
-## 🧪 8. Scripts
+## 🔗 8. Frontend Wiki
 
-| 명령어                 | 설명                       |
-| ---------------------- | -------------------------- |
-| `pnpm dev`             | 개발 서버 실행 (Turbopack) |
-| `pnpm build`           | 프로덕션 빌드              |
-| `pnpm start`           | 프로덕션 서버 실행         |
-| `pnpm analyze`         | 번들 분석                  |
-| `pnpm lint`            | ESLint 실행                |
-| `pnpm format`          | Prettier 포맷팅            |
-| `pnpm depcruise`       | FSD 의존성 구조 검증       |
-| `pnpm storybook`       | Storybook 개발 서버        |
-| `pnpm test:e2e`        | Playwright E2E 테스트      |
-| `pnpm test:load:http`  | Artillery 부하 테스트      |
-| `pnpm profile:collect` | HAR 프로파일 수집          |
+- https://github.com/100-hours-a-week/7-team-temporary-fe/wiki
