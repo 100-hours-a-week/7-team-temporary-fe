@@ -56,7 +56,13 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 
 ---
 
-## 🛠️ 2. Tech Stack
+## 🧱 2. Architecture
+
+![alt text](.github/assets/readme/아키텍처.png)
+
+---
+
+## 🛠️ 3. Tech Stack
 
 ### Core
 
@@ -106,7 +112,7 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 
 ---
 
-## 🎯 3. Design System
+## 🎯 4. Design System
 
 - 컴포넌트 기준: `src/shared/ui`
 - 스타일/토큰 기준: `src/shared/styles`, Tailwind Theme
@@ -114,144 +120,6 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 - 문서/검증: Storybook 기반 컴포넌트 문서화 및 UI 확인
 
 ![디자인시스템](.github/assets/readme/디자인시스템.png)
-
----
-
-## 🧱 4. Architecture
-
-### 현재 폴더 구조 (요약)
-
-```text
-.
-├── .agents/
-├── .claude/
-├── .cursor/
-├── .github/
-├── .husky/
-├── .idea/
-├── .storybook/
-├── .vscode/
-├── 7-team-temporary-fe.wiki/
-├── app/
-│   ├── (protected)/
-│   │   ├── home/
-│   │   ├── chat/
-│   │   │   ├── [roomId]/
-│   │   │   ├── create/
-│   │   │   └── search/
-│   │   ├── room/
-│   │   ├── retro/
-│   │   └── profile/
-│   ├── (public)/
-│   │   ├── login/
-│   │   ├── sign-up/
-│   │   │   └── intro/
-│   │   └── retro/
-│   │       └── public/
-│   │           └── [retroId]/
-│   ├── api/
-│   │   ├── _proxy/
-│   │   ├── bff/[...path]/
-│   │   ├── chat/[...path]/
-│   │   ├── task/[...path]/
-│   │   ├── example/
-│   │   └── sentry-example-api/
-│   ├── fonts/
-│   ├── health/
-│   └── sentry-example-page/
-├── docs/
-│   ├── common-domain/
-│   ├── frontend-standard-structure/
-│   └── images/
-├── local-assets/
-├── pages/
-├── public/
-│   └── icons/
-├── scripts/
-├── src/
-│   ├── entities/
-│   │   ├── auth/
-│   │   ├── cam-study-room/
-│   │   ├── chat-room/
-│   │   ├── day-plan/
-│   │   ├── day-plan-presence/
-│   │   ├── day-plan-schedule/
-│   │   ├── day-plan-schedule-core/
-│   │   ├── friend/
-│   │   ├── issue/
-│   │   ├── notification/
-│   │   ├── report/
-│   │   ├── retro/
-│   │   └── user/
-│   ├── features/
-│   │   ├── ai-arrange/
-│   │   ├── auth/
-│   │   ├── chat-room-create/
-│   │   ├── chat-room-edit/
-│   │   ├── chat-room-join/
-│   │   ├── chat-room-leave/
-│   │   ├── chat-room-session/
-│   │   ├── friend/
-│   │   ├── home/
-│   │   ├── image/
-│   │   ├── profile/
-│   │   ├── report/
-│   │   ├── retro/
-│   │   ├── schedule/
-│   │   └── task-basket/
-│   ├── pages/
-│   │   ├── app-shell/
-│   │   ├── auth/
-│   │   ├── friend/
-│   │   ├── home/
-│   │   ├── login/
-│   │   ├── notification/
-│   │   ├── profile/
-│   │   ├── report/
-│   │   ├── retro/
-│   │   ├── room/
-│   │   └── sign-up/
-│   ├── shared/
-│   │   ├── api/
-│   │   ├── auth/
-│   │   ├── device/
-│   │   ├── firebase/
-│   │   ├── form/
-│   │   ├── hooks/
-│   │   ├── lib/
-│   │   ├── model/
-│   │   ├── pwa/
-│   │   ├── query/
-│   │   ├── socket/
-│   │   ├── styles/
-│   │   ├── ui/
-│   │   └── validation/
-│   └── widgets/
-│       ├── app-header/
-│       ├── auth/
-│       ├── chat-room-message-feed/
-│       ├── chat-room-session/
-│       ├── friend-list/
-│       ├── home-planner/
-│       ├── home-week/
-│       ├── planner-edit/
-│       ├── public-page-header/
-│       ├── retro-feed/
-│       ├── retro-public-feed/
-│       ├── room-feed/
-│       ├── stack/
-│       ├── tab-stack/
-│       └── task-basket/
-├── tests/
-│   ├── e2e/
-│   └── load/
-└── (build/output folders omitted: .git, .next, .pnpm-store, node_modules, test-results, tmp)
-```
-
-### BFF Proxy
-
-`app/api/` 하위 API Routes가 백엔드 서버로의 프록시 역할을 수행합니다.
-HTTP 요청은 BFF를 통해 프록시되며, WebSocket(STOMP)은 백엔드에 직접 연결합니다.
 
 ---
 
@@ -347,15 +215,16 @@ scripts/create-issue.sh \
   --project-url https://github.com/orgs/100-hours-a-week/projects/304
 ```
 
-### 성능 측정
+### 템플릿/컨벤션 링크
 
-```bash
-# HAR + React Profiler 데이터 수집
-pnpm profile:collect -- --url http://localhost:3000/home --label "home-perf" --runs 3
+- [PR 템플릿](.github/pull_request_template.md)
+- [이슈 템플릿/운영 가이드](.github/issue/README.md)
+- [이슈 자동 생성 템플릿 가이드](.github/issue/Github_이슈_자동_생성_스크립트.md)
+- [커밋 컨벤션 가이드](docs/commit-ground-rule.md)
+- [Git Flow 가이드](docs/gitflow.md)
 
-# E2E 성능 테스트
-pnpm test:e2e
+---
 
-# 부하 테스트
-pnpm test:load:http
-```
+## 🔗 8. Frontend Wiki
+
+- https://github.com/100-hours-a-week/7-team-temporary-fe/wiki
