@@ -43,14 +43,14 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 
 - 2025년 12월 22일 ~ 2026년 03월 26일
 
-| 단계 | 기간 | 시작일 | 종료일 |
-| --- | --- | --- | --- |
-| 서비스 기획 및 주제 선정 | 2주 | 2025-12-22 | 2026-01-04 |
-| 기능 요구사항 정의 및 화면 설계 | 2주 | 2026-01-05 | 2026-01-18 |
-| V1 개발 및 테스트 | 3주 | 2026-01-19 | 2026-02-08 |
-| V2 개발 | 3주 | 2026-02-09 | 2026-03-01 |
-| V3 개발 | 3주 | 2026-03-02 | 2026-03-22 |
-| 마무리 점검/배포 정리 | 4일 | 2026-03-23 | 2026-03-26 |
+| 단계                            | 기간 | 시작일     | 종료일     |
+| ------------------------------- | ---- | ---------- | ---------- |
+| 서비스 기획 및 주제 선정        | 2주  | 2025-12-22 | 2026-01-04 |
+| 기능 요구사항 정의 및 화면 설계 | 2주  | 2026-01-05 | 2026-01-18 |
+| V1 개발 및 테스트               | 3주  | 2026-01-19 | 2026-02-08 |
+| V2 개발                         | 3주  | 2026-02-09 | 2026-03-01 |
+| V3 개발                         | 3주  | 2026-03-02 | 2026-03-22 |
+| 마무리 점검/배포 정리           | 4일  | 2026-03-23 | 2026-03-26 |
 
 ---
 
@@ -58,42 +58,42 @@ MOLIP은 대학생 팀 프로젝트 협업을 위한 올인원 플래너 앱입�
 
 ### Core
 
-| 항목         | 기술                                                                    |
-| ------------ | ----------------------------------------------------------------------- |
-| Framework    | Next.js 15 (App Router)                                                 |
-| UI Library   | React 19, React DOM 19                                                  |
-| Language     | TypeScript 5                                                            |
-| Styling      | Tailwind CSS 4, Emotion, `clsx`, `tailwind-merge`                       |
-| Server State | TanStack Query 5, React Query Devtools                                  |
-| Client State | Zustand 5                                                               |
-| Form         | React Hook Form, `@hookform/resolvers`, Zod                             |
-| UI 컴포넌트  | Radix UI (`@radix-ui/react-dialog`)                                     |
-| 인터랙션     | DnD Kit (`@dnd-kit/*`), `react-mobile-picker`                           |
-| 데이터 시각화 | Recharts                                                                |
-| 모션/애니메이션 | GSAP (`gsap`, `@gsap/react`), Motion, `canvas-confetti`                 |
+| 항목            | 기술                                                    |
+| --------------- | ------------------------------------------------------- |
+| Framework       | Next.js 15 (App Router)                                 |
+| UI Library      | React 19, React DOM 19                                  |
+| Language        | TypeScript 5                                            |
+| Styling         | Tailwind CSS 4, Emotion, `clsx`, `tailwind-merge`       |
+| Server State    | TanStack Query 5, React Query Devtools                  |
+| Client State    | Zustand 5                                               |
+| Form            | React Hook Form, `@hookform/resolvers`, Zod             |
+| UI 컴포넌트     | Radix UI (`@radix-ui/react-dialog`)                     |
+| 인터랙션        | DnD Kit (`@dnd-kit/*`), `react-mobile-picker`           |
+| 데이터 시각화   | Recharts                                                |
+| 모션/애니메이션 | GSAP (`gsap`, `@gsap/react`), Motion, `canvas-confetti` |
 
 ### Realtime & Communication
 
-| 항목        | 기술                                        |
-| ----------- | ------------------------------------------- |
-| 실시간 채팅 | STOMP over WebSocket (`@stomp/stompjs`)     |
-| 영상 통화   | LiveKit (`livekit-client`)                  |
+| 항목        | 기술                                             |
+| ----------- | ------------------------------------------------ |
+| 실시간 채팅 | STOMP over WebSocket (`@stomp/stompjs`)          |
+| 영상 통화   | LiveKit (`livekit-client`)                       |
 | 푸시 알림   | Firebase FCM + Web Push (`firebase`, `web-push`) |
-| PWA         | Workbox (`workbox-window`)                  |
+| PWA         | Workbox (`workbox-window`)                       |
 
 ### Infrastructure & DX
 
-| 항목           | 기술                                                                                 |
-| -------------- | ------------------------------------------------------------------------------------ |
-| 모니터링       | Sentry (`@sentry/nextjs`)                                                            |
-| E2E 테스트     | Playwright (`@playwright/test`)                                                      |
-| 성능 테스트    | Artillery                                                                            |
-| 문서화         | Storybook (`storybook`, `@storybook/nextjs`)                                        |
-| 의존성 검사    | Dependency Cruiser                                                                    |
-| 코드 품질      | ESLint, Prettier, TypeScript                                                         |
+| 항목               | 기술                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| 모니터링           | Sentry (`@sentry/nextjs`)                                                               |
+| E2E 테스트         | Playwright (`@playwright/test`)                                                         |
+| 성능 테스트        | Artillery                                                                               |
+| 문서화             | Storybook (`storybook`, `@storybook/nextjs`)                                            |
+| 의존성 검사        | Dependency Cruiser                                                                      |
+| 코드 품질          | ESLint, Prettier, TypeScript                                                            |
 | 경계/아키텍처 규칙 | `eslint-plugin-boundaries`, `eslint-plugin-import`, `eslint-import-resolver-typescript` |
-| 훅/커밋 규칙   | Husky, Commitlint                                                                     |
-| 번들 분석      | `@next/bundle-analyzer`                                                              |
+| 훅/커밋 규칙       | Husky, Commitlint                                                                       |
+| 번들 분석          | `@next/bundle-analyzer`                                                                 |
 
 ### Platform (Repo/Infra)
 
@@ -253,11 +253,6 @@ HTTP 요청은 BFF를 통해 프록시되며, WebSocket(STOMP)은 백엔드에 �
 
 ## 🎨 5. UI/UX 설계 포인트
 
-### AppShell 기반 탭 SPA
-
-`/home` 진입 후 탭 전환은 URL이 아닌 AppShell 내부 상태로 관리합니다.
-페이지 전환 없이 탭 간 이동이 가능해 네이티브 앱과 유사한 UX를 제공합니다.
-
 ### 실시간 채팅 STOMP 세션 관리
 
 `chatStompSession` 싱글톤이 STOMP 연결을 관리합니다.
@@ -360,21 +355,3 @@ pnpm test:e2e
 # 부하 테스트
 pnpm test:load:http
 ```
-
----
-
-## 🧪 8. Scripts
-
-| 명령어                 | 설명                       |
-| ---------------------- | -------------------------- |
-| `pnpm dev`             | 개발 서버 실행 (Turbopack) |
-| `pnpm build`           | 프로덕션 빌드              |
-| `pnpm start`           | 프로덕션 서버 실행         |
-| `pnpm analyze`         | 번들 분석                  |
-| `pnpm lint`            | ESLint 실행                |
-| `pnpm format`          | Prettier 포맷팅            |
-| `pnpm depcruise`       | FSD 의존성 구조 검증       |
-| `pnpm storybook`       | Storybook 개발 서버        |
-| `pnpm test:e2e`        | Playwright E2E 테스트      |
-| `pnpm test:load:http`  | Artillery 부하 테스트      |
-| `pnpm profile:collect` | HAR 프로파일 수집          |
